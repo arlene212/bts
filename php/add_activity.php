@@ -42,7 +42,7 @@ try {
 
     $filePath = null;
 
-    if ($attachmentType === 'file' && isset($_FILES['activity_file']) && $_FILES['activity_file']['error'] === UPLOAD_ERR_OK && !empty($_FILES['activity_file']['name'])) {
+    if ($attachmentType === 'file' && isset($_FILES['activity_file']) && $_FILES['activity_file']['error'] === UPLOAD_ERR_OK) {
         // Validate file size (200MB max)
         if ($_FILES['activity_file']['size'] > 200 * 1024 * 1024) {
             echo json_encode(['success' => false, 'message' => 'File size must be less than 200MB.']);
@@ -68,10 +68,10 @@ try {
 
     // Insert activity into the database
     $stmt = $pdo->prepare("
-        INSERT INTO topic_activities (topic_id, activity_title, activity_description, activity_type, due_date, max_score, attachment_path, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO topic_activities (topic_id, activity_title, activity_description, activity_type, due_date, max_score, attachment_path, created_by, start_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$topicId, $activityTitle, $activityDescription, $activityType, $dueDate, $maxScore, $filePath, $trainerId]);
+    $stmt->execute([$topicId, $activityTitle, $activityDescription, $activityType, $dueDate, $maxScore, $filePath, $trainerId, $_POST['start_date'] ?: null]);
 
     echo json_encode(['success' => true, 'message' => 'Activity added successfully.']);
 

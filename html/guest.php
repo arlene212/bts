@@ -62,7 +62,7 @@ try {
         <aside class="sidebar">
             <div class="profile">
                 <div class="user-card">
-                    <div class="user-card-header">
+                    <div class="user-card-header"> 
                         <img src="<?php echo htmlspecialchars($user['profile_picture'] ?: '../images/school.png'); ?>" alt="User Avatar" class="user-avatar">
                         <button class="edit-profile-btn" id="editProfileBtn" title="Edit Profile">
                             <i class="fas fa-edit"></i>
@@ -164,7 +164,7 @@ try {
                                 <div class="dashboard-card course-card" 
                                      data-course="<?php echo htmlspecialchars($course['course_code']); ?>" 
                                      data-title="<?php echo htmlspecialchars($course['course_name']); ?>">
-                                    <img src="<?php echo htmlspecialchars($course['image'] ?: '../images/course-placeholder.jpg'); ?>" alt="<?php echo htmlspecialchars($course['course_name']); ?>" class="course-img">
+                                    <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : '../images/course-placeholder.jpg'; ?>" alt="<?php echo htmlspecialchars($course['course_name']); ?>" class="course-img">
                                     <div class="label-text"><?php echo htmlspecialchars($course['course_name']); ?></div>
                                     <div class="sub-text"><?php echo htmlspecialchars($course['course_code']); ?> | <?php echo htmlspecialchars($course['hours']); ?> hours</div>
                                     <div class="course-description">
@@ -203,7 +203,7 @@ try {
                                 <div class="dashboard-card course-card enrolled-course" 
                                      data-course="<?php echo htmlspecialchars($course['course_code']); ?>" 
                                      data-title="<?php echo htmlspecialchars($course['course_name']); ?>">
-                                    <img src="<?php echo htmlspecialchars($course['image'] ?: '../images/course-placeholder.jpg'); ?>" alt="<?php echo htmlspecialchars($course['course_name']); ?>" class="course-img">
+                                    <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : '../images/course-placeholder.jpg'; ?>" alt="<?php echo htmlspecialchars($course['course_name']); ?>" class="course-img">
                                     <div class="label-text"><?php echo htmlspecialchars($course['course_name']); ?></div>
                                     <div class="sub-text"><?php echo htmlspecialchars($course['course_code']); ?> | <?php echo htmlspecialchars($course['hours']); ?> hours</div>
                                     <button class="view-course-btn">View Course</button>

@@ -2018,6 +2018,56 @@ body::before {
     background: #218838;
 }
 
+/* ===========================
+   Add Activity Modal Design Fix
+=========================== */
+
+/* Make the modal slightly wider for better form layout */
+#addActivityModal .modal-content {
+    max-width: 650px;
+}
+
+/* Use Grid for the form layout for better alignment */
+#addActivityForm {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Create a two-column layout */
+    gap: 15px 20px; /* Row and column gap */
+}
+
+/* Make single-column elements span both columns */
+#addActivityForm .form-group:not(.form-row .form-group) {
+    grid-column: 1 / -1; /* Span full width */
+}
+
+/* Ensure the form-row itself spans full width */
+#addActivityForm .form-row {
+    grid-column: 1 / -1;
+    display: contents; /* Allow its children to participate in the parent grid */
+}
+
+/* Style the attachment section for better visual grouping */
+#addActivityForm .form-group[id*="_input_group"] {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    margin-top: 5px;
+}
+
+/* Ensure the modal buttons are at the bottom, spanning the full width */
+#addActivityForm .modal-buttons {
+    grid-column: 1 / -1;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Add a subtle focus effect to inputs */
+#addActivityForm input:focus, #addActivityForm select:focus, #addActivityForm textarea:focus {
+    box-shadow: 0 0 0 3px rgba(41, 122, 204, 0.15);
+    border-color: #297acc;
+}
+
 /* Modal styles */
 .modal-content {
     max-width: 600px;
