@@ -88,7 +88,7 @@ try {
     if (move_uploaded_file($file['tmp_name'], $targetPath)) {
         // Insert submission record into the database
         $stmt = $pdo->prepare("
-            INSERT INTO activity_submissions (activity_id, trainee_id, submission_file_path, comments, submitted_at)
+            INSERT INTO activity_submissions (activity_id, trainee_id, file_path, submission_text, submitted_at)
             VALUES (?, ?, ?, ?, NOW())
         ");
         
