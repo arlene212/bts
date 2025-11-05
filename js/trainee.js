@@ -259,8 +259,8 @@ function renderCompetencies(competencies, container, allActivities) {
     container.querySelectorAll('.material-item.activity').forEach(item => {
         item.addEventListener('click', () => {
             const activityId = item.dataset.activityId;
-            const activity = allActivities.find(a => a.id == activityId);
-            openActivityModal(activity);
+            // Redirect to the dedicated activity page
+            window.location.href = `activity_view.php?id=${activityId}`;
         });
     });
 }
@@ -316,8 +316,8 @@ function renderActivitiesTable(activities, container) {
     container.querySelectorAll('.view-activity-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const activityId = btn.dataset.activityId;
-            const activity = activities.find(a => a.id == activityId);
-            openActivityModal(activity);
+            // Redirect to the dedicated activity page
+            window.location.href = `activity_view.php?id=${activityId}`;
         });
     });
 }
@@ -469,56 +469,6 @@ function renderActivitiesTable(activities, container) {
   const submissionHistory = document.getElementById("submissionHistory");
   const historyContent = document.getElementById("historyContent");
 
-  function openActivityModal(activity) {
-    if (!activity) return;
-
-    currentActivityId = activity.id; // Store the activity ID
-    activityModalTitle.textContent = activity.title;
-    document.getElementById('activityInstructions').textContent = activity.description || 'No instructions provided.';
-    document.getElementById('activityDueDate').textContent = new Date(activity.due_date).toLocaleString();
-
-    // Handle attachment display
-    const attachmentLinkContainer = document.getElementById('activityAttachmentLink');
-    if (activity.attachment_path) {
-        const attachmentUrl = activity.attachment_path.startsWith('http') 
-            ? activity.attachment_path 
-            : `../uploads/activities/${activity.attachment_path}`;
-        
-        attachmentLinkContainer.href = attachmentUrl;
-        attachmentLinkContainer.textContent = 'View Attached File';
-        attachmentLinkContainer.parentElement.classList.remove('hidden');
-    } else {
-        attachmentLinkContainer.parentElement.classList.add('hidden');
-    }
-
-
-    // Reset modal state
-    submissionSuccess.classList.add("hidden");
-    activitySubmitBtn.disabled = true;
-    activityFilePreview.classList.add("hidden");
-    activityFilePreview.innerHTML = "";
-    studentComment.value = "";
-    submissionHistory.classList.add("hidden");
-    teacherRemarksSection.classList.add("hidden");
-
-    // Show submission and grading info if it exists
-    if (activity.submission) {
-        submissionHistory.classList.remove("hidden");
-        renderSubmissionHistory([activity.submission]);
-
-        if (activity.submission.feedback) {
-            teacherRemarksSection.classList.remove("hidden");
-            teacherRemarksContent.textContent = activity.submission.feedback;
-            teacherRemarksMeta.textContent = `Score: ${activity.submission.score}/${activity.max_score}`;
-        }
-    }
-
-    // Show upload section only if not submitted or if resubmission is allowed (future feature)
-    uploadSection.style.display = activity.submission ? 'none' : 'block';
-
-    activityModal.classList.remove("hidden");
-  }
-
   // Format date for display
   function formatDisplayDate(dateString) {
     const date = new Date(dateString);
@@ -551,110 +501,6 @@ function renderActivitiesTable(activities, container) {
       historyContent.appendChild(historyItem);
     });
   }
-
-  // Submit assignment
-  activitySubmitBtn.addEventListener("click", () => {
-    if (!activityFileInput.files[0]) {
-      alert("Please select a file to upload.");
-      return;
-    }
-
-    const file = activityFileInput.files[0];
-    const comment = studentComment.value.trim();
-
-    const formData = new FormData();
-    formData.append('activity_id', currentActivityId);
-    formData.append('submission_file', file);
-    formData.append('comment', comment);
-
-    // Simulate upload process
-    activitySubmitBtn.disabled = true;
-    activitySubmitBtn.textContent = "Uploading...";
-
-    fetch('../php/submit_activity.php', {
-      method: 'POST',
-      body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        submissionSuccess.classList.remove("hidden");
-        activitySubmitBtn.textContent = "Submitted";
-        uploadSection.style.display = 'none'; // Hide upload section after success
-        
-        // Close modal after 3 seconds and reload course details
-        setTimeout(() => {
-          activityModal.classList.add("hidden");
-          const courseCode = document.getElementById('course-detail-code').textContent.replace('Code: ', '');
-          const courseName = document.getElementById('course-detail-title').textContent;
-          loadCourseDetails(courseCode, courseName); // Reload to show updated status
-        }, 3000);
-      } else {
-        alert('Submission failed: ' + data.error);
-        activitySubmitBtn.disabled = false;
-        activitySubmitBtn.textContent = "Submit Assignment";
-      }
-    })
-    .catch(error => {
-      console.error('Error submitting activity:', error);
-      alert('An error occurred during submission.');
-      activitySubmitBtn.disabled = false;
-      activitySubmitBtn.textContent = "Submit Assignment";
-    });
-  });
-
-  // Close activity modal
-  closeActivityModal.addEventListener("click", () => {
-    activityModal.classList.add("hidden");
-  });
-
-  // File upload functionality
-  uploadArea.addEventListener("click", () => {
-    activityFileInput.click();
-  });
-
-  activityFileInput.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file size (10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert("File size must be less than 10MB");
-        return;
-      }
-
-      // Validate file type
-      const allowedTypes = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
-      const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-      if (!allowedTypes.includes(fileExtension)) {
-        alert("Please upload a PDF, DOC, DOCX, JPG, or PNG file");
-        return;
-      }
-
-      // Show file preview
-      activityFilePreview.classList.remove("hidden");
-      activityFilePreview.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <div>
-            <strong>${file.name}</strong>
-            <div style="font-size: 0.8rem; color: #6c757d;">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
-          </div>
-          <button type="button" class="remove-file-btn" style="background: none; border: none; color: #dc3545; cursor: pointer;">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-      `;
-
-      // Enable submit button
-      activitySubmitBtn.disabled = false;
-
-      // Add remove file functionality
-      activityFilePreview.querySelector('.remove-file-btn').addEventListener('click', () => {
-        activityFileInput.value = '';
-        activityFilePreview.classList.add('hidden');
-        activitySubmitBtn.disabled = true;
-      });
-    }
-  });
 
   // Submit assignment
   activitySubmitBtn.addEventListener("click", () => {
@@ -721,10 +567,4 @@ function renderActivitiesTable(activities, container) {
     return null;
   }
 
-  // Close modal when clicking outside
-  activityModal.addEventListener("click", (e) => {
-    if (e.target === activityModal) {
-      activityModal.classList.add("hidden");
-    }
-  });
 });

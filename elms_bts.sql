@@ -170,6 +170,7 @@ CREATE TABLE topic_activities (
     max_score INT,
     max_attempts INT DEFAULT 1,
     created_by VARCHAR(50),
+    attachment_path VARCHAR(500) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (topic_id) REFERENCES course_topics(id)
 );
@@ -218,4 +219,3 @@ ALTER TABLE users ADD COLUMN password_changed_at DATETIME NULL AFTER last_login;
 INSERT INTO users (user_id, role, first_name, last_name, email, password) 
 VALUES ('1000000001', 'admin', 'Admin', 'User', 'admin@bts.gov.ph', 
         '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
-ALTER TABLE topic_activities ADD COLUMN attachment_path VARCHAR(500) NULL AFTER max_attempts;

@@ -516,6 +516,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("activity_topic_id").value = topicId;
         modal.classList.remove("hidden");
     }
+    
 
     document.getElementById("closeActivityModal").addEventListener("click", () => {
         document.getElementById("addActivityModal").classList.add("hidden");
@@ -525,30 +526,106 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("addActivityModal").classList.add("hidden");
     });
 
+    // ===== ADD ACTIVITY DATE PICKER LOGIC =====
+    const startDateInput = document.getElementById('start_date_date');
+    const startTimeInput = document.getElementById('start_date_time');
+    const dueDateInput = document.getElementById('due_date_date');
+    const dueTimeInput = document.getElementById('due_date_time');
+    const hiddenStartDateInput = document.getElementById('start_date');
+    const hiddenDueDateInput = document.getElementById('due_date');
+
+    if (startDateInput && startTimeInput && dueDateInput && dueTimeInput) {
+        const now = new Date();
+        // Set seconds and milliseconds to 0 for cleaner time values
+        now.setSeconds(0);
+        now.setMilliseconds(0);
+
+        const localDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+        const localTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+        // Set minimums to prevent picking past dates/times
+        startDateInput.min = localDate;
+        dueDateInput.min = localDate;
+
+        // Set default start time to now
+        startDateInput.value = localDate;
+        startTimeInput.value = localTime;
+
+        // Set default due date to one hour from now
+        const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+        dueDateInput.value = oneHourLater.toISOString().split('T')[0];
+        dueTimeInput.value = oneHourLater.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+        // Function to combine date and time for the hidden inputs
+        const combineDateTime = () => {
+            // Helper to convert local date/time to a UTC string in 'YYYY-MM-DD HH:MM:SS' format
+            const toUTCString = (dateStr, timeStr) => {
+                if (!dateStr || !timeStr) return '';                
+                // Create a date object by explicitly parsing the local date and time parts.
+                // This is more reliable across browsers than new Date('YYYY-MM-DDTHH:MM').
+                const [year, month, day] = dateStr.split('-').map(Number);
+                const [hours, minutes] = timeStr.split(':').map(Number);
+                const localDateTime = new Date(year, month - 1, day, hours, minutes);
+
+                // Convert the local date to a UTC string and format it for the database.
+                return localDateTime.toISOString().slice(0, 19).replace('T', ' ');
+            };
+
+            if (startDateInput.value && startTimeInput.value) {
+                hiddenStartDateInput.value = toUTCString(startDateInput.value, startTimeInput.value);
+            }
+            if (dueDateInput.value && dueTimeInput.value) {
+                hiddenDueDateInput.value = toUTCString(dueDateInput.value, dueTimeInput.value);
+            }
+        };
+
+        // Update hidden fields whenever a date or time input changes
+        [startDateInput, startTimeInput, dueDateInput, dueTimeInput].forEach(el => {
+            el.addEventListener('change', combineDateTime);
+        });
+
+        // Also update when the start date changes to ensure due date is valid
+        startDateInput.addEventListener('change', () => {
+            dueDateInput.min = startDateInput.value;
+            // If due date is now before start date, set it to the start date
+            if (dueDateInput.value < startDateInput.value) {
+                dueDateInput.value = startDateInput.value;
+            }
+            // If the dates are the same, ensure the due time is not before the start time
+            if (dueDateInput.value === startDateInput.value && dueTimeInput.value < startTimeInput.value) {
+                dueTimeInput.value = startTimeInput.value;
+            }
+        });
+
+        // Initial combination on load
+        combineDateTime();
+    }
+
+
     // Handle activity attachment type change
     const activityAttachmentTypeSelect = document.getElementById('activity_attachment_type');
     const activityFileInputGroup = document.getElementById('activity_file_input_group');
     const activityLinkInputGroup = document.getElementById('activity_link_input_group');
+    const activityFileInput = document.getElementById('activity_file');
+    const activityLinkInput = document.getElementById('activity_link');
 
-    if (activityAttachmentTypeSelect && activityFileInputGroup && activityLinkInputGroup) {
+    if (activityAttachmentTypeSelect) {
         activityAttachmentTypeSelect.addEventListener('change', function() {
-            if (this.value === 'file') {
-                activityFileInputGroup.classList.remove('hidden');
-                activityLinkInputGroup.classList.add('hidden');
-                document.getElementById('activity_file').required = true;
-                document.getElementById('activity_link').required = false;
-            } else { // link
-                activityFileInputGroup.classList.add('hidden');
-                activityLinkInputGroup.classList.remove('hidden');
-                document.getElementById('activity_file').required = false;
-                document.getElementById('activity_link').required = true;
-            }
+            const selectedType = this.value;
+            activityFileInputGroup.classList.toggle('hidden', selectedType !== 'file');
+            activityLinkInputGroup.classList.toggle('hidden', selectedType !== 'link');
+
+            // Update required status
+            if (activityFileInput) activityFileInput.required = (selectedType === 'file');
+            if (activityLinkInput) activityLinkInput.required = (selectedType === 'link');
         });
     }
+
 
     document.getElementById("addActivityForm").addEventListener("submit", function(e) {
         e.preventDefault();
         const formData = new FormData(this);
+
         const submitBtn = this.querySelector('button[type="submit"]');
         submitBtn.textContent = 'Adding...';
         submitBtn.disabled = true;

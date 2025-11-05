@@ -193,8 +193,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
         <form id="loginForm" method="POST" action="php/unified_login.php">
             <input type="email" name="email" placeholder="Enter your email" required>
             <div class="password-wrapper">
-                <input type="password" name="password" placeholder="Password" required />
-                <i class="fa fa-eye toggle-password"></i>
+                <input type="password" id="loginPassword" name="password" placeholder="Password" required />
+                <i class="fa fa-eye toggle-password" data-target="loginPassword"></i>
             </div>
             <button type="submit">Login</button>
             <p class="forgot-password">
@@ -309,5 +309,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
     </footer>
 
 <script src="js/landingpage.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if a login error message exists in the DOM
+    const loginError = document.querySelector('#loginModal .error-message');
+    
+    if (loginError) {
+        // If an error message is found, open the login modal automatically
+        document.getElementById('loginModal').style.display = 'flex';
+    }
+});
+</script>
 </body>
 </html>

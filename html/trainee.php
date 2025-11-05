@@ -119,9 +119,9 @@ try {
         <aside class="sidebar">
             <div class="profile">
                 <!-- User Profile Card -->
-                 <div class="user-card">
+                <div class="user-card">
                     <div class="user-card-header">
-                        <img src="<?php echo htmlspecialchars($user['profile_picture'] ?: '../images/school.png'); ?>" alt="User Avatar" class="user-avatar">
+                        <img src="<?php echo !empty($user['profile_picture']) ? '../uploads/profiles/' . htmlspecialchars($user['profile_picture']) : '../images/school.png'; ?>" alt="User Avatar" class="user-avatar">
                         <button class="edit-profile-btn" id="editProfileBtn" title="Edit Profile">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -244,7 +244,7 @@ try {
                                         <div class="course-card" 
                                              data-course-id="<?php echo htmlspecialchars($course['course_code']); ?>"
                                              data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">
-                                            <img src="<?php echo htmlspecialchars($course['image'] ?: 'https://via.placeholder.com/250x140'); ?>" alt="Course Image">
+                                            <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : 'https://via.placeholder.com/250x140'; ?>" alt="Course Image">
                                             <div class="course-info">
                                                 <h3><?php echo htmlspecialchars($course['course_name']); ?></h3>
                                                 <p>Code: <?php echo htmlspecialchars($course['course_code']); ?></p>
@@ -357,7 +357,7 @@ try {
                                 <?php if (!empty($offered_courses)): ?>
                                     <?php foreach ($offered_courses as $course): ?>
                                     <div class="course-card">
-                                        <img src="<?php echo htmlspecialchars($course['image'] ?: 'https://via.placeholder.com/250x140'); ?>" alt="Course Image">
+                                        <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : 'https://via.placeholder.com/250x140'; ?>" alt="Course Image">
                                         <div class="course-info">
                                             <h3><?php echo htmlspecialchars($course['course_name']); ?></h3>
                                             <p>Code: <?php echo htmlspecialchars($course['course_code']); ?></p>
@@ -501,51 +501,68 @@ try {
                 </button>
             </div>
             <div class="modal-body">
-                <div class="activity-instructions">
-                    <div class="instructions-title">
-                        <i class="fas fa-info-circle"></i>
-                        Instructions
+                <!-- Activity Details Section -->
+                <div class="activity-details-grid">
+                    <div class="detail-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <div>
+                            <strong>Due Date</strong>
+                            <span id="activityDueDate"></span>
+                        </div>
                     </div>
-                    <div class="instructions-content" id="activityInstructions">
-                        <!-- Instructions will be populated here -->
+                    <div class="detail-item" id="activityAttachmentContainer">
+                        <i class="fas fa-paperclip"></i>
+                        <div>
+                            <strong>Attachment</strong>
+                            <a href="#" target="_blank" id="activityAttachmentLink">View Attached File</a>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="due-date">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Due: <strong id="activityDueDate"></strong></span>
+
+                <!-- Instructions Section -->
+                <div class="activity-instructions" id="activityInstructionsSection">
+                    <h4><i class="fas fa-info-circle"></i> Instructions</h4>
+                    <div class="instructions-content" id="activityInstructions">
+                        <!-- Instructions will be populated by JS -->
+                    </div>
                 </div>
 
                 <!-- Teacher Remarks -->
                 <div class="teacher-remarks hidden" id="teacherRemarksSection">
                     <h4><i class="fas fa-comment-alt"></i> Trainer's Remarks</h4>
-                    <p id="teacherRemarksContent"></p>
-                    <small id="teacherRemarksMeta"></small>
+                    <div class="remarks-content">
+                        <p id="teacherRemarksContent"></p>
+                        <strong id="teacherRemarksMeta"></strong>
+                    </div>
                 </div>
 
                 <!-- Submission History -->
                 <div class="submission-history hidden" id="submissionHistory">
                     <h4><i class="fas fa-history"></i> Submission History</h4>
-                    <div id="historyContent"></div>
+                    <div id="historyContent" class="history-content">
+                        <!-- Submission history will be populated by JS -->
+                    </div>
                 </div>
                 
                 <!-- File Upload Section -->
                 <div class="upload-section" id="uploadSection">
-                    <div class="upload-header">
-                        <i class="fas fa-upload"></i>
-                        <span>Submit Your Work</span>
+                    <h4><i class="fas fa-upload"></i> Submit Your Work</h4>
+                    <div class="form-group">
+                        <label for="studentComment">Add a comment (optional)</label>
+                        <textarea id="studentComment" placeholder="Type your comment here..."></textarea>
                     </div>
-                    <textarea id="studentComment" placeholder="Add a comment (optional)..."></textarea>
                     <div class="upload-area" id="uploadArea">
                         <div class="upload-icon">
                             <i class="fas fa-cloud-upload-alt"></i>
                         </div>
-                        <div class="upload-text">Click to upload your file</div>
+                        <div class="upload-text">Click to upload or drag and drop</div>
                         <div class="upload-hint">Max file size: 10MB | Supported: PDF, DOC, DOCX, JPG, PNG</div>
                         <input type="file" id="activityFileInput" class="file-input" style="display:none;">
                     </div>
                     <div class="file-preview hidden" id="activityFilePreview"></div>
-                    <button class="submit-btn" id="activitySubmitBtn" disabled>Submit Assignment</button>
+                    <div class="modal-actions">
+                        <button class="submit-btn" id="activitySubmitBtn" disabled>Submit Assignment</button>
+                    </div>
                 </div>
                 
                 <div class="submission-success hidden" id="submissionSuccess">
