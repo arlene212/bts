@@ -2130,6 +2130,60 @@ tbody tr:hover {
 .course-tab.active {
     display: block;
 }
+
+/* ================= COURSES TAB GRID & CARD STYLES ================= */
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.course-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.course-image {
+    width: 100%;
+    height: 180px; /* Fixed height for the image container */
+    background-color: #f0f8ff;
+}
+
+.course-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* This is the key property to fix the image size */
+}
+
+.course-image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e6f2ff;
+    color: #297acc;
+}
+
+.course-image-placeholder .fas {
+    font-size: 3rem;
+}
+
+/* Ensure course-info padding is consistent */
+.course-info {
+    padding: 1rem;
+    flex-grow: 1;
+}
 /* Course Batches Styles */
 .batches-list {
     display: grid;
