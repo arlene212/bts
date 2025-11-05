@@ -63,22 +63,22 @@ class SessionManager {
             // Check if password needs to be changed
             if (isset($_SESSION['user']['password_changed_at']) && 
                 $_SESSION['user']['password_changed_at'] === null) {
-                header('Location: ../html/force_change_password.php');
+                header('Location: html/force_change_password.php');
                 exit;
             }
             
             switch ($_SESSION['user']['role']) {
                 case 'admin': 
-                    header('Location: ../html/admin.php'); 
+                    header('Location: html/admin.php'); 
                     break;
                 case 'trainer': 
-                    header('Location: ../html/trainer.php'); 
+                    header('Location: html/trainer.php'); 
                     break;
                 case 'trainee': 
-                    header('Location: ../html/trainee.php'); 
+                    header('Location: html/trainee.php'); 
                     break;
                 case 'guest': 
-                    header('Location: ../html/guest.php'); 
+                    header('Location: html/guest.php'); 
                     break;
                 default: 
                     header('Location: ../landingpage.php');
@@ -90,13 +90,13 @@ class SessionManager {
     public static function getRedirectUrlByRole($role) {
         switch ($role) {
             case 'admin':
-                return '../html/admin.php';
+                return 'html/admin.php';
             case 'trainer':
-                return '../html/trainer.php';
+                return 'html/trainer.php';
             case 'trainee':
-                return '../html/trainee.php';
+                return 'html/trainee.php';
             case 'guest':
-                return '../html/guest.php';
+                return 'html/guest.php';
             default:
                 return '../landingpage.php';
         }
