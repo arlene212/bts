@@ -558,11 +558,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Function to combine date and time for the hidden inputs
         const combineDateTime = () => {
+            // Helper to convert local date/time to a UTC string in 'YYYY-MM-DD HH:MM:SS' format
+            const toUTCString = (dateStr, timeStr) => {
+                if (!dateStr || !timeStr) return '';                
+                // Create a date object by explicitly parsing the local date and time parts.
+                // This is more reliable across browsers than new Date('YYYY-MM-DDTHH:MM').
+                const [year, month, day] = dateStr.split('-').map(Number);
+                const [hours, minutes] = timeStr.split(':').map(Number);
+                const localDateTime = new Date(year, month - 1, day, hours, minutes);
+
+                // Convert the local date to a UTC string and format it for the database.
+                return localDateTime.toISOString().slice(0, 19).replace('T', ' ');
+            };
+
             if (startDateInput.value && startTimeInput.value) {
-                hiddenStartDateInput.value = `${startDateInput.value} ${startTimeInput.value}:00`;
+                hiddenStartDateInput.value = toUTCString(startDateInput.value, startTimeInput.value);
             }
             if (dueDateInput.value && dueTimeInput.value) {
-                hiddenDueDateInput.value = `${dueDateInput.value} ${dueTimeInput.value}:00`;
+                hiddenDueDateInput.value = toUTCString(dueDateInput.value, dueTimeInput.value);
             }
         };
 

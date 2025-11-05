@@ -3,6 +3,8 @@ require_once '../php/SessionManager.php';
 SessionManager::startSession();
 SessionManager::requireRole('trainee');
 
+date_default_timezone_set('UTC'); // Set default timezone to UTC
+
 require_once '../php/DatabaseConnection.php';
 
 $user = SessionManager::getCurrentUser();
@@ -135,6 +137,53 @@ try {
         .attachment-link a:hover {
             background-color: #dee2e6;
         }
+
+        /* Submission Form Styles */
+        #uploadSection {
+            border-top: 1px solid #e0e0e0;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: .5rem;
+            font-weight: 600;
+            color: #495057;
+        }
+        #studentComment {
+            width: 100%;
+            padding: .75rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            min-height: 80px;
+        }
+        .upload-area {
+            border: 2px dashed #007bff;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            background-color: #f8f9fa;
+            transition: background-color 0.2s;
+        }
+        .upload-area.active, .upload-area:hover {
+            background-color: #e2e6ea;
+        }
+        .file-preview { margin-top: 1rem; }
+        .file-preview-item { display: flex; align-items: center; gap: 10px; background: #e9ecef; padding: 10px; border-radius: 5px; }
+        .file-details { flex-grow: 1; }
+        .remove-file-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #dc3545; }
+        .submit-btn {
+            display: block;
+            width: 100%;
+            padding: .75rem;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+        .submission-success { text-align: center; padding: 2rem; background-color: #d4edda; color: #155724; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -191,13 +240,35 @@ try {
                 </div>
             <?php else: ?>
                 <!-- The submission form from the modal can be placed here -->
-                <h3><i class="fas fa-upload"></i> Submit Your Work</h3>
-                <div id="uploadSection">
-                    <!-- You can move the upload form HTML from trainee.php here -->
-                    <p>Submission form would go here.</p>
+                <div id="uploadSection" data-activity-id="<?php echo htmlspecialchars($activity['id']); ?>">
+                    <h3><i class="fas fa-upload"></i> Submit Your Work</h3>
+                    <div class="form-group">
+                        <label for="studentComment">Add a comment (optional)</label>
+                        <textarea id="studentComment" placeholder="Type your comment here..."></textarea>
+                    </div>
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt fa-2x"></i>
+                        </div>
+                        <div class="upload-text">Click to upload or drag and drop</div>
+                        <div class="upload-hint">Max file size: 20MB</div>
+                        <input type="file" id="activityFileInput" class="file-input" style="display:none;">
+                    </div>
+                    <div class="file-preview hidden" id="activityFilePreview"></div>
+                    <div class="modal-actions">
+                        <button class="submit-btn" id="activitySubmitBtn" disabled>Submit Assignment</button>
+                    </div>
+                </div>
+
+                <div class="submission-success hidden" id="submissionSuccess">
+                    <i class="fas fa-check-circle fa-3x"></i>
+                    <h3>Submission Successful!</h3>
+                    <p>Your work has been submitted. You will be redirected shortly.</p>
                 </div>
             <?php endif; ?>
         </div>
     </div>
+
+    <script src="../js/activity_view.js"></script>
 </body>
 </html>

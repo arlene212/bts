@@ -15,12 +15,24 @@ class SessionManager {
         }
         
         // Check if password needs to be changed, but exclude the password change page itself
-        $currentPage = basename($_SERVER['PHP_SELF']);
-        if ($currentPage !== 'force_change_password.php' && 
-            isset($_SESSION['user']['password_changed_at']) && 
-            $_SESSION['user']['password_changed_at'] === null) {
-            header('Location: /bts/bts/html/force_change_password.php');
-            exit;
+        if (self::requiresPasswordChange()) {
+            $currentPage = basename($_SERVER['PHP_SELF']);
+            
+            // Check if the request is an AJAX request (common check)
+            $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+
+            // Only redirect if it's a normal page load and not the password change page
+            if (!$isAjax && $currentPage !== 'force_change_password.php') {
+                header('Location: /bts/bts/html/force_change_password.php');
+                exit;
+            } 
+            // If it's an AJAX request and not on the password change script, block it.
+            elseif ($isAjax && $currentPage !== 'force_change_password.php') {
+                // For AJAX requests, deny the action instead of redirecting
+                http_response_code(403); // Forbidden
+                echo json_encode(['success' => false, 'error' => 'Password change required before performing this action.']);
+                exit;
+            }
         }
     }
     
