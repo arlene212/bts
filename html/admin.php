@@ -1119,14 +1119,15 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
             </td>
             <td><?php echo date('Y-m-d', strtotime($trainer['date_created'])); ?></td>
             <td class="table-actions">
-              <form method="POST" onsubmit="return confirm('Are you sure you want to unarchive this trainer?');">
+              <form method="POST" onsubmit="return confirm('Are you sure you want to restore this trainer?');">
                 <input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>">
-                <button type="submit" name="unarchive_user" class="action-btn unarchive" title="Unarchive"><i class="fas fa-box-open"></i><span class="btn-text">Unarchive</span></button>
+                <button type="submit" name="unarchive_user" class="action-btn unarchive" title="Restore"><i class="fas fa-box-open"></i><span class="btn-text">Restore</span></button>
               </form>
-              <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to permanently delete this trainer? This action cannot be undone.');">
-                <input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>">
-                <button type="submit" name="delete_user" class="action-btn delete" title="Delete Permanently"><i class="fas fa-trash"></i><span class="btn-text">Delete</span></button>
-              </form>
+              <button class="action-btn view-archive-details" title="View Details" 
+                      data-archived-at="<?php echo htmlspecialchars($trainer['archived_at'] ?? 'N/A'); ?>" 
+                      data-archived-by="<?php echo htmlspecialchars($trainer['archived_by'] ?? 'N/A'); ?>">
+                  <i class="fas fa-info-circle"></i><span class="btn-text">Details</span>
+              </button>
             </td>
           </tr>
           <?php endforeach; ?>
@@ -1361,14 +1362,15 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
               </td>
               <td><?php echo date('Y-m-d', strtotime($trainee['date_created'])); ?></td>
               <td class="table-actions">
-                <form method="POST" onsubmit="return confirm('Are you sure you want to unarchive this trainee?');">
+                <form method="POST" onsubmit="return confirm('Are you sure you want to restore this trainee?');">
                   <input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>">
-                  <button type="submit" name="unarchive_user" class="action-btn unarchive" title="Unarchive"><i class="fas fa-box-open"></i><span class="btn-text">Unarchive</span></button>
+                  <button type="submit" name="unarchive_user" class="action-btn unarchive" title="Restore"><i class="fas fa-box-open"></i><span class="btn-text">Restore</span></button>
                 </form>
-                <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to permanently delete this trainee? This action cannot be undone.');">
-                  <input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>">
-                  <button type="submit" name="delete_user" class="action-btn delete" title="Delete Permanently"><i class="fas fa-trash"></i><span class="btn-text">Delete</span></button>
-                </form>
+                <button class="action-btn view-archive-details" title="View Details" 
+                        data-archived-at="<?php echo htmlspecialchars($trainee['archived_at'] ?? 'N/A'); ?>" 
+                        data-archived-by="<?php echo htmlspecialchars($trainee['archived_by'] ?? 'N/A'); ?>">
+                    <i class="fas fa-info-circle"></i><span class="btn-text">Details</span>
+                </button>
               </td>
             </tr>
             <?php endforeach; ?>
@@ -2337,6 +2339,26 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
     </div>
 </div>
   
+  <!-- Archive Details Modal -->
+  <div class="modal hidden" id="archiveDetailsModal">
+    <div class="modal-content small-modal">
+      <div class="modal-header">
+        <h2>Archive Details</h2>
+        <span class="close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="confirmation-details">
+          <div class="confirmation-item">
+            <strong>Archived On:</strong> <span id="detailArchivedAt"></span>
+          </div>
+          <div class="confirmation-item">
+            <strong>Archived By (Admin ID):</strong> <span id="detailArchivedBy"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
  <?php
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_search'])) {
         $searchType = $_POST['search_type'];

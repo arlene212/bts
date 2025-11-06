@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupCourseEditing(); // Make sure this is called
     setupAjaxPagination(); // Add this line
     setupCourseEditing(); // Add this line
+    setupArchiveDetailsModal(); // Add this line
     setupEnrollmentActions(); // Add this line
     setupGuestEnrollment();
     setupConfirmationModals();
@@ -26,6 +27,25 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 // Competency Management Functions
 function initializeCompetencyHandlers() {
+    // View Archive Details Modal
+    document.querySelectorAll('.view-archive-details').forEach(button => {
+        button.addEventListener('click', function() {
+            const archivedAt = this.dataset.archivedAt;
+            const archivedBy = this.dataset.archivedBy;
+
+            document.getElementById('detailArchivedAt').textContent = archivedAt !== 'N/A' ? new Date(archivedAt).toLocaleString() : 'N/A';
+            document.getElementById('detailArchivedBy').textContent = archivedBy;
+
+            openModal('archiveDetailsModal');
+        });
+    });
+}
+
+function setupArchiveDetailsModal() {
+    // This function is just a placeholder to call the initialization
+    // The actual logic is now inside initializeCompetencyHandlers to ensure it runs
+}
+
     // Add competency button handlers
     document.querySelectorAll('.add-competency-btn').forEach(button => {
         button.addEventListener('click', function() {
@@ -44,7 +64,6 @@ function initializeCompetencyHandlers() {
             }
         }
     });
-}
 
 function setupEnrollmentActions() {
     const enrollmentTable = document.getElementById('enrollments');

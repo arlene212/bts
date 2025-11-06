@@ -1080,7 +1080,7 @@ tbody tr:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1.5rem;
+  margin-top: 5rem;
   padding-top: 1.5rem;
   border-top: 1px solid #e0e0e0;
 }
@@ -1901,6 +1901,7 @@ body div.modal .modal-content .modal-footer button.submit-btn:hover {
 .action-btn.delete { background-color: #dc3545; } /* Red */
 .action-btn.enroll { background-color: #20c997; } /* Teal */
 .action-btn.approve { background-color: #28a745; } /* Green */
+.action-btn.view-archive-details { background-color: #17a2b8; } /* Info Blue */
 .action-btn.reject { background-color: #dc3545; } /* Red */
 
 .action-btn.edit:hover { background-color: #1f5f99; }
@@ -1910,6 +1911,7 @@ body div.modal .modal-content .modal-footer button.submit-btn:hover {
 .action-btn.delete:hover { background-color: #c82333; }
 .action-btn.enroll:hover { background-color: #1aa87a; }
 .action-btn.approve:hover { background-color: #218838; }
+.action-btn.view-archive-details:hover { background-color: #138496; }
 .action-btn.reject:hover { background-color: #c82333; }
 
 /* Remove default form styling for buttons inside a form */
