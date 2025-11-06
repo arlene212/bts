@@ -919,6 +919,11 @@ tbody tr:hover {
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
+.modal .close,
+.modal .close-btn {
+    display: none;
+}
+
 .modal-content h2 {
   color: #297acc;
   text-align: center;
@@ -1132,6 +1137,24 @@ tbody tr:hover {
   background: #c82333;
 }
 
+/* ================= GLOBAL MODAL BUTTON FIX ================= */
+/* This rule is intentionally highly specific to override all other conflicting button styles inside modals. */
+body div.modal .modal-content .modal-footer button.submit-btn {
+    background: #297acc !important;
+    color: white !important;
+    border: none !important;
+    padding: 10px 20px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    transition: background 0.3s ease !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+}
+
+body div.modal .modal-content .modal-footer button.submit-btn:hover {
+    background: #1f5f99 !important;
+}
+
 /* ================= POST MODAL STYLES ================= */
 .post-box {
   border: 1px solid #ddd;
@@ -1260,6 +1283,21 @@ tbody tr:hover {
   background: #1f5f99;
 }
 
+.modal-footer .confirm-btn {
+    background: #297acc;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.modal-footer .confirm-btn:hover {
+    background: #1f5f99;
+}
 /* ================= PROFILE MODAL STYLES ================= */
 .profile-wrapper {
   text-align: center;
