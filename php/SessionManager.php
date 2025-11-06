@@ -23,7 +23,7 @@ class SessionManager {
 
             // Only redirect if it's a normal page load and not the password change page
             if (!$isAjax && $currentPage !== 'force_change_password.php') {
-                header('Location: /bts/bts/html/force_change_password.php');
+                header('Location: /bts/html/force_change_password.php');
                 exit;
             } 
             // If it's an AJAX request and not on the password change script, block it.
@@ -75,25 +75,25 @@ class SessionManager {
             // Check if password needs to be changed
             if (isset($_SESSION['user']['password_changed_at']) && 
                 $_SESSION['user']['password_changed_at'] === null) {
-                header('Location: /bts/bts/html/force_change_password.php');
+                header('Location: /bts/html/force_change_password.php');
                 exit;
             }
             
             switch ($_SESSION['user']['role']) {
                 case 'admin': 
-                    header('Location: /bts/bts/html/admin.php'); 
+                    header('Location: /bts/html/admin.php'); 
                     break;
                 case 'trainer': 
-                    header('Location: /bts/bts/html/trainer.php'); 
+                    header('Location: /bts/html/trainer.php'); 
                     break;
                 case 'trainee': 
-                    header('Location: /bts/bts/html/trainee.php'); 
+                    header('Location: /bts/html/trainee.php'); 
                     break;
                 case 'guest': 
-                    header('Location: /bts/bts/html/guest.php'); 
+                    header('Location: /bts/html/guest.php'); 
                     break;
                 default: 
-                    header('Location: /bts/bts/landingpage.php');
+                    header('Location: /bts/landingpage.php');
             }
             exit;
         }
@@ -102,15 +102,15 @@ class SessionManager {
     public static function getRedirectUrlByRole($role) {
         switch ($role) {
             case 'admin':
-                return '/bts/bts/html/admin.php';
+                return '/bts/html/admin.php';
             case 'trainer':
-                return '/bts/bts/html/trainer.php';
+                return '/bts/html/trainer.php';
             case 'trainee':
-                return '/bts/bts/html/trainee.php';
+                return '/bts/html/trainee.php';
             case 'guest':
-                return '/bts/bts/html/guest.php';
+                return '/bts/html/guest.php';
             default:
-                return '/bts/bts/landingpage.php';
+                return '/bts/landingpage.php';
         }
     }
     
