@@ -1093,6 +1093,11 @@ body::before {
   border-top: 6px solid #297acc;
 }
 
+.modal .close,
+.modal .close-btn {
+    display: none;
+}
+
 .close-btn {
   position: absolute;
   top: 15px;
@@ -2763,4 +2768,21 @@ body::before {
     padding: 15px;
     border-radius: 6px;
     text-align: center;
+}
+
+/* Specific styles for modal submit buttons to override defaults */
+.modal-footer .submit-btn {
+    background: #297acc;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.modal-footer .submit-btn:hover {
+    background: #1f5f99;
 }
