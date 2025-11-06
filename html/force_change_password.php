@@ -1,5 +1,11 @@
 <?php
+// Prevent browser from caching old pages
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 require_once '../php/SessionManager.php';
+
 require_once '../php/DatabaseConnection.php';
 
 SessionManager::startSession();

@@ -1,5 +1,11 @@
 <?php
+// Prevent browser from caching old pages
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 require_once '../php/SessionManager.php';
+
 SessionManager::startSession();
 SessionManager::requireRole('admin');
 
@@ -1879,25 +1885,27 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
       </div>
       <form method="POST" enctype="multipart/form-data" id="addCourseForm">
         <div class="modal-body">
-          <div class="form-group">
-            <label for="course_name">Course Name:</label>
-            <input type="text" id="course_name" name="course_name" required>
-          </div>
-          <div class="form-group">
-            <label for="course_code">Course Code:</label>
-            <input type="text" id="course_code" name="course_code" required>
-          </div>
-          <div class="form-group">
-            <label for="course_hours">Course Hours:</label>
-            <input type="number" id="course_hours" name="course_hours" required min="1">
-          </div>
-          <div class="form-group">
-            <label for="course_description">Description:</label>
-            <textarea id="course_description" name="course_description" rows="3"></textarea>
-          </div>
-          <div class="form-group">
-            <label for="course_image">Course Image:</label>
-            <input type="file" id="course_image" name="course_image" accept="image/*">
+          <div class="form-group"> <!-- This div will now be a grid container -->
+            <div class="form-group">
+              <label for="course_name">Course Name:</label>
+              <input type="text" id="course_name" name="course_name" required>
+            </div>
+            <div class="form-group">
+              <label for="course_code">Course Code:</label>
+              <input type="text" id="course_code" name="course_code" required>
+            </div>
+            <div class="form-group">
+              <label for="course_hours">Course Hours:</label>
+              <input type="number" id="course_hours" name="course_hours" required min="1">
+            </div>
+            <div class="form-group">
+              <label for="course_image">Course Image:</label>
+              <input type="file" id="course_image" name="course_image" accept="image/*">
+            </div>
+            <div class="form-group form-group-full">
+              <label for="course_description">Description:</label>
+              <textarea id="course_description" name="course_description" rows="3"></textarea>
+            </div>
           </div>
           
           <!-- Competencies Section -->
