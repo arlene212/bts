@@ -1850,6 +1850,81 @@ body div.modal .modal-content .modal-footer button.submit-btn:hover {
     background: #1f5f99 !important;
 }
 
+/* ==================================================
+   NEW AESTHETIC TABLE ACTION BUTTONS
+===================================================== */
+
+/* Container for the action buttons */
+.table-actions {
+    display: flex;
+    flex-direction: column; /* Stack buttons vertically */
+    gap: 8px;
+    align-items: flex-start; /* Align to the start of the cell */
+    justify-content: center;
+}
+
+/* Base style for all action buttons in tables */
+.table-actions .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start; /* Align icon to the left */
+    border: none;
+    border-radius: 50px; /* Pill shape */
+    width: 32px; /* Initial width for icon only */
+    height: 32px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    color: white;
+    font-size: 14px; /* Icon size */
+    padding: 0 9px; /* Adjust padding for icon centering */
+    overflow: hidden; /* Hide the text initially */
+    white-space: nowrap; /* Prevent text from wrapping */
+}
+
+.table-actions .action-btn:hover {
+    width: auto; /* Expand to fit content */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Style for the text label inside the button */
+.action-btn .btn-text {
+    margin-left: 8px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Specific colors for each button type */
+.action-btn.edit { background-color: #297acc; } /* Blue */
+.action-btn.reset { background-color: #6c757d; } /* Gray */
+.action-btn.archive { background-color: #fd7e14; } /* Orange */
+.action-btn.unarchive { background-color: #28a745; } /* Green */
+.action-btn.delete { background-color: #dc3545; } /* Red */
+.action-btn.enroll { background-color: #20c997; } /* Teal */
+.action-btn.approve { background-color: #28a745; } /* Green */
+.action-btn.reject { background-color: #dc3545; } /* Red */
+
+.action-btn.edit:hover { background-color: #1f5f99; }
+.action-btn.reset:hover { background-color: #5a6268; }
+.action-btn.archive:hover { background-color: #e66900; }
+.action-btn.unarchive:hover { background-color: #218838; }
+.action-btn.delete:hover { background-color: #c82333; }
+.action-btn.enroll:hover { background-color: #1aa87a; }
+.action-btn.approve:hover { background-color: #218838; }
+.action-btn.reject:hover { background-color: #c82333; }
+
+/* Remove default form styling for buttons inside a form */
+.table-actions form {
+    margin: 0;
+    padding: 0;
+    display: inline-flex;
+}
+
+/* Fix for vertical alignment of items within the actions container */
+.table-actions > * {
+    vertical-align: middle;
+}
+
+
 
 .course-actions {
     display: flex;

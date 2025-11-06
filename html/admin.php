@@ -1030,26 +1030,21 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
                 ?>
               </td>
               <td><?php echo date('Y-m-d', strtotime($trainer['date_created'])); ?></td>
-              <td>
-                <form method="POST" style="display: inline;">
-                  <input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>">
-                  <button type="submit" name="archive_user" class="archive-btn">Archive</button>
-                </form>
-                <button class="reset-password-btn" 
-                        data-user-id="<?php echo $trainer['user_id']; ?>" 
-                        data-user-name="<?php echo htmlspecialchars($trainer['first_name'] . ' ' . $trainer['last_name']); ?>">
-                  Reset Password
-                </button>
-                <button class="edit-trainer-btn" 
-                        data-user-id="<?php echo $trainer['user_id']; ?>"
-                        data-user-data='<?php echo json_encode([
-                            'first_name' => $trainer['first_name'],
-                            'last_name' => $trainer['last_name'],
-                            'email' => $trainer['email'],
-                            'contact_number' => $trainer['contact_number']
-                        ]); ?>'>
-                  Edit
-                </button>
+              <td class="table-actions">
+                  <button class="action-btn edit edit-trainer-btn" title="Edit"
+                          data-user-id="<?php echo $trainer['user_id']; ?>"
+                          data-user-data='<?php echo htmlspecialchars(json_encode($trainer), ENT_QUOTES, 'UTF-8'); ?>'>
+                      <i class="fas fa-edit"></i><span class="btn-text">Edit</span>
+                  </button>
+                  <button class="action-btn reset reset-password-btn" title="Reset Password"
+                          data-user-id="<?php echo $trainer['user_id']; ?>" 
+                          data-user-name="<?php echo htmlspecialchars($trainer['first_name'] . ' ' . $trainer['last_name']); ?>">
+                      <i class="fas fa-key"></i><span class="btn-text">Reset</span>
+                  </button>
+                  <form method="POST" onsubmit="return confirm('Are you sure you want to archive this trainer?');">
+                      <input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>">
+                      <button type="submit" name="archive_user" class="action-btn archive" title="Archive"><i class="fas fa-archive"></i><span class="btn-text">Archive</span></button>
+                  </form>
               </td>
             </tr>
             <?php endforeach; ?>
@@ -1123,14 +1118,14 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
               ?>
             </td>
             <td><?php echo date('Y-m-d', strtotime($trainer['date_created'])); ?></td>
-            <td>
-              <form method="POST" style="display: inline;">
+            <td class="table-actions">
+              <form method="POST" onsubmit="return confirm('Are you sure you want to unarchive this trainer?');">
                 <input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>">
-                <button type="submit" name="unarchive_user" class="unarchive-btn">Unarchive</button>
+                <button type="submit" name="unarchive_user" class="action-btn unarchive" title="Unarchive"><i class="fas fa-box-open"></i><span class="btn-text">Unarchive</span></button>
               </form>
               <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to permanently delete this trainer? This action cannot be undone.');">
                 <input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>">
-                <button type="submit" name="delete_user" class="delete-btn">Delete</button>
+                <button type="submit" name="delete_user" class="action-btn delete" title="Delete Permanently"><i class="fas fa-trash"></i><span class="btn-text">Delete</span></button>
               </form>
             </td>
           </tr>
@@ -1260,26 +1255,21 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
                 ?>
               </td>
               <td><?php echo date('Y-m-d', strtotime($trainee['date_created'])); ?></td>
-              <td>
-                <form method="POST" style="display: inline;">
-                  <input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>">
-                  <button type="submit" name="archive_user" class="archive-btn">Archive</button>
-                </form>
-                <button class="reset-password-btn" 
-                        data-user-id="<?php echo $trainee['user_id']; ?>" 
-                        data-user-name="<?php echo htmlspecialchars($trainee['first_name'] . ' ' . $trainee['last_name']); ?>">
-                  Reset Password
-                </button>
-                <button class="edit-trainee-btn" 
-                        data-user-id="<?php echo $trainee['user_id']; ?>"
-                        data-user-data='<?php echo json_encode([
-                            'first_name' => $trainee['first_name'],
-                            'last_name' => $trainee['last_name'],
-                            'email' => $trainee['email'],
-                            'contact_number' => $trainee['contact_number']
-                        ]); ?>'>
-                  Edit
-                </button>
+              <td class="table-actions">
+                  <button class="action-btn edit edit-trainee-btn" title="Edit"
+                          data-user-id="<?php echo $trainee['user_id']; ?>"
+                          data-user-data='<?php echo htmlspecialchars(json_encode($trainee), ENT_QUOTES, 'UTF-8'); ?>'>
+                      <i class="fas fa-edit"></i><span class="btn-text">Edit</span>
+                  </button>
+                  <button class="action-btn reset reset-password-btn" title="Reset Password"
+                          data-user-id="<?php echo $trainee['user_id']; ?>" 
+                          data-user-name="<?php echo htmlspecialchars($trainee['first_name'] . ' ' . $trainee['last_name']); ?>">
+                      <i class="fas fa-key"></i><span class="btn-text">Reset</span>
+                  </button>
+                  <form method="POST" onsubmit="return confirm('Are you sure you want to archive this trainee?');">
+                      <input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>">
+                      <button type="submit" name="archive_user" class="action-btn archive" title="Archive"><i class="fas fa-archive"></i><span class="btn-text">Archive</span></button>
+                  </form>
               </td>
             </tr>
             <?php endforeach; ?>
@@ -1370,14 +1360,14 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
                 ?>
               </td>
               <td><?php echo date('Y-m-d', strtotime($trainee['date_created'])); ?></td>
-              <td>
-                <form method="POST" style="display: inline;">
+              <td class="table-actions">
+                <form method="POST" onsubmit="return confirm('Are you sure you want to unarchive this trainee?');">
                   <input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>">
-                  <button type="submit" name="unarchive_user" class="unarchive-btn">Unarchive</button>
+                  <button type="submit" name="unarchive_user" class="action-btn unarchive" title="Unarchive"><i class="fas fa-box-open"></i><span class="btn-text">Unarchive</span></button>
                 </form>
                 <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to permanently delete this trainee? This action cannot be undone.');">
                   <input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>">
-                  <button type="submit" name="delete_user" class="delete-btn">Delete</button>
+                  <button type="submit" name="delete_user" class="action-btn delete" title="Delete Permanently"><i class="fas fa-trash"></i><span class="btn-text">Delete</span></button>
                 </form>
               </td>
             </tr>
@@ -1478,21 +1468,18 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
               ?>
             </td>
             <td><?php echo date('Y-m-d', strtotime($guest['date_created'])); ?></td>
-            <td>
-              <button class="enroll-guest-btn" 
+            <td class="table-actions">
+              <button class="action-btn enroll enroll-guest-btn" title="Enroll Guest"
                       data-user-id="<?php echo $guest['user_id']; ?>"
                       data-user-name="<?php echo htmlspecialchars($guest['first_name'] . ' ' . $guest['last_name']); ?>">
-                Enroll in Course
+                  <i class="fas fa-plus"></i><span class="btn-text">Enroll</span>
               </button>
-              <button class="reset-password-btn" 
+              <button class="action-btn reset reset-password-btn" title="Reset Password"
                       data-user-id="<?php echo $guest['user_id']; ?>" 
                       data-user-name="<?php echo htmlspecialchars($guest['first_name'] . ' ' . $guest['last_name']); ?>">
-                Reset Password
+                  <i class="fas fa-key"></i><span class="btn-text">Reset</span>
               </button>
-              <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this guest account? This action cannot be undone.');">
-                <input type="hidden" name="user_id" value="<?php echo $guest['user_id']; ?>">
-                <button type="submit" name="delete_guest" class="delete-btn">Delete</button>
-              </form>
+              <button class="action-btn delete delete-guest-btn" title="Delete Guest" data-user-id="<?php echo $guest['user_id']; ?>"><i class="fas fa-trash"></i><span class="btn-text">Delete</span></button>
             </td>
           </tr>
           <?php endforeach; ?>
@@ -1692,10 +1679,10 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
             <td><?php echo htmlspecialchars($enrollment['remarks'] ?? 'No remarks'); ?></td>
             <td>
               <?php if ($enrollment['status'] == 'pending'): ?>
-              <div class="enrollment-actions" data-enrollment-id="<?php echo $enrollment['id']; ?>">
-                  <button class="approve-btn action-btn" data-action="approve">Approve</button>
-                  <button class="reject-btn action-btn" data-action="reject">Reject</button>
-              </div>
+                <div class="table-actions enrollment-actions" data-enrollment-id="<?php echo $enrollment['id']; ?>">
+                    <button class="action-btn approve" title="Approve" data-action="approve"><i class="fas fa-check"></i><span class="btn-text">Approve</span></button>
+                    <button class="action-btn reject" title="Reject" title="Reject"><i class="fas fa-times"></i><span class="btn-text">Reject</span></button>
+                </div>
               <?php else: ?>
               <span class="processed-text">
                 Processed on <?php echo date('Y-m-d', strtotime($enrollment['processed_date'])); ?>

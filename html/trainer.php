@@ -345,9 +345,9 @@ try {
                                         </span>
                                     </td>
                                     <td><?php echo date('M d, Y', strtotime($request['date_requested'])); ?></td>
-                                    <td class="action-buttons">
-                                        <button class="approve-btn" data-request-id="<?php echo $request['id']; ?>">Approve</button>
-                                        <button class="reject-btn" data-request-id="<?php echo $request['id']; ?>">Reject</button>
+                                    <td class="table-actions">
+                                        <button class="action-btn approve" title="Approve" data-request-id="<?php echo $request['id']; ?>"><i class="fas fa-check"></i><span class="btn-text">Approve</span></button>
+                                        <button class="action-btn reject" title="Reject" data-request-id="<?php echo $request['id']; ?>"><i class="fas fa-times"></i><span class="btn-text">Reject</span></button>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
