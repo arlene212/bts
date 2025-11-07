@@ -25,6 +25,9 @@ if ($currentPage !== 'force_change_password.php' &&
 
 $user = SessionManager::getCurrentUser();
 
+// Get current tab from URL, default to 'home'
+$currentTab = $_GET['current_tab'] ?? 'home';
+
 // Include database connection
 require_once '../php/DatabaseConnection.php';
 
@@ -137,10 +140,10 @@ try {
                 </div>
             </div>
             <nav class="nav">
-                <a href="#" class="tab-link active" data-tab="home">Home</a>
-                <a href="#" class="tab-link" data-tab="mycourses">My Courses</a>
-                <a href="#" class="tab-link" data-tab="offered-courses">Offered Courses</a>
-                <a href="#" class="tab-link" data-tab="enrollment-requests">Enrollment Request</a>
+                <a href="#" class="tab-link <?php echo $currentTab === 'home' ? 'active' : ''; ?>" data-tab="home">Home</a>
+                <a href="#" class="tab-link <?php echo $currentTab === 'mycourses' ? 'active' : ''; ?>" data-tab="mycourses">My Courses</a>
+                <a href="#" class="tab-link <?php echo $currentTab === 'offered-courses' ? 'active' : ''; ?>" data-tab="offered-courses">Offered Courses</a>
+                <a href="#" class="tab-link <?php echo $currentTab === 'enrollment-requests' ? 'active' : ''; ?>" data-tab="enrollment-requests">Enrollment Request</a>
             </nav>
         </aside>
 
@@ -177,7 +180,7 @@ try {
                 <div class="main-content">
 
                     <!-- HOME TAB -->
-                    <section class="tab-content active" id="home">
+                    <section class="tab-content <?php echo $currentTab === 'home' ? 'active' : ''; ?>" id="home">
                        <div class="dashboard tab-inner active" id="dashboard">
                             <div class="dashboard-header">Quick Overview</div>
                             <div class="dashboard-cards">
@@ -202,7 +205,7 @@ try {
                     </section>
 
                     <!-- MY COURSES TAB -->
-                    <section class="tab-content" id="mycourses">
+                    <section class="tab-content <?php echo $currentTab === 'mycourses' ? 'active' : ''; ?>" id="mycourses">
                         <div class="course-box">
                             <div class="news-switch-wrapper">
                                 <div class="switch-oval">
@@ -284,7 +287,7 @@ try {
                     </section>
 
                     <!-- ENROLLMENT REQUEST TAB -->
-                    <section class="tab-content" id="enrollment-requests">
+                    <section class="tab-content <?php echo $currentTab === 'enrollment-requests' ? 'active' : ''; ?>" id="enrollment-requests">
                         <h2 class="section-header">My Enrollment Requests</h2>
                         <table class="requests-table">
                             <thead>
@@ -327,7 +330,7 @@ try {
                     </section>
 
                     <!-- OFFERED COURSES TAB -->
-                    <section class="tab-content" id="offered-courses">
+                    <section class="tab-content <?php echo $currentTab === 'offered-courses' ? 'active' : ''; ?>" id="offered-courses">
                         <h2 class="section-header">Available Courses</h2>
                         <div class="course-box">
                             <div class="course-list">
@@ -551,5 +554,22 @@ try {
     </div>
 
     <script src="../js/trainee.js"></script>
+    <script>
+        // This script ensures the correct tab is shown on page load based on the URL parameter.
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            const tabId = params.get('current_tab');
+
+            if (tabId) {
+                // Deactivate all tabs first
+                document.querySelectorAll('.tab-link').forEach(link => link.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+                // Activate the target tab
+                document.querySelector(`.tab-link[data-tab="${tabId}"]`)?.classList.add('active');
+                document.getElementById(tabId)?.classList.add('active');
+            }
+        });
+    </script>
 </body>
 </html>

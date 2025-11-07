@@ -180,11 +180,11 @@ try {
                 </div>
             </div>
             <nav class="nav">
-                <a href="#" class="tab-link active" data-tab="home">Home</a>
-                <a href="#" class="tab-link" data-tab="mycourses">My Courses</a>
-                <a href="#" class="tab-link" data-tab="trainees">Trainees</a>
-                <a href="#" class="tab-link" data-tab="guests">Guests</a>
-                <a href="#" class="tab-link" data-tab="requests">Enrollment Request</a>
+                <a href="#" class="tab-link <?php echo $currentTab === 'home' ? 'active' : ''; ?>" data-tab="home">Home</a>
+                <a href="#" class="tab-link <?php echo $currentTab === 'mycourses' ? 'active' : ''; ?>" data-tab="mycourses">My Courses</a>
+                <a href="#" class="tab-link <?php echo $currentTab === 'trainees' ? 'active' : ''; ?>" data-tab="trainees">Trainees</a>
+                <a href="#" class="tab-link <?php echo $currentTab === 'guests' ? 'active' : ''; ?>" data-tab="guests">Guests</a>
+                <a href="#" class="tab-link <?php echo $currentTab === 'requests' ? 'active' : ''; ?>" data-tab="requests">Enrollment Request</a>
             </nav>
         </aside>
 
@@ -222,7 +222,7 @@ try {
                 <div class="main-content">
 
                     <!-- HOME TAB -->
-                    <section class="tab-content active" id="home">
+                    <section class="tab-content <?php echo $currentTab === 'home' ? 'active' : ''; ?>" id="home">
                        <div class="dashboard-cards">
                             <div class="dashboard-card clickable-card" data-target="mycourses">
                                 <div class="number-circle"><?php echo count($courses); ?></div>
@@ -244,7 +244,7 @@ try {
                     </section>
 
                     <!-- MY COURSES TAB -->
-                    <section class="tab-content" id="mycourses">
+                    <section class="tab-content <?php echo $currentTab === 'mycourses' ? 'active' : ''; ?>" id="mycourses">
                         <!-- Course List View -->
                         <div id="enrolled" class="tab-inner active">
                             <h2 class="section-header">My Assigned Courses</h2>
@@ -320,7 +320,7 @@ try {
                     </section>
 
                     <!-- ENROLLMENT REQUEST TAB -->
-                    <section class="tab-content" id="requests">
+                    <section class="tab-content <?php echo $currentTab === 'requests' ? 'active' : ''; ?>" id="requests">
                         <h2 class="section-header">Enrollment Requests for My Courses</h2>
                         <table class="requests-table">
                             <thead>
@@ -361,7 +361,7 @@ try {
                     </section>
 
                     <!-- TRAINEES TAB -->
-                    <section class="tab-content" id="trainees">
+                    <section class="tab-content <?php echo $currentTab === 'trainees' ? 'active' : ''; ?>" id="trainees">
                         <h2 class="section-header">My Trainees</h2>
 
                         <!-- Search Bar -->
@@ -429,7 +429,7 @@ try {
                     </section>
                     
                     <!-- GUESTS TAB -->
-                    <section class="tab-content" id="guests">
+                    <section class="tab-content <?php echo $currentTab === 'guests' ? 'active' : ''; ?>" id="guests">
                         <h2 class="section-header">Guest Users in My Courses</h2>
                         
                         <div class="table-controls">
@@ -744,5 +744,22 @@ try {
     </div>
 
     <script src="../js/trainer.js"></script>
+    <script>
+        // This script ensures the correct tab is shown on page load based on the URL parameter.
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            const tabId = params.get('current_tab');
+
+            if (tabId) {
+                // Deactivate all tabs first
+                document.querySelectorAll('.tab-link').forEach(link => link.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+                // Activate the target tab
+                document.querySelector(`.tab-link[data-tab="${tabId}"]`)?.classList.add('active');
+                document.getElementById(tabId)?.classList.add('active');
+            }
+        });
+    </script>
 </body>
 </html>

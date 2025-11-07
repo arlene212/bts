@@ -495,7 +495,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert('Material added successfully!');
                 document.getElementById("addMaterialModal").classList.add("hidden");
                 this.reset();
-                location.reload(); // Easiest way to show the new material
+                // Reload and stay on the courses tab
+                window.location.href = window.location.pathname + '?current_tab=mycourses';
             } else {
                 alert('Error adding material: ' + data.message);
             }
@@ -640,7 +641,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert('Activity added successfully!');
                 document.getElementById("addActivityModal").classList.add("hidden");
                 this.reset();
-                location.reload();
+                // Reload and stay on the courses tab
+                window.location.href = window.location.pathname + '?current_tab=mycourses';
             } else {
                 alert('Error adding activity: ' + data.message);
             }
