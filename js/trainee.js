@@ -8,31 +8,33 @@ document.addEventListener("DOMContentLoaded", () => {
   // Sidebar toggle
   hamburger?.addEventListener("click", (e) => {
     e.stopPropagation();
-    sidebar.classList.toggle("open");
+    sidebar?.classList.toggle("open");
   });
 
   // Sidebar tab switching
-  navLinks.forEach(link => {
+  navLinks.forEach((link) => {
     link.addEventListener("click", (e) => {
       e.preventDefault();
-      navLinks.forEach(l => l.classList.remove("active"));
+      navLinks.forEach((l) => l.classList.remove("active"));
       link.classList.add("active");
 
       const target = link.getAttribute("data-tab");
-      tabContents.forEach(tab => {
-        tab.classList.toggle("active", tab.id === target);
-      });
+      tabContents.forEach((tab) =>
+        tab.classList.toggle("active", tab.id === target)
+      );
 
-      sidebar.classList.remove("open");
+      sidebar?.classList.remove("open");
 
       // Reset My Courses view
       if (target === "mycourses") {
         showEnrolledTab();
-        courseDetail.classList.add("hidden");
-        courseDetail.classList.remove("active");
-        document.querySelectorAll("#mycourses .course-box").forEach(box => box.classList.remove("hidden"));
-        myCourseSwitchButtons.forEach(b => b.classList.remove("active"));
-        myCourseSwitchButtons[0].classList.add("active");
+        courseDetail?.classList.add("hidden");
+        courseDetail?.classList.remove("active");
+        document
+          .querySelectorAll("#mycourses .course-box")
+          .forEach((box) => box.classList.remove("hidden"));
+        myCourseSwitchButtons.forEach((b) => b.classList.remove("active"));
+        myCourseSwitchButtons[0]?.classList.add("active");
         myCourseSwitchInner.style.transform = "translateX(0%)";
       }
     });
@@ -44,14 +46,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   notifIcon?.addEventListener("click", (e) => {
     e.stopPropagation();
-    notifDropdown.classList.toggle("hidden");
+    notifDropdown?.classList.toggle("hidden");
   });
 
   document.addEventListener("click", (e) => {
-    if (sidebar?.classList.contains("open") && !sidebar.contains(e.target) && !hamburger.contains(e.target)) {
+    if (
+      sidebar?.classList.contains("open") &&
+      !sidebar.contains(e.target) &&
+      !hamburger.contains(e.target)
+    ) {
       sidebar.classList.remove("open");
     }
-    if (notifDropdown && !notifDropdown.contains(e.target) && !notifIcon.contains(e.target)) {
+    if (
+      notifDropdown &&
+      !notifDropdown.contains(e.target) &&
+      !notifIcon.contains(e.target)
+    ) {
       notifDropdown.classList.add("hidden");
     }
   });
@@ -64,8 +74,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   switchButtons.forEach((btn, index) => {
     btn.addEventListener("click", () => {
-      switchButtons.forEach(b => b.classList.remove("active"));
-      document.querySelectorAll("#home .tab-inner").forEach(tab => tab.classList.remove("active"));
+      switchButtons.forEach((b) => b.classList.remove("active"));
+      document
+        .querySelectorAll("#home .tab-inner")
+        .forEach((tab) => tab.classList.remove("active"));
       btn.classList.add("active");
       switchInner.style.transform = `translateX(${index * 100}%)`;
 
@@ -75,54 +87,58 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ========= MY COURSES SWITCH ========= */
-  const myCourseSwitchButtons = document.querySelectorAll("#mycourses .switch-btn");
+  const myCourseSwitchButtons = document.querySelectorAll(
+    "#mycourses .switch-btn"
+  );
   const myCourseSwitchInner = document.querySelector("#mycourses .switch-inner");
   const enrolledTab = document.getElementById("enrolled");
   const completedTab = document.getElementById("completed");
 
   function showEnrolledTab() {
-    enrolledTab.classList.add("active");
-    completedTab.classList.remove("active");
+    enrolledTab?.classList.add("active");
+    completedTab?.classList.remove("active");
   }
 
   function showCompletedTab() {
-    completedTab.classList.add("active");
-    enrolledTab.classList.remove("active");
+    completedTab?.classList.add("active");
+    enrolledTab?.classList.remove("active");
   }
 
   showEnrolledTab();
 
   myCourseSwitchButtons.forEach((btn, index) => {
     btn.addEventListener("click", () => {
-      myCourseSwitchButtons.forEach(b => b.classList.remove("active"));
+      myCourseSwitchButtons.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       myCourseSwitchInner.style.transform = `translateX(${index * 100}%)`;
-      if (btn.dataset.tab === "enrolled") showEnrolledTab();
-      else showCompletedTab();
+      btn.dataset.tab === "enrolled" ? showEnrolledTab() : showCompletedTab();
     });
   });
 
-/* ========= COURSE DETAIL VIEW ========= */
-const courseDetail = document.getElementById('courseDetail');
-const backBtn = courseDetail?.querySelector('.back-btn');
-const courseSwitchBtns = courseDetail?.querySelectorAll('.course-switch .switch-btn');
-const courseSwitchInner = courseDetail?.querySelector('.course-switch .switch-inner');
-const modulesView = document.getElementById('modules-view');
-const activitiesView = document.getElementById('activities-view');
+  /* ========= COURSE DETAIL VIEW ========= */
+  const courseDetail = document.getElementById("courseDetail");
+  const backBtn = courseDetail?.querySelector(".back-btn");
+  const courseSwitchBtns = courseDetail?.querySelectorAll(
+    ".course-switch .switch-btn"
+  );
+  const courseSwitchInner = courseDetail?.querySelector(
+    ".course-switch .switch-inner"
+  );
+  const modulesView = document.getElementById("modules-view");
+  const activitiesView = document.getElementById("activities-view");
 
-// Function to reset course detail view to Modules
-function resetCourseDetailView() {
-  if (courseSwitchInner && courseSwitchBtns?.length) {
-    courseSwitchInner.style.transition = "transform 0.3s ease";
-    courseSwitchInner.style.transform = 'translateX(0%)';
-    modulesView.classList.add("active");
-    activitiesView.classList.remove("active");
-    modulesView.style.display = "block";
-    activitiesView.style.display = "none";
-    courseSwitchBtns[0].classList.add("active");
-    courseSwitchBtns[1].classList.remove("active");
+  function resetCourseDetailView() {
+    if (courseSwitchInner && courseSwitchBtns?.length) {
+      courseSwitchInner.style.transition = "transform 0.3s ease";
+      courseSwitchInner.style.transform = "translateX(0%)";
+      modulesView?.classList.add("active");
+      activitiesView?.classList.remove("active");
+      modulesView.style.display = "block";
+      activitiesView.style.display = "none";
+      courseSwitchBtns[0]?.classList.add("active");
+      courseSwitchBtns[1]?.classList.remove("active");
+    }
   }
-}
 
 // Open course detail
 document.querySelectorAll('#mycourses .course-card').forEach(card => {
@@ -136,12 +152,10 @@ document.querySelectorAll('#mycourses .course-card').forEach(card => {
     courseDetail.classList.remove("hidden");
     courseDetail.classList.add("active");
 
-    loadCourseDetails(courseCode, courseName);
-
-    // Always reset to Modules view when opening course detail
-    resetCourseDetailView();
+      loadCourseDetails(courseCode, courseName);
+      resetCourseDetailView();
+    });
   });
-});
 
 // Back button - only ONE event listener
 backBtn?.addEventListener("click", () => {
@@ -156,233 +170,111 @@ backBtn?.addEventListener("click", () => {
   resetCourseDetailView();
 });
 
-// Fix: Smooth & reliable switch between Modules/Activities
-if (courseSwitchBtns && courseSwitchInner && modulesView && activitiesView) {
-  courseSwitchBtns.forEach((btn, index) => {
-    btn.addEventListener("click", () => {
-      courseSwitchBtns.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
+  if (courseSwitchBtns && courseSwitchInner && modulesView && activitiesView) {
+    courseSwitchBtns.forEach((btn, index) => {
+      btn.addEventListener("click", () => {
+        courseSwitchBtns.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        courseSwitchInner.style.transition = "transform 0.3s ease";
+        courseSwitchInner.style.transform = `translateX(${index * 100}%)`;
 
-      courseSwitchInner.style.transition = "transform 0.3s ease";
-      courseSwitchInner.style.transform = `translateX(${index * 100}%)`;
-
-      // FIX: Use data-tab instead of data-view
-      if (btn.dataset.tab === "modules") {
-        modulesView.classList.add("active");
-        activitiesView.classList.remove("active");
-        modulesView.style.display = "block";
-        activitiesView.style.display = "none";
-      } else {
-        activitiesView.classList.add("active");
-        modulesView.classList.remove("active");
-        activitiesView.style.display = "block";
-        modulesView.style.display = "none";
-      }
+        if (btn.dataset.tab === "modules") {
+          modulesView.classList.add("active");
+          activitiesView.classList.remove("active");
+          modulesView.style.display = "block";
+          activitiesView.style.display = "none";
+        } else {
+          activitiesView.classList.add("active");
+          modulesView.classList.remove("active");
+          activitiesView.style.display = "block";
+          modulesView.style.display = "none";
+        }
+      });
     });
-  });
-}
+  }
 
-function loadCourseDetails(courseCode, courseName) {
-    const competenciesList = document.getElementById('competencies-list');
-    const activities = []; // To store activities for later use
-    const activitiesContainer = document.getElementById('activities-view');
-    competenciesList.innerHTML = '<div>Loading course content...</div>';
-    activitiesContainer.innerHTML = '<div>Loading activities...</div>';
+  // ==== LOAD COURSE DETAILS (AJAX) ====
+  function loadCourseDetails(courseCode, courseName) {
+    const competenciesList = document.getElementById("competencies-list");
+    const activitiesContainer = document.getElementById("activities-view");
 
-    document.getElementById('course-detail-title').textContent = courseName;
+    competenciesList.innerHTML = "<div>Loading course content...</div>";
+    activitiesContainer.innerHTML = "<div>Loading activities...</div>";
+
+    document.getElementById("course-detail-title").textContent = courseName;
 
     fetch(`../php/get_course_details_trainee.php?course_code=${courseCode}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                competenciesList.innerHTML = `<div class="error-message">${data.error}</div>`;
-                return;
-            }
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) {
+          competenciesList.innerHTML = `<div class="error-message">${data.error}</div>`;
+          return;
+        }
+        document.getElementById("course-detail-code").textContent = `Code: ${data.course.course_code}`;
+        document.getElementById("course-detail-hours").textContent = `Hours: ${data.course.hours} hrs`;
+        document.getElementById("course-detail-description").textContent = data.course.description;
+        renderCompetencies(data.competencies, competenciesList);
+        renderActivitiesTable(data.activities, activitiesContainer);
+      })
+      .catch(() => {
+        competenciesList.innerHTML = `<div class="error-message">Failed to load course content.</div>`;
+      });
+  }
 
-            // Populate course meta
-            document.getElementById('course-detail-code').textContent = `Code: ${data.course.course_code}`;
-            document.getElementById('course-detail-hours').textContent = `Hours: ${data.course.hours} hrs`;
-            document.getElementById('course-detail-description').textContent = data.course.description;
-
-            // Render modules
-            renderCompetencies(data.competencies, competenciesList, data.activities);
-            // Render activities
-            renderActivitiesTable(data.activities, activitiesContainer);
-        })
-        .catch(error => {
-            console.error('Error fetching course details:', error);
-            competenciesList.innerHTML = `<div class="error-message">Failed to load course content.</div>`;
-        });
-}
-
-function renderCompetencies(competencies, container, allActivities) {
-    if (!competencies || competencies.length === 0) {
-        container.innerHTML = '<div class="no-content">No modules have been added to this course yet.</div>';
-        return;
-    }
-
-    container.innerHTML = competencies.map(comp => `
-        <div class="competency-box">
-            <div class="competency-header">
-                <span class="competency-type ${comp.type}">${comp.type.toUpperCase()}</span>
-                <h3>${comp.name}</h3>
-            </div>
-            ${comp.topics.map(topic => `
-                <div class="topic-box">
-                    <button class="toggle-btn">
-                        <h4>${topic.name}</h4>
-                        <span class="arrow"></span>
-                    </button>
-                    <div class="materials-list hidden">
-                        ${topic.materials.map(material => `
-                            <a href="${material.file_path.startsWith('http') ? material.file_path : `../uploads/courses/${material.file_path}`}" target="_blank" class="material-item">
-                                <i class="fas fa-file-alt"></i>
-                                <span>${material.title}</span>
-                            </a>
-                        `).join('') || '<p class="no-materials">No materials for this topic.</p>'}
-                        
-                        ${topic.activities.map(activity => `
-                            <div class="material-item activity" data-activity-id="${activity.id}">
-                                <i class="fas fa-tasks"></i>
-                                <span>${activity.title} (Activity)</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `).join('');
-
-    // Add event listeners for toggles and activities
-    container.querySelectorAll('.toggle-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const materials = btn.nextElementSibling;
-            materials.classList.toggle('hidden');
-            btn.querySelector('.arrow').classList.toggle('rotated');
-        });
-    });
-
-    container.querySelectorAll('.material-item.activity').forEach(item => {
-        item.addEventListener('click', () => {
-            const activityId = item.dataset.activityId;
-            // Redirect to the dedicated activity page
-            window.location.href = `activity_view.php?id=${activityId}`;
-        });
-    });
-}
-
-function renderActivitiesTable(activities, container) {
-    if (!activities || activities.length === 0) {
-        container.innerHTML = '<div class="no-content">No activities found for this course.</div>';
-        return;
-    }
-
-    const tableHTML = `
-        <table class="activities-table">
-            <thead>
-                <tr>
-                    <th>Activity Name</th>
-                    <th>Due Date</th>
-                    <th>Status</th>
-                    <th>Score</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${activities.map(act => {
-                    let status = 'Not Submitted';
-                    let statusClass = 'pending';
-                    if (act.submission) {
-                        status = act.submission.score !== null ? 'Graded' : 'Submitted';
-                        statusClass = act.submission.score !== null ? 'graded' : 'submitted';
-                    } else if (new Date(act.due_date) < new Date()) {
-                        status = 'Missed';
-                        statusClass = 'missed';
-                    }
-
-                    return `
-                        <tr>
-                            <td>${act.title}</td>
-                            <td>${new Date(act.due_date).toLocaleString()}</td>
-                            <td><span class="status-badge status-${statusClass}">${status}</span></td>
-                            <td>${act.submission && act.submission.score !== null ? `${act.submission.score} / ${act.max_score}` : '-'}</td>
-                            <td>
-                                <button class="view-activity-btn" data-activity-id="${act.id}">
-                                    ${act.submission ? 'View' : 'Submit'}
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                }).join('')}
-            </tbody>
-        </table>
-    `;
-    container.innerHTML = tableHTML;
-
-    container.querySelectorAll('.view-activity-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const activityId = btn.dataset.activityId;
-            // Redirect to the dedicated activity page
-            window.location.href = `activity_view.php?id=${activityId}`;
-        });
-    });
-}
-
-  /* ========= ENROLL CONFIRMATION MODAL ========= */
-  const enrollBtns = document.querySelectorAll(".enroll-btn");
+  // ========= ENROLLMENT CONFIRM ========= //
+  const offeredCourses = document.getElementById("offered-courses");
   const enrollModal = document.getElementById("enrollModal");
   const confirmEnroll = document.getElementById("confirmEnroll");
   const cancelEnroll = document.getElementById("cancelEnroll");
+  const enrollCourseName = document.getElementById("enrollCourseName");
+
   let courseToEnroll = { code: null, name: null, button: null };
 
-  enrollBtns.forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      courseToEnroll.code = btn.dataset.courseCode;
-      courseToEnroll.name = btn.dataset.courseName;
-      courseToEnroll.button = btn;
-      document.getElementById('enrollCourseName').textContent = courseToEnroll.name;
-      enrollModal.classList.remove("hidden");
-    });
+  offeredCourses?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".enroll-btn");
+    if (btn && !btn.disabled) {
+      courseToEnroll = {
+        code: btn.dataset.courseCode || null,
+        name: btn.dataset.courseName || "Unnamed Course",
+        button: btn,
+      };
+      enrollCourseName.textContent = courseToEnroll.name;
+      enrollModal?.classList.remove("hidden");
+    }
   });
 
   cancelEnroll?.addEventListener("click", () => {
-    enrollModal.classList.add("hidden");
+    enrollModal?.classList.add("hidden");
     courseToEnroll = { code: null, name: null, button: null };
   });
 
-  confirmEnroll?.addEventListener("click", () => {
-    enrollModal.classList.add("hidden");
-    if (courseToEnroll.code && courseToEnroll.button) {
-      const btn = courseToEnroll.button;
-      btn.disabled = true;
-      btn.textContent = 'Requesting...';
+  confirmEnroll?.addEventListener("click", async () => {
+    enrollModal?.classList.add("hidden");
+    const { code, button } = courseToEnroll;
+    if (!code || !button) return;
+    button.disabled = true;
+    button.textContent = "Requesting...";
 
-      fetch('../php/request_enrollment.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `course_code=${encodeURIComponent(courseToEnroll.code)}`
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          alert('✅ Enrollment request sent successfully!');
-          btn.textContent = 'Request Pending';
-          btn.classList.add('pending');
-        } else {
-          alert('⚠️ ' + (data.message || 'An error occurred.'));
-          btn.disabled = false;
-          btn.textContent = 'Enroll';
-        }
-      })
-      .catch(error => {
-        console.error('Enrollment request error:', error);
-        alert('⚠️ An error occurred while sending your request.');
-        btn.disabled = false;
-        btn.textContent = 'Enroll';
+    try {
+      const response = await fetch("../php/request_enrollment.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `course_code=${encodeURIComponent(code)}`,
       });
+      const data = await response.json();
+      if (data.success) {
+        alert("✅ Enrollment request sent successfully!");
+        window.location.reload();
+      } else {
+        alert("⚠️ " + (data.message || "An error occurred."));
+        button.disabled = false;
+        button.textContent = "Request to Enroll";
+      }
+    } catch {
+      alert("⚠️ Error sending request.");
+      button.disabled = false;
+      button.textContent = "Request to Enroll";
     }
-    courseToEnroll = { code: null, name: null, button: null };
   });
 
   /* ========= PROFILE MODAL ========= */
@@ -584,7 +476,5 @@ function renderActivitiesTable(activities, container) {
         return activity;
       }
     }
-    return null;
   }
-
 });

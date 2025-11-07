@@ -11,15 +11,6 @@ error_reporting(E_ALL);
 // Log the request for debugging
 error_log("Create trainer request received: " . print_r($_POST, true));
 
-// In add_activity.php, change the INSERT statement from:
-$sql = "INSERT INTO topic_activities (topic_id, activity_title, activity_description, activity_type, start_date, due_date, max_score, max_attempts, attachment_path, created_by) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-// To either remove attachment_path if you don't need it:
-$sql = "INSERT INTO topic_activities (topic_id, activity_title, activity_description, activity_type, start_date, due_date, max_score, max_attempts, created_by) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-// Or if you do need attachment storage, add the column as shown above.
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Invalid request method']);

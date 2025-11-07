@@ -50,10 +50,11 @@ function setupEnrollmentActions() {
     if (!enrollmentTable) return;
 
     enrollmentTable.addEventListener('click', function(e) {
-        const target = e.target;
-        if (target.classList.contains('action-btn')) {
-            const action = target.dataset.action;
-            const enrollmentId = target.closest('.enrollment-actions').dataset.enrollmentId;
+        // Use .closest() to ensure we get the button, even if the icon or span is clicked
+        const button = e.target.closest('.action-btn');
+        if (button) {
+            const action = button.dataset.action;
+            const enrollmentId = button.closest('.enrollment-actions').dataset.enrollmentId;
             
             let remarks = '';
             if (action === 'reject') {
@@ -66,7 +67,7 @@ function setupEnrollmentActions() {
                 if (remarks === null) return;
             }
 
-            processEnrollment(enrollmentId, action, remarks, target);
+            processEnrollment(enrollmentId, action, remarks, button);
         }
     });
 }
