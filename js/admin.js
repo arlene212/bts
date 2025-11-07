@@ -764,7 +764,6 @@ function setupUserManagement() {
                 openModal('editTrainerModal');
             } catch (error) {
                 console.error('Error parsing user data:', error);
-                alert('Error loading user data. Please try again.');
             }
         });
     });
@@ -831,7 +830,6 @@ function setupUserManagement() {
                 openModal('editTraineeModal');
             } catch (error) {
                 console.error('Error parsing user data:', error);
-                alert('Error loading user data. Please try again.');
             }
         });
     });

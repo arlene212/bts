@@ -382,7 +382,7 @@ try {
                                         <?php elseif ($is_pending): ?>
                                             <button class="enroll-btn pending" disabled>Request Pending</button>
                                         <?php else: ?>
-                                            <button class="enroll-btn" data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">Request to Enroll</button>
+                                            <a href="" class="enroll-btn" data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">Request to Enroll</a>
                                         <?php endif; ?>
                                     </div>
                                     <?php endforeach; ?>
