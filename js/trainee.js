@@ -476,5 +476,5 @@ backBtn?.addEventListener("click", () => {
         return activity;
       }
     }
-  });
+  }
 });
