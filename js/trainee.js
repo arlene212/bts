@@ -263,9 +263,12 @@ backBtn?.addEventListener("click", () => {
       return '<p class="no-materials">No topics for this competency.</p>';
     }
     return topics.map(topic => `
-      <div class="topic-item">
-        <h5>${topic.topic_name || topic.name || 'Unnamed Topic'}</h5>
-        <div class="materials-list">${renderMaterials(topic.materials || [])}</div>
+      <div class="topic-container">
+        <h4 class="topic-title">${topic.topic_name || topic.name || 'Unnamed Topic'}</h4>
+        <div class="topic-content-section">
+          <h6 class="content-divider">Materials</h6>
+          ${renderMaterials(topic.materials || [])}
+        </div>
         ${renderActivitiesForTopic(topic.activities || [])}
       </div>
     `).join('');
@@ -276,7 +279,8 @@ backBtn?.addEventListener("click", () => {
     if (!materials || materials.length === 0) {
       return '<p class="no-materials">No materials for this topic.</p>';
     }
-    return materials.map(material => {
+    let html = '<div class="materials-list">';
+    html += materials.map(material => {
       const filePath = material.material_file_path || material.file_path;
       const isLink = filePath && (filePath.startsWith('http://') || filePath.startsWith('https://'));
       const downloadPath = isLink ? filePath : `../uploads/courses/${filePath}`;
@@ -291,28 +295,68 @@ backBtn?.addEventListener("click", () => {
         </div>
       `;
     }).join('');
+    html += '</div>';
+    return html;
   }
 
   function renderActivitiesForTopic(activities) {
     if (!activities || activities.length === 0) {
       return '';
     }
-    let html = '<h6 class="content-divider">Activities</h6>';
+    let html = '<div class="topic-content-section">';
+    html += '<h6 class="content-divider">Activities</h6>';
     html += '<div class="activities-list">';
     activities.forEach(activity => {
       html += `
-        <div class="material-item activity-submission-trigger" data-activity-id="${activity.activity_id}">
-          <i class="fas fa-tasks"></i>
-          <div class="material-info">
-            <strong>${activity.activity_title || activity.title || 'Unnamed Activity'}</strong>
-            <p>Due: ${formatDisplayDate(activity.due_date)}</p>
+        <div class="topic-activity-item" data-activity-id="${activity.id}">
+          <div class="activity-header">
+            <div class="activity-info-cleaned">
+              <strong>${activity.title || 'Unnamed Activity'}</strong>
+              <p>Due: ${formatDisplayDate(activity.due_date)}</p>
+            </div>
           </div>
-          <i class="fas fa-chevron-right"></i>
+          <div class="activity-content hidden">
+            <div class="activity-instructions">
+              <h4><i class="fas fa-info-circle"></i> Instructions</h4>
+              <p>${activity.description || 'No instructions provided.'}</p>
+            </div>
+            
+            ${activity.submission ? `
+              <div class="submission-history">
+                <h4><i class="fas fa-history"></i> Your Submission</h4>
+                <div class="history-content">
+                  <div class="history-item">
+                    <div class="history-meta">
+                      <span>Submitted on: ${formatDisplayDate(activity.submission.date)}</span>
+                      <span class="status-badge ${activity.submission.score !== null ? 'graded' : 'submitted'}">
+                        ${activity.submission.score !== null ? 'Graded' : 'Submitted'}
+                      </span>
+                    </div>
+                    ${activity.submission.file ? `<div class="submission-file"><i class="fas fa-paperclip"></i> <a href="../uploads/submissions/${activity.submission.file}" target="_blank">${activity.submission.file.split('/').pop()}</a></div>` : ''}
+                    ${activity.submission.score !== null ? `<div class="submission-score"><strong>Score:</strong> ${activity.submission.score} / ${activity.max_score}</div>` : ''}
+                    ${activity.submission.feedback ? `<div class="submission-feedback"><strong>Trainer Feedback:</strong> <p>${activity.submission.feedback.replace(/\n/g, '<br>')}</p></div>` : ''}
+                  </div>
+                </div>
+              </div>
+            ` : `
+              <div class="upload-section">
+                <h4><i class="fas fa-upload"></i> Submit Your Work</h4>
+                <textarea class="submission-comment" placeholder="Add a comment (optional)..."></textarea>
+                <div class="upload-area">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <p>Click to upload or drag and drop a file</p>
+                  <input type="file" class="activity-file-input" style="display:none;">
+                </div>
+                <div class="file-preview hidden"></div>
+                <button class="submit-btn" disabled>Submit Assignment</button>
+              </div>
+            `}
+          </div>
         </div>
       `;
     });
     html += '</div>';
-    return html;
+    return html + '</div>';
   }
 
 
@@ -337,15 +381,15 @@ backBtn?.addEventListener("click", () => {
     `;
 
     activities.forEach(activity => {
-      const submission = submissions[activity.activity_id];
+      const submission = activity.submission;
       const status = submission ? (submission.score !== null ? 'Graded' : 'Submitted') : 'Not Submitted';
       const statusClass = submission ? (submission.score !== null ? 'graded' : 'submitted') : 'not-submitted';
-      const score = submission && submission.score !== null ? `${submission.score} / ${activity.max_score}` : '-';
+      const score = submission && submission.score !== null ? `${submission.score} / ${activity.max_score}` : '—';
 
       tableHtml += `
         <tr>
           <td>${activity.activity_title || activity.title || 'Unnamed Activity'}</td>
-          <td>${formatDisplayDate(activity.start_date || activity.created_at)}</td>
+          <td>${formatDisplayDate(activity.start_date)}</td>
           <td>${formatDisplayDate(activity.due_date)}</td>
           <td><span class="status-badge ${statusClass}">${status}</span></td>
           <td>${score}</td>
@@ -359,95 +403,87 @@ backBtn?.addEventListener("click", () => {
     `;
     container.innerHTML = tableHtml;
 
-  }
+  }  
 
-  // Event Delegation for dynamically added activity triggers
+  // Event Delegation for new dynamic activity accordions
   document.getElementById('modules-view').addEventListener('click', function(e) {
-    const trigger = e.target.closest('.activity-submission-trigger');
-    if (trigger) {
-      const activityId = trigger.dataset.activityId;
-      openActivityModal(activityId);
+    const header = e.target.closest('.activity-header');
+    if (header) {
+      const content = header.nextElementSibling;
+      content.classList.toggle('hidden');
+      const icon = header.querySelector('.toggle-icon');
+      if (icon) { // Check if icon exists before trying to toggle classes
+        icon.classList.toggle('fa-chevron-down');
+        icon.classList.toggle('fa-chevron-up');
+      }
+    }
+
+    // Handle file input click
+    const uploadArea = e.target.closest('.upload-area');
+    if (uploadArea) {
+      uploadArea.querySelector('.activity-file-input').click();
+    }
+
+    // Handle file removal
+    const removeBtn = e.target.closest('.remove-file-btn');
+    if (removeBtn) {
+        const activityItem = removeBtn.closest('.topic-activity-item');
+        const fileInput = activityItem.querySelector('.activity-file-input');
+        const filePreview = activityItem.querySelector('.file-preview');
+        const submitBtn = activityItem.querySelector('.submit-btn');
+
+        fileInput.value = '';
+        filePreview.classList.add('hidden');
+        filePreview.innerHTML = '';
+        submitBtn.disabled = true;
+    }
+
+    // Handle submission
+    const submitBtn = e.target.closest('.submit-btn');
+    if (submitBtn) {
+        const activityItem = submitBtn.closest('.topic-activity-item');
+        const activityId = activityItem.dataset.activityId;
+        const fileInput = activityItem.querySelector('.activity-file-input');
+        const comment = activityItem.querySelector('.submission-comment').value;
+
+        if (!fileInput.files[0]) {
+            alert("Please select a file to submit.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('activity_id', activityId);
+        formData.append('submission_file', fileInput.files[0]);
+        formData.append('comment', comment);
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+
+        fetch('../php/submit_activity.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Submission successful!');
+                // Reload course details to show the updated submission status
+                const courseCode = document.getElementById("course-detail-code").textContent.replace('Code: ', '');
+                loadCourseDetails(courseCode, null, null, null);
+            } else {
+                alert('Submission failed: ' + (data.error || 'Unknown error'));
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Assignment';
+            }
+        })
+        .catch(error => {
+            console.error('Submission error:', error);
+            alert('An error occurred during submission.');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Assignment';
+        });
     }
   });
-
-  // Open and populate the activity submission modal
-  async function openActivityModal(activityId) {
-    const modal = document.getElementById('activityModal');
-    modal.classList.remove('hidden');
-    currentActivityId = activityId;
-
-    // Reset modal state
-    document.getElementById('activityModalTitle').textContent = 'Loading...';
-    document.getElementById('activityInstructions').textContent = '';
-    document.getElementById('activityDueDate').textContent = '';
-    document.getElementById('activityAttachmentContainer').classList.add('hidden');
-    uploadSection.classList.add('hidden');
-    submissionHistory.classList.add('hidden');
-    historyContent.innerHTML = '';
-
-    try {
-      const response = await fetch(`../php/get_activity_details.php?activity_id=${activityId}`);
-      const data = await response.json();
-
-      if (data.error) {
-        alert(data.error);
-        modal.classList.add('hidden');
-        return;
-      }
-
-      const activity = data.activity;
-      const submission = data.submission;
-
-      // Populate modal with activity data
-      document.getElementById('activityModalTitle').textContent = activity.activity_title;
-      document.getElementById('activityInstructions').innerHTML = activity.activity_description.replace(/\n/g, '<br>');
-      document.getElementById('activityDueDate').textContent = formatDisplayDate(activity.due_date);
-
-      if (activity.attachment_path) {
-        const attachmentLink = document.getElementById('activityAttachmentLink');
-        const isLink = activity.attachment_path.startsWith('http');
-        attachmentLink.href = isLink ? activity.attachment_path : `../uploads/activities/${activity.attachment_path}`;
-        document.getElementById('activityAttachmentContainer').classList.remove('hidden');
-      }
-
-      // Handle submission status
-      if (submission) {
-        // Already submitted, show history and hide upload section
-        uploadSection.classList.add('hidden');
-        submissionHistory.classList.remove('hidden');
-        let submissionHTML = `
-          <div class="history-item">
-            <div class="history-meta">
-              <span>Submitted on: ${formatDisplayDate(submission.submitted_at)}</span>
-              <span class="status-badge ${submission.score !== null ? 'graded' : 'submitted'}">
-                ${submission.score !== null ? 'Graded' : 'Submitted'}
-              </span>
-            </div>
-            ${submission.submission_text ? `<div class="submission-text"><p>${submission.submission_text.replace(/\n/g, '<br>')}</p></div>` : ''}
-            ${submission.file_path ? `<div class="submission-file"><i class="fas fa-paperclip"></i> <a href="../uploads/submissions/${submission.file_path}" target="_blank">${submission.file_path.split('/').pop()}</a></div>` : ''}
-            ${submission.score !== null ? `<div class="submission-score"><strong>Score:</strong> ${submission.score} / ${activity.max_score}</div>` : ''}
-            ${submission.feedback ? `<div class="submission-feedback"><strong>Trainer Feedback:</strong> <p>${submission.feedback.replace(/\n/g, '<br>')}</p></div>` : ''}
-          </div>
-        `;
-        historyContent.innerHTML = submissionHTML;
-      } else {
-        // Not submitted, show upload section
-        uploadSection.classList.remove('hidden');
-        submissionHistory.classList.add('hidden');
-        // Reset form fields
-        document.getElementById('submission_text').value = '';
-        document.getElementById('activityFileInput').value = '';
-        document.getElementById('filePreview').innerHTML = '';
-        document.getElementById('filePreview').classList.add('hidden');
-        document.getElementById('activitySubmitBtn').disabled = true;
-      }
-
-    } catch (error) {
-      console.error('Failed to load activity details:', error);
-      alert('Failed to load activity details.');
-      modal.classList.add('hidden');
-    }
-  }
 
   // ========= ENROLLMENT CONFIRM ========= //
   const offeredCourses = document.getElementById("offered-courses");
@@ -504,91 +540,33 @@ backBtn?.addEventListener("click", () => {
     });
 });
 
-  // Activity Modal Close Button
-  document.getElementById('closeActivityModal')?.addEventListener('click', () => {
-    document.getElementById('activityModal').classList.add('hidden');
-  });
+  // Handle file selection for dynamic activity forms
+  document.getElementById('modules-view').addEventListener('change', function(e) {
+      if (e.target.classList.contains('activity-file-input')) {
+          const file = e.target.files[0];
+          const activityItem = e.target.closest('.topic-activity-item');
+          const filePreview = activityItem.querySelector('.file-preview');
+          const submitBtn = activityItem.querySelector('.submit-btn');
 
-  // Submission Logic
-  const fileInput = document.getElementById("activityFileInput");
-  const filePreview = document.getElementById("filePreview");
-  const submitBtn = document.getElementById("activitySubmitBtn");
-
-  uploadArea.addEventListener("click", () => fileInput.click());
-  fileInput.addEventListener("change", () => {
-    if (fileInput.files.length > 0) {
-      handleFile(fileInput.files[0]);
-    }
-  });
-
-  // Drag and Drop
-  uploadArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadArea.classList.add('active');
-  });
-  uploadArea.addEventListener('dragleave', () => {
-    uploadArea.classList.remove('active');
-  });
-  uploadArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadArea.classList.remove('active');
-    if (e.dataTransfer.files.length > 0) {
-      fileInput.files = e.dataTransfer.files;
-      handleFile(fileInput.files[0]);
-    }
-  });
-
-  function handleFile(file) {
-    filePreview.innerHTML = `
-      <div class="file-preview-item">
-          <i class="fas fa-file-alt"></i>
-          <div class="file-details">
-              <strong>${file.name}</strong>
-              <span>(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-          </div>
-          <button class="remove-file-btn">&times;</button>
-      </div>
-    `;
-    filePreview.classList.remove('hidden');
-    submitBtn.disabled = false;
-
-    filePreview.querySelector('.remove-file-btn').addEventListener('click', () => {
-      fileInput.value = '';
-      filePreview.classList.add('hidden');
-      submitBtn.disabled = true;
-    });
-  }
-
-  submitBtn.addEventListener('click', async () => {
-    const formData = new FormData();
-    formData.append('activity_id', currentActivityId);
-    formData.append('submission_text', document.getElementById('submission_text').value);
-    if (fileInput.files[0]) {
-      formData.append('submission_file', fileInput.files[0]);
-    }
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting...';
-
-    try {
-      const response = await fetch('../php/submit_activity.php', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await response.json();
-      if (data.success) {
-        alert('Submission successful!');
-        window.location.reload();
-      } else {
-        alert('Error: ' + data.message);
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit';
+          if (file) {
+              filePreview.innerHTML = `
+                  <div class="file-preview-item">
+                      <i class="fas fa-file-alt"></i>
+                      <div class="file-details">
+                          <strong>${file.name}</strong>
+                          <span>(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                      </div>
+                      <button class="remove-file-btn">&times;</button>
+                  </div>
+              `;
+              filePreview.classList.remove('hidden');
+              submitBtn.disabled = false;
+          } else {
+              filePreview.classList.add('hidden');
+              filePreview.innerHTML = '';
+              submitBtn.disabled = true;
+          }
       }
-    } catch (error) {
-      alert('An error occurred during submission.');
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Submit';
-    }
   });
 
   /* ========= PROFILE MODAL ========= */
@@ -710,90 +688,5 @@ backBtn?.addEventListener("click", () => {
       hour: '2-digit',
       minute: '2-digit'
     });
-  }
-
-  // Render submission history
-  function renderSubmissionHistory(submissions) {
-    historyContent.innerHTML = '';
-    submissions.forEach(submission => {
-      const historyItem = document.createElement('div');
-      historyItem.className = 'history-item';
-
-      historyItem.innerHTML = `
-        <div class="history-meta">
-          <span>Submitted: ${formatDisplayDate(submission.date)}</span>
-        </div>
-        ${submission.file ? `
-          <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #6c757d;">
-            <i class="fas fa-paperclip"></i> <a href="../uploads/submissions/${submission.file}" target="_blank">${submission.file}</a>
-          </div>
-        ` : ''}
-      `;
-      historyContent.appendChild(historyItem);
-    });
-  }
-
-  // Submit assignment
-  activitySubmitBtn.addEventListener("click", () => {
-    if (!activityFileInput.files[0]) {
-      alert("Please select a file to upload");
-      return;
-    }
-
-    const file = activityFileInput.files[0];
-    const comment = studentComment.value.trim();
-
-    // Simulate upload process
-    activitySubmitBtn.disabled = true;
-    activitySubmitBtn.textContent = "Uploading...";
-
-    setTimeout(() => {
-      // Add to submission history (in a real app, this would be sent to a server)
-      const currentActivity = getCurrentActivity();
-      if (currentActivity) {
-        const newSubmission = {
-          id: Date.now(),
-          date: new Date().toISOString().replace('T', ' ').substring(0, 19),
-          comment: comment || null,
-          fileName: file.name,
-          fileSize: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-          status: 'submitted'
-        };
-        
-        if (!currentActivity.submissions) {
-          currentActivity.submissions = [];
-        }
-        currentActivity.submissions.unshift(newSubmission);
-        
-        // Update submission history display
-        renderSubmissionHistory(currentActivity.submissions);
-        submissionHistory.classList.remove('hidden');
-      }
-
-      submissionSuccess.classList.remove("hidden");
-      activitySubmitBtn.textContent = "Submitted";
-      
-      // Reset form
-      studentComment.value = "";
-      activityFileInput.value = "";
-      activityFilePreview.classList.add("hidden");
-      
-      // Close modal after 3 seconds
-      setTimeout(() => {
-        activityModal.classList.add("hidden");
-        activitySubmitBtn.textContent = "Submit Assignment";
-        activitySubmitBtn.disabled = true;
-      }, 3000);
-    }, 1500);
-  });
-
-  // Helper function to get current activity
-  function getCurrentActivity() {
-    const activityTitle = activityModalTitle.textContent;
-    for (const [key, activity] of Object.entries(activityData)) {
-      if (activity.title === activityTitle) {
-        return activity;
-      }
-    }
   }
 });

@@ -41,7 +41,7 @@ try {
         SELECT 
             ct.id as topic_id, ct.competency_id, ct.topic_name, ct.topic_description,
             tm.id as material_id, tm.material_title, tm.material_description, tm.file_path as material_file_path,
-            ta.id as activity_id, ta.activity_title, ta.activity_description, ta.activity_type, ta.due_date, ta.max_score, ta.start_date, ta.created_at,
+            ta.id as activity_id, ta.activity_title, ta.activity_description, ta.activity_type, ta.due_date, ta.max_score, ta.start_date,
             asub.id as submission_id, asub.file_path as submission_file, asub.submitted_at, asub.score, asub.feedback
         FROM course_topics ct
         LEFT JOIN topic_materials tm ON ct.id = tm.topic_id
@@ -100,8 +100,7 @@ try {
                 'type' => $row['activity_type'],
                 'due_date' => $row['due_date'],
                 'max_score' => $row['max_score'],
-                'start_date' => $row['start_date'],
-                'created_at' => $row['created_at'],
+                'start_date' => $row['start_date'], // Ensure start_date is fetched
                 'submission' => null
             ];
             if ($row['submission_id']) {

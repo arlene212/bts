@@ -119,6 +119,23 @@ try {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="../images/school.png">
     <link rel="stylesheet" href="../css/trainee.css">
+    <style>
+        /* Styles for topic containers and titles */
+        .topic-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: #fff;
+        }
+        .topic-title {
+            font-size: 1.5rem; /* Make topic title bigger */
+            color: #297acc;   /* Lighter blue color */
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e6f2ff;
+        }
+    </style>
 </head>
 
 <body>

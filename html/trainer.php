@@ -289,23 +289,16 @@ try {
                                 </div>
                                 
                                 <!-- Toggle between Batches and Competencies -->
-                                <div class="view-toggle">
-                                    <button class="toggle-btn active" data-view="batches">Batches</button>
-                                    <button class="toggle-btn" data-view="competencies">Competencies & Topics</button>
-                                </div>
-                                
-                                <!-- Batches Section -->
-                                <div id="batches-view" class="detail-view active">
-                                    <div class="batches-section">
-                                        <h3>Batches</h3>
-                                        <div id="batches-list">
-                                            <!-- Batches will be loaded here -->
-                                        </div>
+                                <div class="news-switch-wrapper course-detail-toggle">
+                                    <div class="switch-oval">
+                                        <div class="switch-inner"></div>
+                                        <button class="switch-btn active" data-view="view-material">View Material</button>
+                                        <button class="switch-btn" data-view="submissions">Submissions</button>
                                     </div>
                                 </div>
                                 
-                                <!-- Competencies Section -->
-                                <div id="competencies-view" class="detail-view">
+                                <!-- View Material Section (replaces competencies) -->
+                                <div id="view-material-view" class="detail-view active">
                                     <div class="competencies-section">
                                         <div class="section-header">
                                             <h3>Course Competencies & Topics</h3>
@@ -314,6 +307,16 @@ try {
                                             <!-- Competencies and topics will be loaded here -->
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submissions Section -->
+                        <div id="submissions-view" class="detail-view">
+                            <div class="submissions-section-main">
+                                <h3>Activity Submissions</h3>
+                                <div id="submissions-list">
+                                    <!-- Activity submissions will be loaded here -->
                                 </div>
                             </div>
                         </div>
@@ -724,6 +727,101 @@ try {
             </form>
         </div>
     </div>
+
+    <!-- ===== EDIT MATERIAL MODAL ===== -->
+    <div class="modal hidden" id="editMaterialModal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeEditMaterialModal">&times;</span>
+            <h2>Edit Material</h2>
+            <form id="editMaterialForm" enctype="multipart/form-data">
+                <input type="hidden" id="edit_material_id" name="material_id">
+                <div class="form-group">
+                    <label>Material Title: *</label>
+                    <input type="text" id="edit_material_title" name="material_title" required>
+                </div>
+                <div class="form-group">
+                    <label>Description:</label>
+                    <textarea id="edit_material_description" name="material_description" rows="2"></textarea>
+                </div>
+                <div id="edit_material_file_info"></div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" id="cancelEditMaterial">Cancel</button>
+                    <button type="submit" class="primary-btn">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== EDIT ACTIVITY MODAL ===== -->
+    <div class="modal hidden" id="editActivityModal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeEditActivityModal">&times;</span>
+            <h2>Edit Activity</h2>
+            <form id="editActivityForm">
+                <input type="hidden" id="edit_activity_id" name="activity_id">
+                <div class="form-group">
+                    <label>Activity Title: *</label>
+                    <input type="text" id="edit_activity_title" name="activity_title" required>
+                </div>
+                <div class="form-group">
+                    <label>Description/Instructions:</label>
+                    <textarea id="edit_activity_description" name="activity_description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Due Date: *</label>
+                    <input type="datetime-local" id="edit_due_date" name="due_date" required>
+                </div>
+                <div class="form-group">
+                    <label>Max Score: *</label>
+                    <input type="number" id="edit_max_score" name="max_score" required min="1">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" id="cancelEditActivity">Cancel</button>
+                    <button type="submit" class="primary-btn">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== CONFIRMATION MODAL (for deletions) ===== -->
+    <div class="modal hidden" id="confirmationModal">
+        <div class="modal-content small-modal">
+            <h2 id="confirmationTitle">Confirm Action</h2>
+            <p id="confirmationMessage">Are you sure?</p>
+            <div class="modal-buttons">
+                <button type="button" class="cancel-btn" id="cancelConfirmation">Cancel</button>
+                <button type="button" class="delete-btn" id="confirmActionBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== GRADE SUBMISSION MODAL ===== -->
+    <div class="modal hidden" id="gradeSubmissionModal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeGradeModal">&times;</span>
+            <h2>Grade Submission</h2>
+            <form id="gradeSubmissionForm">
+                <input type="hidden" id="grade_submission_id" name="submission_id">
+                <div class="form-group">
+                    <label for="submission_score">Score</label>
+                    <div class="score-input-wrapper">
+                        <input type="number" id="submission_score" name="score" required min="0">
+                        <span>/</span>
+                        <span id="submission_max_score">100</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="submission_feedback">Feedback (Optional)</label>
+                    <textarea id="submission_feedback" name="feedback" rows="4" placeholder="Provide constructive feedback..."></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" id="cancelGrade">Cancel</button>
+                    <button type="submit" class="primary-btn">Save Grade</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
     <!-- ===== DELETE ACCOUNT MODAL ===== -->
     <div class="modal hidden" id="deleteAccountModal">
