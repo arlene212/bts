@@ -142,12 +142,6 @@ try {
 
                     <!-- ===== OFFERED COURSES TAB ===== -->
                     <section class="main-content tab-content" id="courses">
-                        <div class="tab-header">
-                            <button id="backToCourses" class="back-btn hidden" aria-label="Back">
-                                <i class="fa-solid fa-arrow-left"></i>
-                            </button>
-                            <h2 id="courseHeaderTitle">Offered Courses</h2>
-                        </div>   
 
                         <!-- Course Grid -->
                         <div id="courseGrid" class="dashboard-cards">
@@ -177,7 +171,11 @@ try {
                                         <?php echo htmlspecialchars(substr($course['description'], 0, 100)); ?>...
                                     </div>
                                     <?php if ($is_enrolled): ?>
-                                        <button class="enroll-btn enrolled" disabled>Already Enrolled</button>
+                                        <button class="unenroll-btn" 
+                                                data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" 
+                                                data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">
+                                            Unenroll
+                                        </button>
                                     <?php elseif ($is_pending): ?>
                                         <button class="enroll-btn pending" disabled>Request Pending</button>
                                     <?php else: ?>
@@ -222,8 +220,11 @@ try {
 
                        <!-- Course Detail View -->
                         <div id="courseDetail" class="course-detail hidden">
-                            <div class="course-content">
-                                <!-- Course detail content will be populated by JavaScript -->
+                            <div class="course-detail-header">
+                                <button id="unenrollCourseBtn" class="unenroll-btn" title="Unenroll from this course">Unenroll</button>
+                            </div>
+                            <div class="course-content" id="courseDetailContent">
+                                <!-- Dynamic course content will be populated here -->
                             </div>
                         </div>
                     </section>
@@ -340,6 +341,22 @@ try {
         <div class="modal-actions">
             <button id="confirmEnroll" class="confirm-btn">Yes, Enroll</button>
             <button id="cancelEnroll" class="cancel-btn">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== UNENROLL CONFIRMATION MODAL ===== -->
+<div id="unenrollConfirmModal" class="modal hidden">
+    <div class="modal-content small-modal">
+        <span class="close-btn" id="closeUnenrollConfirmModal">&times;</span>
+        <h3>⚠️ Unenroll Confirmation</h3>
+        <p>Are you sure you want to unenroll from <strong id="unenrollConfirmCourseName"></strong>? Your progress in this course will be lost.</p>
+        <div class="modal-actions">
+            <button id="cancelUnenrollConfirm" class="cancel-btn">Cancel</button>
+            <form id="unenrollForm" method="POST" action="../php/guest_unenroll.php" style="display:inline;">
+                <input type="hidden" name="course_code" id="unenrollCourseCodeInput">
+                <button id="confirmUnenroll" type="button" class="delete-btn">Yes, Unenroll</button>
+            </form>
         </div>
     </div>
 </div>
