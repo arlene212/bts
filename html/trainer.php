@@ -1,5 +1,11 @@
 <?php
+// Prevent browser from caching old pages
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 require_once '../php/SessionManager.php';
+
 SessionManager::startSession();
 SessionManager::requireRole('trainer');
 
@@ -163,7 +169,7 @@ try {
                 <!-- User Profile Card -->
                  <div class="user-card">
                     <div class="user-card-header">
-                        <img src="../images/school.png" alt="User Avatar" class="user-avatar">
+                        <img src="<?php echo !empty($trainer_info['profile_picture']) ? '../uploads/profiles/' . htmlspecialchars($trainer_info['profile_picture']) : '../images/school.png'; ?>" alt="User Avatar" class="user-avatar">
                         <button class="edit-profile-btn" id="editProfileBtn" title="Edit Profile">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -253,7 +259,7 @@ try {
                                          data-course-data='<?php echo json_encode([
                                             'competency_types' => json_decode($course['competency_types'] ?? '[]', true)
                                          ]); ?>'>
-                                        <img src="<?php echo htmlspecialchars($course['image'] ?: '../images/course-placeholder.jpg'); ?>" alt="Course Image">
+                                        <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : '../images/course-placeholder.jpg'; ?>" alt="Course Image">
                                         <div class="batch-info">
                                             <h3><?php echo htmlspecialchars($course['course_name']); ?></h3>
                                             <p><?php echo htmlspecialchars($course['hours']); ?> Hours</p>
@@ -339,9 +345,9 @@ try {
                                         </span>
                                     </td>
                                     <td><?php echo date('M d, Y', strtotime($request['date_requested'])); ?></td>
-                                    <td class="action-buttons">
-                                        <button class="approve-btn" data-request-id="<?php echo $request['id']; ?>">Approve</button>
-                                        <button class="reject-btn" data-request-id="<?php echo $request['id']; ?>">Reject</button>
+                                    <td class="table-actions">
+                                        <button class="action-btn approve" title="Approve" data-request-id="<?php echo $request['id']; ?>"><i class="fas fa-check"></i><span class="btn-text">Approve</span></button>
+                                        <button class="action-btn reject" title="Reject" data-request-id="<?php echo $request['id']; ?>"><i class="fas fa-times"></i><span class="btn-text">Reject</span></button>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -664,15 +670,31 @@ try {
                     </select>
                 </div>
                 <div class="form-row">
+                    <!-- Start Date and Time -->
                     <div class="form-group">
-                        <label>Start Date (Optional):</label>
-                        <input type="datetime-local" name="start_date">
+                        <label for="start_date_date">Start Date (Optional)</label>
+                        <input type="date" name="start_date_date" id="start_date_date">
                     </div>
                     <div class="form-group">
-                        <label>Due Date: *</label>
-                        <input type="datetime-local" name="due_date" required>
+                        <label for="start_date_time">Start Time</label>
+                        <input type="time" name="start_date_time" id="start_date_time">
                     </div>
                 </div>
+                <!-- Hidden input to hold the combined datetime string for submission -->
+                <input type="hidden" name="start_date" id="start_date">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="due_date_date">Due Date *</label>
+                        <input type="date" name="due_date_date" id="due_date_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="due_date_time">Due Time *</label>
+                        <input type="time" name="due_date_time" id="due_date_time" required>
+                    </div>
+                </div>
+                <!-- Hidden input to hold the combined datetime string for submission -->
+                <input type="hidden" name="due_date" id="due_date">
                 <div class="form-group">
                     <label>Max Score: *</label>
                     <input type="number" name="max_score" required value="100" min="1">

@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFormValidation();
     setupCompetencyFields();
     setupCourseEditing(); // Make sure this is called
+    activateTabFromUrl(); // Add this line to handle tab state on load
     setupAjaxPagination(); // Add this line
     setupCourseEditing(); // Add this line
     setupEnrollmentActions(); // Add this line
@@ -460,6 +461,29 @@ function setupTabNavigation() {
     });
 }
 
+function activateTabFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const tabId = params.get('current_tab') || window.location.hash.substring(1);
+
+    if (tabId) {
+        const tabLink = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
+        const tabContent = document.getElementById(tabId);
+
+        if (tabLink && tabContent) {
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            // Add active class to the target tab and content
+            tabLink.classList.add('active');
+            tabContent.classList.add('active');
+
+            console.log(`Activated tab from URL: ${tabId}`);
+        }
+    }
+}
+
+
 function setupDashboardCards() {
     const dashboardCards = document.querySelectorAll('.dashboard-card');
     const tabLinks = document.querySelectorAll('.tab-link');
@@ -848,31 +872,38 @@ function setupUserManagement() {
     // Enhanced View Course Details functionality
 document.querySelectorAll('.view-details-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-        const courseDataStr = this.getAttribute('data-course');
-        
-        if (!courseDataStr) {
-            console.error('No course data found');
-            return;
-        }
-        
+        const courseDataStr = this.getAttribute('data-course');        
         try {
             const courseData = JSON.parse(courseDataStr);
-            const content = document.getElementById('courseDetailsContent');
+            const courseGrid = document.querySelector('.courses-grid');
+            const detailView = document.getElementById('course-detail-view');
             
-            if (!content) {
-                console.error('Course details content element not found');
+            if (!courseGrid || !detailView) {
+                console.error('Course grid or detail view container not found.');
                 return;
             }
-            
-            // Show loading state
-            content.innerHTML = '<div class="loading">Loading course details...</div>';
-            openModal('viewCourseDetailsModal');
-            
+
+            // Hide grid, show detail view with loading state
+            courseGrid.classList.add('hidden');
+            detailView.classList.remove('hidden');
+            detailView.innerHTML = '<div class="loading">Loading course details...</div>';
+
             // Fetch comprehensive course data
             fetch(`../php/get_course_details.php?course_code=${courseData.course_code}`)
                 .then(response => response.json())
                 .then(courseDetails => {
-                    renderCourseDetails(content, courseDetails);
+                    renderCourseDetails(detailView, courseDetails);
+
+                    // Add back button functionality
+                    const backBtn = detailView.querySelector('.back-to-course-list-btn');
+                    if (backBtn) {
+                        backBtn.classList.remove('hidden'); // Make sure it's visible
+                        backBtn.addEventListener('click', () => {
+                            detailView.classList.add('hidden');
+                            courseGrid.classList.remove('hidden');
+                            detailView.innerHTML = ''; // Clear content
+                        });
+                    }
                 })
                 .catch(error => {
                     console.error('Error fetching course details:', error);
@@ -886,6 +917,11 @@ document.querySelectorAll('.view-details-btn').forEach(btn => {
 });
 
 function renderCourseDetails(content, data) {
+    // The back button is now part of the rendered HTML
+    if (data.error) {
+        content.innerHTML = `<div class="error">${data.error}</div>`;
+        return;
+    }
     let html = `
         <button class="back-to-course-list-btn hidden">← Back to Course Details</button>
         <div class="course-details">
@@ -893,7 +929,7 @@ function renderCourseDetails(content, data) {
     `;
     
     // Course image
-    if (data.course.image) {
+    if (data.course && data.course.image) {
         html += `<img src="../uploads/courses/${data.course.image}" alt="${data.course.course_name}" class="course-detail-image">`;
     } else {
         html += `<div class="course-detail-image-placeholder">
@@ -903,10 +939,10 @@ function renderCourseDetails(content, data) {
     
     html += `
                 <div class="course-basic-info">
-                    <h3>${data.course.course_name || 'Unknown Course'}</h3>
-                    <p><strong>Code:</strong> ${data.course.course_code || 'N/A'}</p>
-                    <p><strong>Hours:</strong> ${data.course.hours || 'N/A'}</p>
-                    <p><strong>Description:</strong> ${data.course.description || 'No description available'}</p>
+                    <h3>${data.course?.course_name || 'Unknown Course'}</h3>
+                    <p><strong>Code:</strong> ${data.course?.course_code || 'N/A'}</p>
+                    <p><strong>Hours:</strong> ${data.course?.hours || 'N/A'}</p>
+                    <p><strong>Description:</strong> ${data.course?.description || 'No description available'}</p>
                 </div>
             </div>
     `;
@@ -948,121 +984,132 @@ function renderCourseDetails(content, data) {
                 <div class="competencies-accordion">
         `;
         
-        data.competencies.forEach(comp => {
-            if (comp && comp.type && comp.name) {
-                html += `
-                    <div class="competency-item">
-                        <div class="competency-header">
-                            <strong>${comp.type.toUpperCase()} COMPETENCY:</strong>
-                            ${comp.name}
-                            ${comp.description ? `- ${comp.description}` : ''}
-                            <span class="toggle-icon">▼</span>
-                        </div>
-                        <div class="competency-content">
-                `;
-                
-                // Topics for this competency
-                if (comp.topics && comp.topics.length > 0) {
-                    html += `<div class="topics-section">`;
+        if (data.competencies && data.competencies.length > 0) {
+            data.competencies.forEach(comp => {
+                if (comp && comp.type && comp.name) {
+                    html += `
+                        <div class="competency-item">
+                            <div class="competency-header">
+                                <strong>${comp.type.toUpperCase()} COMPETENCY:</strong>
+                                ${comp.name}
+                                ${comp.description ? `- ${comp.description}` : ''}
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                            <div class="competency-content">
+                    `;
                     
-                    comp.topics.forEach(topic => {
-                        html += `
-                            <div class="topic-item">
-                                <h5>📚 ${topic.topic_name}</h5>
-                                ${topic.topic_description ? `<p class="topic-description">${topic.topic_description}</p>` : ''}
-                        `;
+                    // Topics for this competency
+                    if (comp.topics && comp.topics.length > 0) {
+                        html += `<div class="topics-section">`;
                         
-                        // Materials for this topic
-                        if (topic.materials && topic.materials.length > 0) {
+                        comp.topics.forEach(topic => {
                             html += `
-                                <div class="materials-section">
-                                    <h6>📎 Course Materials:</h6>
-                                    <ul class="materials-list">
+                                <div class="topic-item">
+                                    <h5>📚 ${topic.topic_name}</h5>
+                                    ${topic.topic_description ? `<p class="topic-description">${topic.topic_description}</p>` : ''}
                             `;
-                            topic.materials.forEach(material => {
+                            
+                            // Materials for this topic
+                            if (topic.materials && topic.materials.length > 0) {
                                 html += `
-                                    <li>
-                                        <strong>${material.material_title}</strong>
-                                        ${material.material_description ? `<br><small>${material.material_description}</small>` : ''}
-                                        ${material.file_path ? `<br><a href="../uploads/courses/${material.file_path}" target="_blank" class="download-link">Download File</a>` : ''}
-                                        <br><small>Uploaded by: ${material.trainer_name || 'Unknown'} on ${material.uploaded_at}</small>
-                                    </li>
+                                    <div class="materials-section">
+                                        <h6>📎 Course Materials:</h6>
+                                        <ul class="materials-list">
                                 `;
-                            });
-                            html += `</ul></div>`;
-                        }
-                        
-                        // Activities for this topic
-                        if (topic.activities && topic.activities.length > 0) {
-                            html += `
-                                <div class="activities-section">
-                                    <h6>📝 Activities:</h6>
-                                    <div class="activities-list">
-                            `;
-                            topic.activities.forEach(activity => {
-                                html += `
-                                    <div class="activity-item">
-                                        <strong>${activity.activity_title}</strong>
-                                        <span class="activity-type ${activity.activity_type}">${activity.activity_type}</span>
-                                        ${activity.due_date ? `<br><small>Due: ${activity.due_date}</small>` : ''}
-                                        ${activity.max_score ? `<br><small>Max Score: ${activity.max_score}</small>` : ''}
-                                        ${activity.activity_description ? `<br><small>${activity.activity_description}</small>` : ''}
-                                `;
-                                
-                                // Submissions for this activity
-                                if (activity.submissions && activity.submissions.length > 0) {
+                                topic.materials.forEach(material => {
+                                    const filePath = material.material_file_path || material.file_path;
+                                    const isLink = filePath && (filePath.startsWith('http://') || filePath.startsWith('https://'));
+                                    const downloadPath = isLink ? filePath : `../uploads/courses/${filePath}`;
                                     html += `
-                                        <div class="submissions-section">
-                                            <h7>📤 Submissions (${activity.submissions.length}):</h7>
-                                            <table class="submissions-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Trainee</th>
-                                                        <th>Submitted</th>
-                                                        <th>Status</th>
-                                                        <th>Score</th>
-                                                        <th>Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
+                                        <li>
+                                            <strong>${material.material_title}</strong>
+                                            ${material.material_description ? `<br><small>${material.material_description}</small>` : ''}
+                                            ${filePath ? `<br><a href="${downloadPath}" target="_blank" class="download-link">View Material</a>` : ''}
+                                            <br><small>Uploaded by: ${material.first_name || 'Unknown'} ${material.last_name || ''} on ${new Date(material.uploaded_at).toLocaleDateString()}</small>
+                                        </li>
                                     `;
-                                    activity.submissions.forEach(submission => {
-                                        const status = submission.score !== null ? 'Graded' : 'Submitted';
-                                        const statusClass = submission.score !== null ? 'graded' : 'submitted';
+                                });
+                                html += `</ul></div>`;
+                            }
+                            
+                            // Activities for this topic
+                            if (topic.activities && topic.activities.length > 0) {
+                                html += `
+                                    <div class="activities-section">
+                                        <h6>📝 Activities:</h6>
+                                        <div class="activities-list">
+                                `;
+                                topic.activities.forEach(activity => {
+                                    html += `
+                                        <div class="activity-item">
+                                            <div class="activity-header">
+                                                <strong>${activity.activity_title}</strong>
+                                                <span class="activity-type ${activity.activity_type}">${activity.activity_type}</span>
+                                                <span class="toggle-submissions-icon">▶</span>
+                                            </div>
+                                            <div class="activity-details">
+                                                ${activity.due_date ? `<small>Due: ${new Date(activity.due_date).toLocaleString()}</small>` : ''}
+                                                ${activity.max_score ? `<small>Max Score: ${activity.max_score}</small>` : ''}
+                                                ${activity.activity_description ? `<p>${activity.activity_description}</p>` : ''}
+                                            </div>
+                                            
+                                            <!-- Submissions for this activity -->
+                                            <div class="submissions-section hidden">
+                                                <h6>📤 Submissions (${activity.submissions.length}):</h6>
+                                    `;
+                                    if (activity.submissions && activity.submissions.length > 0) {
                                         html += `
-                                            <tr>
-                                                <td>${submission.trainee_name}</td>
-                                                <td>${submission.submitted_at}</td>
-                                                <td><span class="status-badge ${statusClass}">${status}</span></td>
-                                                <td>${submission.score !== null ? submission.score : 'Not graded'}</td>
-                                                <td>
-                                                    ${submission.file_path ? `<a href="../uploads/submissions/${submission.file_path}" target="_blank" class="view-submission-btn">View</a>` : ''}
-                                                    ${submission.submission_text ? `<button class="view-text-btn" data-text="${submission.submission_text}">View Text</button>` : ''}
-                                                </td>
-                                            </tr>
+                                                <table class="submissions-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Trainee</th>
+                                                            <th>Submitted</th>
+                                                            <th>Status</th>
+                                                            <th>Score</th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
                                         `;
-                                    });
-                                    html += `</tbody></table></div>`;
-                                } else {
-                                    html += `<p class="no-submissions">No submissions yet</p>`;
-                                }
-                                
-                                html += `</div>`; // Close activity-item
-                            });
-                            html += `</div></div>`; // Close activities-list and activities-section
-                        }
+                                        activity.submissions.forEach(submission => {
+                                            const status = submission.score !== null ? 'Graded' : 'Submitted';
+                                            const statusClass = submission.score !== null ? 'graded' : 'submitted';
+                                            html += `
+                                                <tr>
+                                                    <td>${submission.first_name} ${submission.last_name}</td>
+                                                    <td>${new Date(submission.submitted_at).toLocaleString()}</td>
+                                                    <td><span class="status-badge ${statusClass}">${status}</span></td>
+                                                    <td>${submission.score !== null ? submission.score : 'Not graded'}</td>
+                                                    <td>
+                                                        ${submission.file_path ? `<a href="../uploads/submissions/${submission.file_path}" target="_blank" class="view-submission-btn">View</a>` : ''}
+                                                        ${submission.submission_text ? `<button class="view-text-btn" data-text="${submission.submission_text}">View Text</button>` : ''}
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        });
+                                        html += `</tbody></table>`;
+                                    } else {
+                                        html += `<p class="no-submissions">No submissions yet</p>`;
+                                    }
+                                    html += `</div></div>`; // Close activity-item and submissions-section
+                                });
+                                html += `</div></div>`; // Close activities-list and activities-section
+                            }
+                            
+                            html += `</div>`; // Close topic-item
+                        });
                         
-                        html += `</div>`; // Close topic-item
-                    });
+                        html += `</div>`; // Close topics-section
+                    } else {
+                        html += `<p class="no-topics">No topics added for this competency yet.</p>`;
+                    }
                     
-                    html += `</div>`; // Close topics-section
-                } else {
-                    html += `<p class="no-topics">No topics added for this competency yet.</p>`;
+                    html += `</div></div>`; // Close competency-content and competency-item
                 }
-                
-                html += `</div></div>`; // Close competency-content and competency-item
-            }
-        });
+            });
+        } else {
+            html += `<p class="no-data">No competencies defined for this course.</p>`;
+        }
         
         html += `</div></div>`; // Close competencies-accordion and course-section
     } else {
@@ -1081,6 +1128,20 @@ function renderCourseDetails(content, data) {
     initializeBatchView(content);
     initializeAccordions();
     initializeSubmissionViewers();
+
+    // Add event listener for toggling submissions
+    content.querySelectorAll('.activity-header').forEach(header => {
+        header.addEventListener('click', function() {
+            const submissionSection = this.closest('.activity-item').querySelector('.submissions-section');
+            const icon = this.querySelector('.toggle-submissions-icon');
+            if (submissionSection) {
+                submissionSection.classList.toggle('hidden');
+                if (icon) {
+                    icon.textContent = submissionSection.classList.contains('hidden') ? '▶' : '▼';
+                }
+            }
+        });
+    });
 }
 
 function initializeBatchView(modalContent) {
@@ -1659,8 +1720,10 @@ function showAccountCreationSuccess(type, credentials) {
     confirmBtn.textContent = 'Done';
     confirmBtn.onclick = function() {
         closeModal('accountConfirmationModal');
+        const targetTab = type === 'trainer' ? 'trainers' : 'trainees';
         // Reload the page to show the new user
-        setTimeout(() => window.location.reload(), 300);
+        // and navigate to the correct tab
+        setTimeout(() => window.location.href = window.location.pathname + `?current_tab=${targetTab}`, 300);
     };
     
     // Scroll to credentials section
@@ -1680,13 +1743,16 @@ function setupConfirmationModals() {
             // Basic validation
             const firstName = form.querySelector('#trainer_first_name').value.trim();
             const lastName = form.querySelector('#trainer_last_name').value.trim();
-            const contactNumber = form.querySelector('#trainer_number').value.trim();
+            const contactNumberInput = form.querySelector('#trainer_number');
+            const contactNumber = contactNumberInput.value.trim();
 
-            if (!firstName || !lastName || !contactNumber) {
-                alert('Please fill in all required fields: First Name, Last Name, and Contact Number.');
+            if (!form.checkValidity()) {
+                alert('Please fill in all required fields correctly. Phone number must be in 09XXXXXXXXX or +639XXXXXXXXX format.');
                 return;
             }
 
+            // The new implementation uses client-side filtering, so the AJAX check is removed.
+            // We will rely on the server-side check in create_trainer.php for final validation.
             showAccountConfirmation('trainer', form);
         });
     }
@@ -1696,16 +1762,12 @@ function setupConfirmationModals() {
         submitBtn.addEventListener('click', function(e) {
             e.preventDefault();
             const form = document.getElementById('createTraineeForm');
-            // Basic validation
-            const firstName = form.querySelector('#trainee_first_name').value.trim();
-            const lastName = form.querySelector('#trainee_last_name').value.trim();
-            const contactNumber = form.querySelector('#trainee_number').value.trim();
-
-            if (!firstName || !lastName || !contactNumber) {
-                alert('Please fill in all required fields: First Name, Last Name, and Contact Number.');
+            if (!form.checkValidity()) {
+                alert('Please fill in all required fields correctly. Phone number must be in 09XXXXXXXXX or +639XXXXXXXXX format.');
                 return;
             }
-
+            // The new implementation uses client-side filtering, so the AJAX check is removed.
+            // We will rely on the server-side check in create_trainee.php for final validation.
             showAccountConfirmation('trainee', form);
         });
     }
@@ -1717,7 +1779,6 @@ function setupCourseEditing() {
     // Edit course button functionality
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('edit-course-btn')) {
-            const courseCode = e.target.getAttribute('data-course-code');
             const courseDataStr = e.target.getAttribute('data-course-data');
             
             if (courseDataStr) {
@@ -1726,7 +1787,7 @@ function setupCourseEditing() {
                     openEditCourseModal(courseData);
                 } catch (error) {
                     console.error('Error parsing course data:', error);
-                    alert('Error loading course data. Please try again.');
+                    alert('Error loading course data. Please try again. ' + error);
                 }
             }
         }
@@ -1944,8 +2005,10 @@ function submitEditCourseForm(form) {
         if (data.success) {
             alert('Course updated successfully!');
             closeModal('editCourseModal');
-            // Reload the page to show updated course list
-            setTimeout(() => window.location.reload(), 500);
+            // Reload the page and navigate to the courses tab
+            setTimeout(() => {
+                window.location.href = window.location.pathname + '?current_tab=courses';
+            }, 300);
         } else {
             alert('Error updating course: ' + data.message);
         }
@@ -2104,64 +2167,37 @@ function showTrainerConfirmation(form) {
 }
 
 function setupAjaxPagination() {
-    console.log('Initializing AJAX pagination...');
-    const contentArea = document.querySelector('.content');
+    // This function is now replaced by client-side filtering.
+    // The search inputs will now filter the tables directly.
+    const setupClientSideSearch = (inputId, tableSelector) => {
+        const searchInput = document.getElementById(inputId);
+        const table = document.querySelector(tableSelector);
+        if (!searchInput || !table) return;
 
-    if (!contentArea) {
-        console.error('Content area for pagination not found.');
-        return;
-    }
+        const tableRows = table.querySelectorAll('tbody tr');
 
-    // Use event delegation to handle clicks on pagination links
-    contentArea.addEventListener('click', function(e) {
-        const pageLink = e.target.closest('.pagination .page-link');
-
-        // If the clicked element is not a pagination link, do nothing
-        if (!pageLink) {
-            return;
-        }
-
-        // Prevent the default link behavior (full page reload)
-        e.preventDefault();
-
-        const url = pageLink.href;
-        if (!url) return;
-
-        // Find the parent tab content (e.g., #trainers, #trainees)
-        const tabContent = pageLink.closest('.tab-content');
-        if (!tabContent) {
-            console.error('Could not find parent tab content. Falling back to full reload.');
-            window.location.href = url;
-            return;
-        }
-
-        // Add a visual indicator that content is loading
-        tabContent.style.opacity = '0.5';
-        tabContent.style.transition = 'opacity 0.3s ease';
-
-        // Fetch the new content from the server
-        fetch(url)
-            .then(response => response.text())
-            .then(html => {
-                // Create a temporary element to parse the fetched HTML
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-
-                // Find the corresponding tab content in the fetched HTML
-                const newContent = doc.querySelector(`#${tabContent.id}`);
-
-                if (newContent) {
-                    // Replace the old content with the new content
-                    tabContent.innerHTML = newContent.innerHTML;
-                    // Update the browser's URL without reloading the page
-                    history.pushState({}, '', url);
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            tableRows.forEach(row => {
+                const rowText = row.textContent.toLowerCase();
+                if (rowText.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
                 }
-            })
-            .finally(() => {
-                // Restore opacity after content is loaded
-                tabContent.style.opacity = '1';
             });
-    });
+        });
+    };
+
+    // Apply client-side search to all relevant tables
+    setupClientSideSearch('trainerSearchInput', '#activeTrainers .trainer-table');
+    setupClientSideSearch('trainerSearchInput', '#archivedTrainers .trainer-table');
+    setupClientSideSearch('traineeSearchInput', '#activeTrainees .trainee-table');
+    setupClientSideSearch('traineeSearchInput', '#archivedTrainees .trainee-table');
+    setupClientSideSearch('guestSearchInput', '#guests .guest-table');
+    setupClientSideSearch('enrollmentSearchInput', '#enrollments .enrollment-table');
+
     document.addEventListener('modalOpened', function(e) {
         if (e.detail.modalId === 'addCourseModal') {
             initializeCompetencyHandlers();

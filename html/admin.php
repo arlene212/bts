@@ -1,5 +1,68 @@
 <?php
+// Prevent browser from caching old pages
 require_once '../php/SessionManager.php';
+require_once '../php/DatabaseConnection.php';
+
+// Handle AJAX search requests at the very top
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_search'])) {
+    SessionManager::startSession(); // Ensure session is started for AJAX
+    
+    $database = new DatabaseConnection();
+    $pdo = $database->getConnection();
+
+    $searchType = $_POST['search_type'] ?? '';
+    $searchQuery = $_POST['search_query'] ?? '';
+    $results = [];
+    $searchParam = "%$searchQuery%";
+    
+    switch ($searchType) {
+        case 'trainer':
+        case 'trainee':
+        case 'guest':
+            // Unified query for all user roles
+            $stmt = $pdo->prepare("
+                SELECT user_id as id, CONCAT(first_name, ' ', last_name) as name, email, 
+                       'Users' as section, contact_number, date_created
+                FROM users 
+                WHERE role = ? AND (
+                    first_name LIKE ? OR 
+                    last_name LIKE ? OR 
+                    user_id LIKE ? OR 
+                    email LIKE ? OR 
+                    contact_number LIKE ? OR
+                    DATE_FORMAT(date_created, '%Y-%m-%d') LIKE ?
+                )
+                LIMIT 10
+            ");
+            $stmt->execute([$searchType, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam]);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            break;
+            
+        case 'enrollment':
+            $stmt = $pdo->prepare("
+                SELECT e.id, CONCAT(u.first_name, ' ', u.last_name) as trainee_name, 
+                       c.course_name, e.status, 'Enrollments' as section, e.date_requested
+                FROM enrollments e 
+                JOIN users u ON e.trainee_id = u.user_id 
+                JOIN courses c ON e.course_code = c.course_code 
+                WHERE u.first_name LIKE ? OR u.last_name LIKE ? OR c.course_name LIKE ? OR DATE_FORMAT(e.date_requested, '%Y-%m-%d') LIKE ?
+                LIMIT 10
+            ");
+            $stmt->execute([$searchParam, $searchParam, $searchParam, $searchParam]);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            break;
+    }
+
+    header('Content-Type: application/json');
+    echo json_encode($results);
+    exit;
+}
+
+// Prevent browser from caching old pages
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 SessionManager::startSession();
 SessionManager::requireRole('admin');
 
@@ -44,6 +107,51 @@ $uploadDirs = ['../uploads/profiles/', '../uploads/courses/', '../uploads/activi
 foreach ($uploadDirs as $dir) {
     if (!is_dir($dir)) {
         mkdir($dir, 0777, true);
+    }
+}
+
+// Add this function to validate Philippine phone numbers
+function validatePhilippinePhoneNumber($number) {
+    // Remove all non-digit characters
+    $cleanNumber = preg_replace('/\D/', '', $number);
+    
+    // Check if it starts with 09 (11 digits) or +63 (12 digits) or 63 (11 digits)
+    if (preg_match('/^09\d{9}$/', $cleanNumber)) {
+        return true; // 09XXXXXXXXX format
+    } elseif (preg_match('/^63\d{10}$/', $cleanNumber)) {
+        return true; // 63XXXXXXXXXX format
+    } elseif (preg_match('/^\d{10}$/', $cleanNumber) && substr($cleanNumber, 0, 2) === '09') {
+        return true; // 09XXXXXXXX format (if missing last digit by mistake)
+    }
+    
+    return false;
+}
+
+// Add this function to check for duplicate users
+function checkDuplicateUser($pdo, $firstName, $lastName, $middleName = '', $contactNumber = '') {
+    try {
+        // Check by name
+        $nameQuery = "SELECT COUNT(*) FROM users WHERE first_name = ? AND last_name = ? AND middle_name = ?";
+        $nameStmt = $pdo->prepare($nameQuery);
+        $nameStmt->execute([$firstName, $lastName, $middleName]);
+        $nameCount = $nameStmt->fetchColumn();
+        
+        // Check by contact number if provided
+        $contactCount = 0;
+        if (!empty($contactNumber)) {
+            $contactQuery = "SELECT COUNT(*) FROM users WHERE contact_number = ?";
+            $contactStmt = $pdo->prepare($contactQuery);
+            $contactStmt->execute([$contactNumber]);
+            $contactCount = $contactStmt->fetchColumn();
+        }
+        
+        return [
+            'name_duplicate' => $nameCount > 0,
+            'contact_duplicate' => $contactCount > 0
+        ];
+    } catch (Exception $e) {
+        error_log("Duplicate check error: " . $e->getMessage());
+        return ['name_duplicate' => false, 'contact_duplicate' => false];
     }
 }
 
@@ -260,12 +368,14 @@ $enrollmentStmt->bindValue(':enrollment_offset', $enrollmentOffset, PDO::PARAM_I
 $enrollmentStmt->execute();
 $enrollments = $enrollmentStmt->fetchAll();
 
+// Get current tab from GET or POST, default to home
+$currentTab = $_GET['current_tab'] ?? $_POST['current_tab'] ?? 'home';
+
 // This block handles all form submissions that are not AJAX
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     error_log("POST data received: " . print_r($_POST, true));
     error_log("FILES data: " . print_r($_FILES, true));
     
-    // Your existing POST handling code... (This comment can be removed, it's just a placeholder)
     // Add Course with Competencies
     if (isset($_POST['add_course'])) {
         $courseName = $_POST['course_name'];
@@ -324,7 +434,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$courseName, $courseCode, $courseHours, $courseDescription, $courseImage, json_encode($competencies)]);
         
         $_SESSION['success_message'] = "Course added successfully with " . count($competencies) . " competencies!";
-        header("Location: " . $_SERVER['PHP_SELF']);
+        header("Location: " . $_SERVER['PHP_SELF'] . "#courses");
         exit;
     }
     
@@ -346,7 +456,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['success_message'] = "Course batch '$batchName' created successfully!";
         }
         
-        header("Location: " . $_SERVER['PHP_SELF'] . "#courses");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses#courses");
         exit;
     }
     
@@ -358,7 +468,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Validate required fields
         if (empty($title) || empty($content)) {
             $_SESSION['error_message'] = "Please fill in both title and content.";
-            header("Location: " . $_SERVER['PHP_SELF']);
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=home#home");
             exit;
         }
         
@@ -393,32 +503,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['error_message'] = "Database error: " . $e->getMessage();
         }
         
-        header("Location: " . $_SERVER['PHP_SELF']);
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=home#home");
         exit;
     }
     
     // Archive/Unarchive actions
     if (isset($_POST['archive_user'])) {
         $userId = $_POST['user_id'];
+        $currentTab = $_POST['current_tab'] ?? 'home';
         $stmt = $pdo->prepare("UPDATE users SET status = 'archived' WHERE user_id = ?");
         $stmt->execute([$userId]);
         $_SESSION['success_message'] = "User archived successfully!";
-        header("Location: " . $_SERVER['PHP_SELF']);
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=" . $currentTab . "#" . $currentTab);
         exit;
     }
     
     if (isset($_POST['unarchive_user'])) {
         $userId = $_POST['user_id'];
+        $currentTab = $_POST['current_tab'] ?? 'home';
         $stmt = $pdo->prepare("UPDATE users SET status = 'active' WHERE user_id = ?");
         $stmt->execute([$userId]);
-        $_SESSION['success_message'] = "User unarchived successfully!";
-        header("Location: " . $_SERVER['PHP_SELF']);
+        $_SESSION['success_message'] = "User restored successfully!";
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=" . $currentTab . "#" . $currentTab);
         exit;
     }
     
     // Delete user (for guests and archived users) - FIXED VERSION
     if (isset($_POST['delete_user'])) {
         $userId = $_POST['user_id'];
+        $currentTab = $_POST['current_tab'] ?? 'home';
         
         try {
             $pdo->beginTransaction();
@@ -449,13 +562,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             error_log("Delete user error: " . $e->getMessage());
         }
         
-        header("Location: " . $_SERVER['PHP_SELF']);
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=" . $currentTab . "#" . $currentTab);
         exit;
     }
     
     // Delete guest account - FIXED VERSION
     if (isset($_POST['delete_guest'])) {
         $userId = $_POST['user_id'];
+        $currentTab = $_POST['current_tab'] ?? 'guests';
         
         try {
             $pdo->beginTransaction();
@@ -476,7 +590,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             error_log("Delete guest error: " . $e->getMessage());
         }
         
-        header("Location: " . $_SERVER['PHP_SELF'] . "#guests");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=guests#guests");
         exit;
     }
     
@@ -500,7 +614,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['error_message'] = "Error enrolling guest: " . $e->getMessage();
         }
         
-        header("Location: " . $_SERVER['PHP_SELF'] . "#guests");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=guests#guests");
         exit;
     }
 
@@ -520,7 +634,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$status, $remarks, $user['user_id'], $enrollmentId]);
         
         $_SESSION['success_message'] = "Enrollment request {$action}d successfully!";
-        header("Location: " . $_SERVER['PHP_SELF']);
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=enrollments#enrollments");
         exit;
     }
 
@@ -544,10 +658,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['error_message'] = "Error updating course: " . $e->getMessage();
         }
 
-        header("Location: " . $_SERVER['PHP_SELF'] . "#courses");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses#courses");
         exit;
     }
 
+    // Create Trainer with validation
+    if (isset($_POST['create_trainer'])) {
+        $firstName = trim($_POST['trainer_first_name']);
+        $middleName = trim($_POST['trainer_middle_name'] ?? '');
+        $lastName = trim($_POST['trainer_last_name']);
+        $contactNumber = trim($_POST['trainer_number']);
+        
+        // Validate phone number
+        if (!validatePhilippinePhoneNumber($contactNumber)) {
+            $_SESSION['error_message'] = "Please enter a valid Philippine phone number (starting with 09 or +63)";
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainers#trainers");
+            exit;
+        }
+        
+        // Check for duplicates
+        $duplicateCheck = checkDuplicateUser($pdo, $firstName, $lastName, $middleName, $contactNumber);
+        if ($duplicateCheck['name_duplicate']) {
+            $_SESSION['error_message'] = "A user with the same name already exists!";
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainers#trainers");
+            exit;
+        }
+        if ($duplicateCheck['contact_duplicate']) {
+            $_SESSION['error_message'] = "A user with the same contact number already exists!";
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainers#trainers");
+            exit;
+        }
+        
+        // Rest of trainer creation logic...
+        $_SESSION['success_message'] = "Trainer created successfully!";
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainers#trainers");
+        exit;
+    }
+
+    // Create Trainee with validation
+    if (isset($_POST['create_trainee'])) {
+        $firstName = trim($_POST['trainee_first_name']);
+        $middleName = trim($_POST['trainee_middle_name'] ?? '');
+        $lastName = trim($_POST['trainee_last_name']);
+        $contactNumber = trim($_POST['trainee_number']);
+        
+        // Validate phone number
+        if (!validatePhilippinePhoneNumber($contactNumber)) {
+            $_SESSION['error_message'] = "Please enter a valid Philippine phone number (starting with 09 or +63)";
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainees#trainees");
+            exit;
+        }
+        
+        // Check for duplicates
+        $duplicateCheck = checkDuplicateUser($pdo, $firstName, $lastName, $middleName, $contactNumber);
+        if ($duplicateCheck['name_duplicate']) {
+            $_SESSION['error_message'] = "A user with the same name already exists!";
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainees#trainees");
+            exit;
+        }
+        if ($duplicateCheck['contact_duplicate']) {
+            $_SESSION['error_message'] = "A user with the same contact number already exists!";
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainees#trainees");
+            exit;
+        }
+        
+        // Rest of trainee creation logic...
+        $_SESSION['success_message'] = "Trainee created successfully!";
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainees#trainees");
+        exit;
+    }
 
     // Handle profile updates
     if (isset($_POST['update_profile'])) {
@@ -560,7 +739,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Basic validation
         if (empty($firstName) || empty($lastName)) {
             $_SESSION['error_message'] = 'First name and last name are required fields.';
-            header("Location: " . $_SERVER['PHP_SELF']);
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=home#home");
             exit;
         }
         
@@ -640,7 +819,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['error_message'] = 'Error updating profile: ' . $e->getMessage();
         }
         
-        header("Location: " . $_SERVER['PHP_SELF']);
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=home#home");
         exit;
     }
 }
@@ -695,7 +874,9 @@ try {
             // If no database record found, use session data with safe defaults
             $adminProfile = [
                 'first_name' => $user['first_name'] ?? 'Admin',
+                'middle_name' => $user['middle_name'] ?? '',
                 'last_name' => $user['last_name'] ?? 'User', 
+                'suffix' => $user['suffix'] ?? '',
                 'email' => $user['email'] ?? 'admin@bts.gov.ph',
                 'contact_number' => $user['contact_number'] ?? 'Not set',
                 'profile_picture' => $user['profile_picture'] ?? ''
@@ -706,7 +887,9 @@ try {
         // Fallback to session data if query fails
         $adminProfile = [
             'first_name' => $user['first_name'] ?? 'Admin',
+            'middle_name' => $user['middle_name'] ?? '',
             'last_name' => $user['last_name'] ?? 'User',
+            'suffix' => $user['suffix'] ?? '',
             'email' => $user['email'] ?? 'admin@bts.gov.ph',
             'contact_number' => $user['contact_number'] ?? 'Not set',
             'profile_picture' => $user['profile_picture'] ?? ''
@@ -795,12 +978,11 @@ $activeTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'tra
 $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'trainee' AND status = 'archived'")->fetchColumn();
 ?>
 
-<!-- THE REST OF YOUR HTML CODE REMAINS EXACTLY THE SAME -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial=1.0">
   <title>Benguet Technical School-eLMS</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../css/admin.css">
@@ -814,7 +996,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
       <div class="profile">
         <div class="user-card">
             <div class="user-card-header">
-                <img src="<?php echo !empty($adminProfile['profile_picture']) ? '../uploads/profiles/' . $adminProfile['profile_picture'] . '?t=' . time() : '../images/school.png'; ?>" alt="User Avatar" class="user-avatar" id="userCardAvatar">
+                <img src="<?php echo (!empty($adminProfile['profile_picture']) && $adminProfile['profile_picture'] !== 'default.png') ? '../uploads/profiles/' . $adminProfile['profile_picture'] . '?t=' . time() : '../images/school.png'; ?>" alt="User Avatar" class="user-avatar" id="userCardAvatar">
                 <button class="edit-profile-btn" id="editProfileBtn" title="Edit Profile">
                     <i class="fas fa-edit"></i>
                 </button>
@@ -1005,6 +1187,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
             </tr>
           <?php else: ?>
             <?php foreach ($activeTrainers as $trainer): ?>
+            <tr>
               <td><?php echo htmlspecialchars($trainer['user_id']); ?></td>
               <td><?php echo htmlspecialchars($trainer['last_name'] . ', ' . $trainer['first_name'] . ($trainer['middle_name'] ? ' ' . $trainer['middle_name'] . '.' : '')); ?></td>
               <td><?php echo htmlspecialchars($trainer['email']); ?></td>
@@ -1024,26 +1207,22 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
                 ?>
               </td>
               <td><?php echo date('Y-m-d', strtotime($trainer['date_created'])); ?></td>
-              <td>
-                <form method="POST" style="display: inline;">
-                  <input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>">
-                  <button type="submit" name="archive_user" class="archive-btn">Archive</button>
-                </form>
-                <button class="reset-password-btn" 
-                        data-user-id="<?php echo $trainer['user_id']; ?>" 
-                        data-user-name="<?php echo htmlspecialchars($trainer['first_name'] . ' ' . $trainer['last_name']); ?>">
-                  Reset Password
-                </button>
-                <button class="edit-trainer-btn" 
-                        data-user-id="<?php echo $trainer['user_id']; ?>"
-                        data-user-data='<?php echo json_encode([
-                            'first_name' => $trainer['first_name'],
-                            'last_name' => $trainer['last_name'],
-                            'email' => $trainer['email'],
-                            'contact_number' => $trainer['contact_number']
-                        ]); ?>'>
-                  Edit
-                </button>
+              <td class="table-actions">
+                  <button class="action-btn edit edit-trainer-btn" title="Edit"
+                          data-user-id="<?php echo $trainer['user_id']; ?>"
+                          data-user-data='<?php echo htmlspecialchars(json_encode($trainer), ENT_QUOTES, 'UTF-8'); ?>'>
+                      <i class="fas fa-edit"></i><span class="btn-text">Edit</span>
+                  </button>
+                  <button class="action-btn reset reset-password-btn" title="Reset Password"
+                          data-user-id="<?php echo $trainer['user_id']; ?>" 
+                          data-user-name="<?php echo htmlspecialchars($trainer['first_name'] . ' ' . $trainer['last_name']); ?>">
+                      <i class="fas fa-key"></i><span class="btn-text">Reset</span>
+                  </button>
+                  <form method="POST" onsubmit="return confirm('Are you sure you want to archive this trainer?');" class="archive-form">
+                      <input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>">
+                      <input type="hidden" name="current_tab" value="trainers">
+                      <button type="submit" name="archive_user" class="action-btn archive" title="Archive"><i class="fas fa-archive"></i><span class="btn-text">Archive</span></button>
+                  </form>
               </td>
             </tr>
             <?php endforeach; ?>
@@ -1117,14 +1296,11 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
               ?>
             </td>
             <td><?php echo date('Y-m-d', strtotime($trainer['date_created'])); ?></td>
-            <td>
-              <form method="POST" style="display: inline;">
+            <td class="table-actions">
+              <form method="POST" onsubmit="return confirm('Are you sure you want to restore this trainer?');" class="unarchive-form">
                 <input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>">
-                <button type="submit" name="unarchive_user" class="unarchive-btn">Unarchive</button>
-              </form>
-              <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to permanently delete this trainer? This action cannot be undone.');">
-                <input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>">
-                <button type="submit" name="delete_user" class="delete-btn">Delete</button>
+                <input type="hidden" name="current_tab" value="trainers">
+                <button type="submit" name="unarchive_user" class="action-btn unarchive" title="Restore"><i class="fas fa-box-open"></i><span class="btn-text">Restore</span></button>
               </form>
             </td>
           </tr>
@@ -1254,26 +1430,22 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
                 ?>
               </td>
               <td><?php echo date('Y-m-d', strtotime($trainee['date_created'])); ?></td>
-              <td>
-                <form method="POST" style="display: inline;">
-                  <input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>">
-                  <button type="submit" name="archive_user" class="archive-btn">Archive</button>
-                </form>
-                <button class="reset-password-btn" 
-                        data-user-id="<?php echo $trainee['user_id']; ?>" 
-                        data-user-name="<?php echo htmlspecialchars($trainee['first_name'] . ' ' . $trainee['last_name']); ?>">
-                  Reset Password
-                </button>
-                <button class="edit-trainee-btn" 
-                        data-user-id="<?php echo $trainee['user_id']; ?>"
-                        data-user-data='<?php echo json_encode([
-                            'first_name' => $trainee['first_name'],
-                            'last_name' => $trainee['last_name'],
-                            'email' => $trainee['email'],
-                            'contact_number' => $trainee['contact_number']
-                        ]); ?>'>
-                  Edit
-                </button>
+              <td class="table-actions">
+                  <button class="action-btn edit edit-trainee-btn" title="Edit"
+                          data-user-id="<?php echo $trainee['user_id']; ?>"
+                          data-user-data='<?php echo htmlspecialchars(json_encode($trainee), ENT_QUOTES, 'UTF-8'); ?>'>
+                      <i class="fas fa-edit"></i><span class="btn-text">Edit</span>
+                  </button>
+                  <button class="action-btn reset reset-password-btn" title="Reset Password"
+                          data-user-id="<?php echo $trainee['user_id']; ?>" 
+                          data-user-name="<?php echo htmlspecialchars($trainee['first_name'] . ' ' . $trainee['last_name']); ?>">
+                      <i class="fas fa-key"></i><span class="btn-text">Reset</span>
+                  </button>
+                  <form method="POST" onsubmit="return confirm('Are you sure you want to archive this trainee?');" class="archive-form">
+                      <input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>">
+                      <input type="hidden" name="current_tab" value="trainees">
+                      <button type="submit" name="archive_user" class="action-btn archive" title="Archive"><i class="fas fa-archive"></i><span class="btn-text">Archive</span></button>
+                  </form>
               </td>
             </tr>
             <?php endforeach; ?>
@@ -1364,14 +1536,11 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
                 ?>
               </td>
               <td><?php echo date('Y-m-d', strtotime($trainee['date_created'])); ?></td>
-              <td>
-                <form method="POST" style="display: inline;">
+              <td class="table-actions">
+                <form method="POST" onsubmit="return confirm('Are you sure you want to restore this trainee?');" class="unarchive-form">
                   <input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>">
-                  <button type="submit" name="unarchive_user" class="unarchive-btn">Unarchive</button>
-                </form>
-                <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to permanently delete this trainee? This action cannot be undone.');">
-                  <input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>">
-                  <button type="submit" name="delete_user" class="delete-btn">Delete</button>
+                  <input type="hidden" name="current_tab" value="trainees">
+                  <button type="submit" name="unarchive_user" class="action-btn unarchive" title="Restore"><i class="fas fa-box-open"></i><span class="btn-text">Restore</span></button>
                 </form>
               </td>
             </tr>
@@ -1442,13 +1611,12 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
           <th>Contact Number</th>
           <th>Enrolled Courses</th>
           <th>Date Created</th>
-          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         <?php if (empty($guests)): ?>
           <tr>
-            <td colspan="7" class="no-data">No guests found</td>
+            <td colspan="6" class="no-data">No guests found</td>
           </tr>
         <?php else: ?>
           <?php foreach ($guests as $guest): ?>
@@ -1472,22 +1640,6 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
               ?>
             </td>
             <td><?php echo date('Y-m-d', strtotime($guest['date_created'])); ?></td>
-            <td>
-              <button class="enroll-guest-btn" 
-                      data-user-id="<?php echo $guest['user_id']; ?>"
-                      data-user-name="<?php echo htmlspecialchars($guest['first_name'] . ' ' . $guest['last_name']); ?>">
-                Enroll in Course
-              </button>
-              <button class="reset-password-btn" 
-                      data-user-id="<?php echo $guest['user_id']; ?>" 
-                      data-user-name="<?php echo htmlspecialchars($guest['first_name'] . ' ' . $guest['last_name']); ?>">
-                Reset Password
-              </button>
-              <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this guest account? This action cannot be undone.');">
-                <input type="hidden" name="user_id" value="<?php echo $guest['user_id']; ?>">
-                <button type="submit" name="delete_guest" class="delete-btn">Delete</button>
-              </form>
-            </td>
           </tr>
           <?php endforeach; ?>
         <?php endif; ?>
@@ -1569,15 +1721,16 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
                 
                 <!-- Course Batches -->
                 <?php
-                $courseBatches = array_filter($courseBatches, function($batch) use ($course) {
+                // Ensure $courseBatches is an array before filtering
+                $courseSpecificBatches = is_array($courseBatches) ? array_filter($courseBatches, function($batch) use ($course) {
                     return $batch['course_code'] == $course['course_code'];
-                });
+                }) : [];
                 ?>
                 <div class="course-batches">
-                  <h4>Batches (<?php echo count($courseBatches); ?>):</h4>
-                  <?php if (!empty($courseBatches)): ?>
+                  <h4>Batches (<?php echo count($courseSpecificBatches); ?>):</h4>
+                  <?php if (!empty($courseSpecificBatches)): ?>
                   <ul>
-                    <?php foreach ($courseBatches as $batch): ?>
+                    <?php foreach ($courseSpecificBatches as $batch): ?>
                     <li>
                       <?php echo htmlspecialchars($batch['batch_name']); ?>
                       (<?php echo $batch['trainee_count']; ?> trainees)
@@ -1617,6 +1770,11 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
 </div>
             </div>
             <?php endforeach; ?>
+          </div>
+
+          <!-- Container for viewing course details in-page -->
+          <div id="course-detail-view" class="hidden" style="padding: 20px;">
+              <!-- Course details will be populated here by JavaScript -->
           </div>
         </section>
 
@@ -1676,7 +1834,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
                 <?php echo htmlspecialchars($enrollment['course_name']); ?><br>
                 <small>(<?php echo htmlspecialchars(ucfirst($enrollment['trainee_role'])); ?>)</small>
             </td>
-            <td><?php echo htmlspecialchars($enrollment['batch_name'] ?? 'Not assigned'); ?></td>
+            <td><?php echo htmlspecialchars($enrollment['batch_name'] ?? 'Not Assigned'); ?></td>
             <td>
               <span class="status-badge status-<?php echo $enrollment['status']; ?>">
                 <?php echo ucfirst($enrollment['status']); ?>
@@ -1686,10 +1844,10 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
             <td><?php echo htmlspecialchars($enrollment['remarks'] ?? 'No remarks'); ?></td>
             <td>
               <?php if ($enrollment['status'] == 'pending'): ?>
-              <div class="enrollment-actions" data-enrollment-id="<?php echo $enrollment['id']; ?>">
-                  <button class="approve-btn action-btn" data-action="approve">Approve</button>
-                  <button class="reject-btn action-btn" data-action="reject">Reject</button>
-              </div>
+                <div class="table-actions enrollment-actions" data-enrollment-id="<?php echo $enrollment['id']; ?>">
+                    <button class="action-btn approve" title="Approve" data-action="approve"><i class="fas fa-check"></i><span class="btn-text">Approve</span></button>
+                    <button class="action-btn reject" title="Reject" title="Reject"><i class="fas fa-times"></i><span class="btn-text">Reject</span></button>
+                </div>
               <?php else: ?>
               <span class="processed-text">
                 Processed on <?php echo date('Y-m-d', strtotime($enrollment['processed_date'])); ?>
@@ -1739,6 +1897,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
         <span class="close">&times;</span>
       </div>
       <form method="POST" id="announcementForm">
+        <input type="hidden" name="current_tab" value="home">
         <div class="modal-body">
           <div class="form-group">
             <label for="announcement_title">Title:</label>
@@ -1765,6 +1924,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
         <span class="close">&times;</span>
       </div>
       <form method="POST" id="createTrainerForm">
+        <input type="hidden" name="current_tab" value="trainers">
         <div class="modal-body">
           <div class="form-row">
             <div class="form-group">
@@ -1788,7 +1948,10 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
           </div>
           <div class="form-group">
             <label for="trainer_number">Contact Number:</label>
-            <input type="tel" id="trainer_number" name="trainer_number" required>
+            <input type="tel" id="trainer_number" name="trainer_number"
+                   pattern="^(09\d{9}|\+639\d{9})$"
+                   title="Format: 09XXXXXXXXX or +639XXXXXXXXX"
+                   required>
           </div>
           <div class="form-group">
             <label for="trainer_courses">Assign Courses (Multiple Selection):</label>
@@ -1804,7 +1967,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
         </div>
         <div class="modal-footer">
           <button type="button" class="cancel-btn">Cancel</button>
-          <button type="submit" class="submit-btn">Create Trainer</button>
+          <button type="submit" name="create_trainer" class="submit-btn">Create Trainer</button>
         </div>
       </form>
     </div>
@@ -1818,6 +1981,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
         <span class="close">&times;</span>
       </div>
       <form method="POST" id="createTraineeForm">
+        <input type="hidden" name="current_tab" value="trainees">
         <div class="modal-body">
           <div class="form-row">
             <div class="form-group">
@@ -1841,7 +2005,10 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
           </div>
           <div class="form-group">
             <label for="trainee_number">Contact Number:</label>
-            <input type="tel" id="trainee_number" name="trainee_number" required>
+            <input type="tel" id="trainee_number" name="trainee_number"
+                   pattern="^(09\d{9}|\+639\d{9})$"
+                   title="Format: 09XXXXXXXXX or +639XXXXXXXXX"
+                   required>
           </div>
           <div class="form-group">
             <label for="trainee_course">Enroll in Course (Optional):</label>
@@ -1878,26 +2045,29 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
         <span class="close">&times;</span>
       </div>
       <form method="POST" enctype="multipart/form-data" id="addCourseForm">
+        <input type="hidden" name="current_tab" value="courses">
         <div class="modal-body">
-          <div class="form-group">
-            <label for="course_name">Course Name:</label>
-            <input type="text" id="course_name" name="course_name" required>
-          </div>
-          <div class="form-group">
-            <label for="course_code">Course Code:</label>
-            <input type="text" id="course_code" name="course_code" required>
-          </div>
-          <div class="form-group">
-            <label for="course_hours">Course Hours:</label>
-            <input type="number" id="course_hours" name="course_hours" required min="1">
-          </div>
-          <div class="form-group">
-            <label for="course_description">Description:</label>
-            <textarea id="course_description" name="course_description" rows="3"></textarea>
-          </div>
-          <div class="form-group">
-            <label for="course_image">Course Image:</label>
-            <input type="file" id="course_image" name="course_image" accept="image/*">
+          <div class="form-group"> <!-- This div will now be a grid container -->
+            <div class="form-group">
+              <label for="course_name">Course Name:</label>
+              <input type="text" id="course_name" name="course_name" required>
+            </div>
+            <div class="form-group">
+              <label for="course_code">Course Code:</label>
+              <input type="text" id="course_code" name="course_code" required>
+            </div>
+            <div class="form-group">
+              <label for="course_hours">Course Hours:</label>
+              <input type="number" id="course_hours" name="course_hours" required min="1">
+            </div>
+            <div class="form-group">
+              <label for="course_image">Course Image:</label>
+              <input type="file" id="course_image" name="course_image" accept="image/*">
+            </div>
+            <div class="form-group form-group-full">
+              <label for="course_description">Description:</label>
+              <textarea id="course_description" name="course_description" rows="3"></textarea>
+            </div>
           </div>
           
           <!-- Competencies Section -->
@@ -1983,6 +2153,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
         <span class="close">&times;</span>
       </div>
       <form method="POST" id="addBatchForm">
+        <input type="hidden" name="current_tab" value="courses">
         <div class="modal-body">
           <div class="form-group">
             <label for="batch_course_code">Course:</label>
@@ -2022,6 +2193,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
         <form method="POST" enctype="multipart/form-data" id="editCourseForm">
             <input type="hidden" name="edit_course" value="1">
             <input type="hidden" id="edit_course_code" name="course_code">
+            <input type="hidden" name="current_tab" value="courses">
             
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
                 <div class="form-group">
@@ -2070,22 +2242,9 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
             
             <div class="modal-footer">
                 <button type="button" class="cancel-btn">Cancel</button>
-                <button type="submit" class="submit-btn">Update Course</button>
+                <button type="submit" name="edit_course" class="submit-btn">Update Course</button>
             </div>
         </form>
-    </div>
-</div>
-
-  <!-- Enhanced View Course Details Modal -->
-<div class="modal hidden" id="viewCourseDetailsModal">
-    <div class="modal-content" style="max-width: 900px;">
-        <div class="modal-header">
-            <h2>Course Details</h2>
-            <span class="close">&times;</span>
-        </div>
-        <div class="modal-body" id="courseDetailsContent" style="max-height: 80vh; overflow-y: auto;">
-            <!-- Course details will be populated here -->
-        </div>
     </div>
 </div>
 
@@ -2097,6 +2256,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
         <span class="close">&times;</span>
       </div>
       <form method="POST" id="resetPasswordForm">
+        <input type="hidden" name="current_tab" value="<?php echo $currentTab; ?>">
         <div class="modal-body">
           <p>Are you sure you want to reset the password for <strong id="resetUserName"></strong>?</p>
           <p>A new temporary password will be generated and shown to you.</p>
@@ -2119,6 +2279,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
         </div>
         <form id="editTrainerForm">
             <input type="hidden" name="user_id" id="editTrainerId">
+            <input type="hidden" name="current_tab" value="trainers">
             <div class="modal-body">
                 <div class="form-group">
                     <label for="edit_trainer_first_name">First Name:</label>
@@ -2135,7 +2296,9 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
                 </div>
                 <div class="form-group">
                     <label for="edit_trainer_contact">Contact Number:</label>
-                    <input type="tel" id="edit_trainer_contact" name="contact_number">
+                    <input type="tel" id="edit_trainer_contact" name="contact_number"
+                           pattern="^(09\d{9}|\+639\d{9})$"
+                           title="Format: 09XXXXXXXXX or +639XXXXXXXXX">
                 </div>
                 <div class="form-group">
                     <label for="edit_trainer_courses">Assigned Courses:</label>
@@ -2166,6 +2329,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
       </div>
       <form id="editTraineeForm">
         <input type="hidden" name="user_id" id="editTraineeId">
+        <input type="hidden" name="current_tab" value="trainees">
         <div class="modal-body">
           <div class="form-group">
             <label for="edit_trainee_first_name">First Name:</label>
@@ -2182,7 +2346,9 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
           </div>
           <div class="form-group">
             <label for="edit_trainee_contact">Contact Number:</label>
-            <input type="tel" id="edit_trainee_contact" name="contact_number">
+            <input type="tel" id="edit_trainee_contact" name="contact_number"
+                   pattern="^(09\d{9}|\+639\d{9})$"
+                   title="Format: 09XXXXXXXXX or +639XXXXXXXXX">
           </div>
           <div class="form-group">
             <label for="edit_trainee_course">Course Enrollment:</label>
@@ -2218,10 +2384,11 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
         <span class="close">&times;</span>
       </div>
       <form method="POST" enctype="multipart/form-data" id="editProfileForm">
+        <input type="hidden" name="current_tab" value="home">
         <div class="modal-body">
           <div class="profile-picture-section">
             <div class="current-profile-picture">
-              <img src="<?php echo !empty($adminProfile['profile_picture']) ? '../uploads/profiles/' . $adminProfile['profile_picture'] . '?t=' . time() : '../images/school.png'; ?>" 
+              <img src="<?php echo (!empty($adminProfile['profile_picture']) && $adminProfile['profile_picture'] !== 'default.png') ? '../uploads/profiles/' . $adminProfile['profile_picture'] . '?t=' . time() : '../images/school.png'; ?>" 
                    alt="Current Profile Picture" id="currentProfilePicture">
             </div>
             <div class="form-group">
@@ -2255,7 +2422,10 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
           
           <div class="form-group">
             <label for="contact_number">Contact Number:</label>
-            <input type="tel" id="contact_number" name="contact_number" value="<?php echo htmlspecialchars($adminProfile['contact_number'] ?? ''); ?>">
+            <input type="tel" id="contact_number" name="contact_number"
+                   pattern="^(09\d{9}|\+639\d{9})$"
+                   title="Format: 09XXXXXXXXX or +639XXXXXXXXX"
+                   value="<?php echo htmlspecialchars($adminProfile['contact_number'] ?? ''); ?>">
           </div>
           
           <div class="form-group">
@@ -2282,6 +2452,9 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
             <div id="accountConfirmationContent">
                 <!-- Content will be populated by JavaScript -->
             </div>
+            <div id="duplicateWarnings" class="warning-box hidden">
+                <!-- Potential duplicate warnings will be shown here -->
+            </div>
         </div>
         <div class="modal-footer">
             <button class="cancel-btn">Cancel</button>
@@ -2297,6 +2470,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
         <span class="close">&times;</span>
       </div>
       <form method="POST" id="enrollGuestForm">
+        <input type="hidden" name="current_tab" value="guests">
         <div class="modal-body">
           <input type="hidden" name="guest_id" id="enrollGuestId">
           <p>Enrolling: <strong id="enrollGuestName"></strong></p>
@@ -2342,62 +2516,6 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
     </div>
 </div>
   
- <?php
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_search'])) {
-        $searchType = $_POST['search_type'];
-        $searchQuery = $_POST['search_query'];
-        $results = [];
-        
-        switch ($searchType) {
-            case 'trainer':
-                $stmt = $pdo->prepare("SELECT user_id as id, CONCAT(first_name, ' ', last_name) as name, email, 'Trainers' as section 
-                                     FROM users 
-                                     WHERE role = 'trainer' AND status = 'active' AND (first_name LIKE ? OR last_name LIKE ? OR user_id LIKE ? OR email LIKE ?)
-                                     LIMIT 10");
-                $searchParam = "%$searchQuery%";
-                $stmt->execute([$searchParam, $searchParam, $searchParam, $searchParam]);
-                $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                break;
-                
-            case 'trainee':
-                $stmt = $pdo->prepare("SELECT user_id as id, CONCAT(first_name, ' ', last_name) as name, email, 'Trainees' as section 
-                                     FROM users 
-                                     WHERE role = 'trainee' AND status = 'active' AND (first_name LIKE ? OR last_name LIKE ? OR user_id LIKE ? OR email LIKE ?)
-                                     LIMIT 10");
-                $searchParam = "%$searchQuery%";
-                $stmt->execute([$searchParam, $searchParam, $searchParam, $searchParam]);
-                $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                break;
-                
-            case 'guest':
-                $stmt = $pdo->prepare("SELECT user_id as id, CONCAT(first_name, ' ', last_name) as name, email, 'Guest Accounts' as section 
-                                     FROM users 
-                                     WHERE role = 'guest' AND (first_name LIKE ? OR last_name LIKE ? OR user_id LIKE ? OR email LIKE ?)
-                                     LIMIT 10");
-                $searchParam = "%$searchQuery%";
-                $stmt->execute([$searchParam, $searchParam, $searchParam, $searchParam]);
-                $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                break;
-                
-            case 'enrollment':
-                $stmt = $pdo->prepare("SELECT e.id, CONCAT(u.first_name, ' ', u.last_name) as trainee_name, c.course_name, e.status, 'Enrollments' as section 
-                                     FROM enrollments e 
-                                     JOIN users u ON e.trainee_id = u.user_id 
-                                     JOIN courses c ON e.course_code = c.course_code 
-                                     WHERE (u.first_name LIKE ? OR u.last_name LIKE ? OR c.course_name LIKE ?)
-                                     LIMIT 10");
-                $searchParam = "%$searchQuery%";
-                $stmt->execute([$searchParam, $searchParam, $searchParam]);
-                $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                break;
-        }
-        
-        header('Content-Type: application/json');
-        echo json_encode($results);
-        exit;
-    }
-
-    ?>
 <script src="../js/admin.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -2524,7 +2642,7 @@ function performAjaxSearch(type, query, resultsContainer, loadingIndicator) {
     formData.append('search_query', query);
     formData.append('ajax_search', 'true');
 
-    fetch('<?php echo $_SERVER["PHP_SELF"]; ?>', {
+    fetch('admin.php', {
         method: 'POST',
         body: formData
     })

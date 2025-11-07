@@ -41,7 +41,7 @@ try {
 
     // Set the new password and reset password_changed_at to NULL
     $stmt = $pdo->prepare("
-        UPDATE users SET password = ?, password_changed_at = NULL
+        UPDATE users SET password = ?, password_changed_at = NULL, status = 'active'
         WHERE user_id = ?
     ");
     $success = $stmt->execute([$hashedPassword, $userId]);

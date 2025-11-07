@@ -21,6 +21,12 @@ const closeEnrollModal = document.getElementById('closeEnrollModal');
 const cancelEnroll = document.getElementById('cancelEnroll');
 const confirmEnroll = document.getElementById('confirmEnroll');
 
+// Unenroll Modal Elements
+const unenrollModal = document.getElementById('unenrollModal');
+const closeUnenrollModal = document.getElementById('closeUnenrollModal');
+const cancelUnenroll = document.getElementById('cancelUnenroll');
+const confirmUnenroll = document.getElementById('confirmUnenroll');
+
 // Activity Modal Elements
 const activityModal = document.getElementById('activityModal');
 const closeActivityModal = document.getElementById('closeActivityModal');
@@ -67,6 +73,10 @@ cancelDeleteBtn.addEventListener('click', () => closeModal(deleteAccountModal));
 // Enrollment Modal
 closeEnrollModal.addEventListener('click', () => closeModal(enrollModal));
 cancelEnroll.addEventListener('click', () => closeModal(enrollModal));
+
+// Unenroll Modal
+closeUnenrollModal.addEventListener('click', () => closeModal(unenrollModal));
+cancelUnenroll.addEventListener('click', () => closeModal(unenrollModal));
 
 // Activity Modal
 closeActivityModal.addEventListener('click', () => closeModal(activityModal));
@@ -136,6 +146,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             openEnrollModal(courseCode, courseName);
         }
+
+        // Handle unenroll button clicks
+        if (e.target.classList.contains('unenroll-btn') && !e.target.disabled) {
+            const courseCard = e.target.closest('.course-card');
+            const courseCode = courseCard.getAttribute('data-course');
+            const courseName = courseCard.getAttribute('data-title');
+            
+            openUnenrollModal(courseCode, courseName);
+        }
     });
 });
 
@@ -149,6 +168,40 @@ function openEnrollModal(courseCode, courseName) {
     };
     
     openModal(enrollModal);
+}
+
+function openUnenrollModal(courseCode, courseName) {
+    document.getElementById('unenrollCourseName').textContent = courseName;
+    
+    // Set up confirmation handler
+    confirmUnenroll.onclick = function() {
+        unenrollFromCourse(courseCode, this);
+        closeModal(unenrollModal);
+    };
+    
+    openModal(unenrollModal);
+}
+
+function unenrollFromCourse(courseCode, button) {
+    button.disabled = true;
+    button.textContent = 'Unenrolling...';
+
+    fetch('../php/guest_unenroll.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `course_code=${encodeURIComponent(courseCode)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showNotification(data.message, 'error');
+            button.disabled = false;
+            button.textContent = 'Yes, Unenroll';
+        }
+    });
 }
 
 // ===== ACTIVITY MODAL FUNCTIONALITY =====

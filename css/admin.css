@@ -919,6 +919,11 @@ tbody tr:hover {
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
+.modal .close,
+.modal .close-btn {
+    display: none;
+}
+
 .modal-content h2 {
   color: #297acc;
   text-align: center;
@@ -1132,6 +1137,24 @@ tbody tr:hover {
   background: #c82333;
 }
 
+/* ================= GLOBAL MODAL BUTTON FIX ================= */
+/* This rule is intentionally highly specific to override all other conflicting button styles inside modals. */
+body div.modal .modal-content .modal-footer button.submit-btn {
+    background: #297acc !important;
+    color: white !important;
+    border: none !important;
+    padding: 10px 20px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    transition: background 0.3s ease !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+}
+
+body div.modal .modal-content .modal-footer button.submit-btn:hover {
+    background: #1f5f99 !important;
+}
+
 /* ================= POST MODAL STYLES ================= */
 .post-box {
   border: 1px solid #ddd;
@@ -1259,6 +1282,63 @@ tbody tr:hover {
 #postNewsBtn:hover {
   background: #1f5f99;
 }
+
+.modal-footer .confirm-btn {
+    background: #297acc;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.modal-footer .confirm-btn:hover {
+    background: #1f5f99;
+}
+
+/* ================= ADD/EDIT COURSE MODAL LAYOUT ================= */
+
+/* Make the modal wider */
+#addCourseModal .modal-content,
+#editCourseModal .modal-content {
+    max-width: 900px;
+}
+
+/* Create a grid layout for the main form fields */
+#addCourseForm .modal-body > .form-group,
+#editCourseForm .modal-body > .form-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 1.5rem;
+}
+
+/* Make description and image fields span the full width */
+#addCourseForm .form-group-full,
+#editCourseForm .form-group-full {
+    grid-column: 1 / -1;
+}
+
+/* Style the competencies section to be a grid */
+.competencies-section {
+    grid-column: 1 / -1; /* Span full width in the parent grid */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.competencies-section > h3 {
+    grid-column: 1 / -1;
+    text-align: center;
+    margin-bottom: 0;
+    color: #1f5f99;
+}
+
 
 /* ================= PROFILE MODAL STYLES ================= */
 .profile-wrapper {
@@ -1759,6 +1839,93 @@ tbody tr:hover {
     border: 2px solid #e6f2ff;
 }
 
+/* Specific override for the "Add Another" competency button */
+.competency-group .add-competency-btn {
+    background: #297acc !important;
+    color: white !important;
+    transition: background 0.3s ease;
+}
+
+.competency-group .add-competency-btn:hover {
+    background: #1f5f99 !important;
+}
+
+/* ==================================================
+   NEW AESTHETIC TABLE ACTION BUTTONS
+===================================================== */
+
+/* Container for the action buttons */
+.table-actions {
+    display: flex;
+    flex-direction: column; /* Stack buttons vertically */
+    gap: 8px;
+    align-items: flex-start; /* Align to the start of the cell */
+    justify-content: center;
+}
+
+/* Base style for all action buttons in tables */
+.table-actions .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start; /* Align icon to the left */
+    border: none;
+    border-radius: 50px; /* Pill shape */
+    width: 32px; /* Initial width for icon only */
+    height: 32px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    color: white;
+    font-size: 14px; /* Icon size */
+    padding: 0 9px; /* Adjust padding for icon centering */
+    overflow: hidden; /* Hide the text initially */
+    white-space: nowrap; /* Prevent text from wrapping */
+}
+
+.table-actions .action-btn:hover {
+    width: auto; /* Expand to fit content */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Style for the text label inside the button */
+.action-btn .btn-text {
+    margin-left: 8px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Specific colors for each button type */
+.action-btn.edit { background-color: #297acc; } /* Blue */
+.action-btn.reset { background-color: #6c757d; } /* Gray */
+.action-btn.archive { background-color: #fd7e14; } /* Orange */
+.action-btn.unarchive { background-color: #28a745; } /* Green */
+.action-btn.delete { background-color: #dc3545; } /* Red */
+.action-btn.enroll { background-color: #20c997; } /* Teal */
+.action-btn.approve { background-color: #28a745; } /* Green */
+.action-btn.reject { background-color: #dc3545; } /* Red */
+
+.action-btn.edit:hover { background-color: #1f5f99; }
+.action-btn.reset:hover { background-color: #5a6268; }
+.action-btn.archive:hover { background-color: #e66900; }
+.action-btn.unarchive:hover { background-color: #218838; }
+.action-btn.delete:hover { background-color: #c82333; }
+.action-btn.enroll:hover { background-color: #1aa87a; }
+.action-btn.approve:hover { background-color: #218838; }
+.action-btn.reject:hover { background-color: #c82333; }
+
+/* Remove default form styling for buttons inside a form */
+.table-actions form {
+    margin: 0;
+    padding: 0;
+    display: inline-flex;
+}
+
+/* Fix for vertical alignment of items within the actions container */
+.table-actions > * {
+    vertical-align: middle;
+}
+
+
+
 .course-actions {
     display: flex;
     gap: 0.5rem;
@@ -2129,6 +2296,60 @@ tbody tr:hover {
 
 .course-tab.active {
     display: block;
+}
+
+/* ================= COURSES TAB GRID & CARD STYLES ================= */
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.course-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.course-image {
+    width: 100%;
+    height: 180px; /* Fixed height for the image container */
+    background-color: #f0f8ff;
+}
+
+.course-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* This is the key property to fix the image size */
+}
+
+.course-image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e6f2ff;
+    color: #297acc;
+}
+
+.course-image-placeholder .fas {
+    font-size: 3rem;
+}
+
+/* Ensure course-info padding is consistent */
+.course-info {
+    padding: 1rem;
+    flex-grow: 1;
 }
 /* Course Batches Styles */
 .batches-list {
@@ -2602,6 +2823,7 @@ tbody tr:hover {
 }
 
 .add-competency-btn {
+    background: #297acc;
     background: #28a745;
     color: white;
     border: none;
@@ -2612,6 +2834,7 @@ tbody tr:hover {
 }
 
 .add-competency-btn:hover {
+    background: #1f5f99;
     background: #218838;
 }
 

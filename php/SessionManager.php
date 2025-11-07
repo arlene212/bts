@@ -14,13 +14,32 @@ class SessionManager {
             exit;
         }
         
-        // Check if password needs to be changed, but exclude the password change page itself
-        $currentPage = basename($_SERVER['PHP_SELF']);
-        if ($currentPage !== 'force_change_password.php' && 
-            isset($_SESSION['user']['password_changed_at']) && 
-            $_SESSION['user']['password_changed_at'] === null) {
-            header('Location: ../html/force_change_password.php');
-            exit;
+        // Only apply the force password change logic if the user is a trainer or trainee.
+        if (in_array($requiredRole, ['trainer', 'trainee'])) {
+            // Check if password needs to be changed, but exclude the password change page itself
+            $userRole = $_SESSION['user']['role'] ?? '';
+            if (in_array($userRole, ['trainer', 'trainee']) && 
+                isset($_SESSION['user']['password_changed_at']) && 
+                $_SESSION['user']['password_changed_at'] === null) {
+                
+                $currentPage = basename($_SERVER['PHP_SELF']);
+                
+                // Check if the request is an AJAX request (common check)
+                $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+    
+                // Only redirect if it's a normal page load and not the password change page
+                if (!$isAjax && $currentPage !== 'force_change_password.php' && $currentPage !== 'logout.php') {
+                    header('Location: /bts/html/force_change_password.php');
+                    exit;
+                } 
+                // If it's an AJAX request and not on the password change script, block it.
+                elseif ($isAjax && $currentPage !== 'force_change_password.php') {
+                    // For AJAX requests, deny the action instead of redirecting
+                    http_response_code(403); // Forbidden
+                    echo json_encode(['success' => false, 'error' => 'Password change required before performing this action.']);
+                    exit;
+                }
+            }
         }
     }
     
@@ -53,7 +72,7 @@ class SessionManager {
             'email' => $user['email'],
             'contact_number' => $user['contact_number'] ?? '',
             'profile_picture' => $user['profile_picture'] ?? '',
-            'password_changed_at' => $user['password_changed_at'] ?? null
+            'password_changed_at' => $user['password_changed_at']
         ];
     }
     
@@ -61,27 +80,28 @@ class SessionManager {
         self::startSession();
         if (isset($_SESSION['user'])) {
             // Check if password needs to be changed
-            if (isset($_SESSION['user']['password_changed_at']) && 
-                $_SESSION['user']['password_changed_at'] === null) {
-                header('Location: ../html/force_change_password.php');
+            $userRole = $_SESSION['user']['role'] ?? '';
+            if (in_array($userRole, ['trainer', 'trainee']) && 
+                isset($_SESSION['user']['password_changed_at']) && $_SESSION['user']['password_changed_at'] === null) {
+                header('Location: /bts/html/force_change_password.php');
                 exit;
             }
             
             switch ($_SESSION['user']['role']) {
                 case 'admin': 
-                    header('Location: ../html/admin.php'); 
+                    header('Location: /bts/html/admin.php'); 
                     break;
                 case 'trainer': 
-                    header('Location: ../html/trainer.php'); 
+                    header('Location: /bts/html/trainer.php'); 
                     break;
                 case 'trainee': 
-                    header('Location: ../html/trainee.php'); 
+                    header('Location: /bts/html/trainee.php'); 
                     break;
                 case 'guest': 
-                    header('Location: ../html/guest.php'); 
+                    header('Location: /bts/html/guest.php'); 
                     break;
                 default: 
-                    header('Location: ../landingpage.php');
+                    header('Location: /bts/landingpage.php');
             }
             exit;
         }
@@ -90,22 +110,24 @@ class SessionManager {
     public static function getRedirectUrlByRole($role) {
         switch ($role) {
             case 'admin':
-                return '../html/admin.php';
+                return '/bts/html/admin.php';
             case 'trainer':
-                return '../html/trainer.php';
+                return '/bts/html/trainer.php';
             case 'trainee':
-                return '../html/trainee.php';
+                return '/bts/html/trainee.php';
             case 'guest':
-                return '../html/guest.php';
+                return '/bts/html/guest.php';
             default:
-                return '../landingpage.php';
+                return '/bts/landingpage.php';
         }
     }
     
     public static function requiresPasswordChange() {
         self::startSession();
-        return isset($_SESSION['user']) && 
-               isset($_SESSION['user']['password_changed_at']) && 
+        $userRole = $_SESSION['user']['role'] ?? '';
+        return isset($_SESSION['user']) &&
+               in_array($userRole, ['trainer', 'trainee']) &&
+               isset($_SESSION['user']['password_changed_at']) &&
                $_SESSION['user']['password_changed_at'] === null;
     }
 }
