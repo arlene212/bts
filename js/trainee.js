@@ -141,30 +141,32 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 // Open course detail
-document.querySelectorAll('#mycourses .course-card').forEach(card => {
+document.querySelectorAll('#mycourses .course-card.view-course-content-btn').forEach(card => {
   card.addEventListener("click", () => {
-    const courseCode = card.dataset.courseId;
+    const courseCode = card.dataset.courseCode;
     const courseName = card.dataset.courseName;
+    const courseHours = card.dataset.courseHours;
+    const courseDescription = card.dataset.courseDescription;
     
     // Hide all main tab contents before showing the detail view
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelector('#mycourses .course-box').classList.add('hidden');
 
     courseDetail.classList.remove("hidden");
     courseDetail.classList.add("active");
 
-      loadCourseDetails(courseCode, courseName);
-      resetCourseDetailView();
-    });
+    loadCourseDetails(courseCode, courseName, courseHours, courseDescription);
+    resetCourseDetailView();
   });
+});
 
 // Back button - only ONE event listener
 backBtn?.addEventListener("click", () => {
   courseDetail.classList.add("hidden");
   courseDetail.classList.remove("active");
   
-  // Show the "My Courses" tab again
-  const myCoursesTab = document.getElementById('mycourses');
-  if (myCoursesTab) myCoursesTab.classList.add('active');
+  // Show the course list box again
+  const courseBox = document.querySelector('#mycourses .course-box');
+  if (courseBox) courseBox.classList.remove('hidden');
   
   // Reset to Modules view for next time
   resetCourseDetailView();
@@ -194,31 +196,257 @@ backBtn?.addEventListener("click", () => {
   }
 
   // ==== LOAD COURSE DETAILS (AJAX) ====
-  function loadCourseDetails(courseCode, courseName) {
+  function loadCourseDetails(courseCode, courseName, courseHours, courseDescription) {
     const competenciesList = document.getElementById("competencies-list");
     const activitiesContainer = document.getElementById("activities-view");
-
+  
     competenciesList.innerHTML = "<div>Loading course content...</div>";
     activitiesContainer.innerHTML = "<div>Loading activities...</div>";
 
-    document.getElementById("course-detail-title").textContent = courseName;
+    document.getElementById("course-detail-title").textContent = courseName || "Course Details";
+    document.getElementById("course-detail-code").textContent = `Code: ${courseCode || 'N/A'}`;
+    document.getElementById("course-detail-hours").textContent = `Hours: ${courseHours || 'N/A'} hrs`;
+    document.getElementById("course-detail-description").textContent = courseDescription || 'No description available.';
 
     fetch(`../php/get_course_details_trainee.php?course_code=${courseCode}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.error) {
           competenciesList.innerHTML = `<div class="error-message">${data.error}</div>`;
+          activitiesContainer.innerHTML = `<div class="error-message">${data.error}</div>`;
           return;
         }
-        document.getElementById("course-detail-code").textContent = `Code: ${data.course.course_code}`;
-        document.getElementById("course-detail-hours").textContent = `Hours: ${data.course.hours} hrs`;
-        document.getElementById("course-detail-description").textContent = data.course.description;
-        renderCompetencies(data.competencies, competenciesList);
-        renderActivitiesTable(data.activities, activitiesContainer);
+        renderCompetencies(data.competencies || [], competenciesList);
+        renderActivitiesTable(data.activities || [], activitiesContainer, data.submissions || {});
       })
       .catch(() => {
         competenciesList.innerHTML = `<div class="error-message">Failed to load course content.</div>`;
       });
+  }
+
+  function renderCompetencies(competencies, container) {
+    container.innerHTML = '';
+    if (!competencies || competencies.length === 0) {
+      container.innerHTML = '<p>No competencies found for this course.</p>';
+      return;
+    }
+
+    const competencyTypes = ['basic', 'common', 'core'];
+    competencyTypes.forEach(type => {
+      const compsOfType = competencies.filter(c => c.type === type);
+      if (compsOfType.length > 0) {
+        const typeHeader = document.createElement('h3');
+        typeHeader.className = 'competency-type-header';
+        typeHeader.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)} Competencies`;
+        container.appendChild(typeHeader);
+
+        compsOfType.forEach(comp => {
+          const compElement = document.createElement('div');
+          compElement.className = 'competency-item';
+          compElement.innerHTML = `
+            <div class="competency-header">
+              <h4>${comp.name}</h4>
+              <p>${comp.description || ''}</p>
+            </div>
+            <div class="topics-list">
+              ${renderTopics(comp.topics || [])}
+            </div>
+          `;
+          container.appendChild(compElement);
+        });
+      }
+    });
+  }
+
+  function renderTopics(topics) {
+    if (!topics || topics.length === 0) {
+      return '<p class="no-materials">No topics for this competency.</p>';
+    }
+    return topics.map(topic => `
+      <div class="topic-item">
+        <h5>${topic.topic_name || topic.name || 'Unnamed Topic'}</h5>
+        <div class="materials-list">${renderMaterials(topic.materials || [])}</div>
+        ${renderActivitiesForTopic(topic.activities || [])}
+      </div>
+    `).join('');
+  }
+
+
+  function renderMaterials(materials) {
+    if (!materials || materials.length === 0) {
+      return '<p class="no-materials">No materials for this topic.</p>';
+    }
+    return materials.map(material => {
+      const filePath = material.material_file_path || material.file_path;
+      const isLink = filePath && (filePath.startsWith('http://') || filePath.startsWith('https://'));
+      const downloadPath = isLink ? filePath : `../uploads/courses/${filePath}`;
+      return `
+        <div class="material-item">
+          <i class="fas fa-file-alt"></i>
+          <div class="material-info">
+            <strong>${material.material_title || material.title || 'Unnamed Material'}</strong>
+            <p>${material.material_description || ''}</p>
+            ${filePath ? `<a href="${downloadPath}" target="_blank">View Material</a>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderActivitiesForTopic(activities) {
+    if (!activities || activities.length === 0) {
+      return '';
+    }
+    let html = '<h6 class="content-divider">Activities</h6>';
+    html += '<div class="activities-list">';
+    activities.forEach(activity => {
+      html += `
+        <div class="material-item activity-submission-trigger" data-activity-id="${activity.activity_id}">
+          <i class="fas fa-tasks"></i>
+          <div class="material-info">
+            <strong>${activity.activity_title || activity.title || 'Unnamed Activity'}</strong>
+            <p>Due: ${formatDisplayDate(activity.due_date)}</p>
+          </div>
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      `;
+    });
+    html += '</div>';
+    return html;
+  }
+
+
+  function renderActivitiesTable(activities, container, submissions) {
+    if (!activities || activities.length === 0) {
+      container.innerHTML = '<p>No activities found for this course.</p>';
+      return;
+    }
+
+    let tableHtml = `
+      <table class="activities-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Date Given</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    activities.forEach(activity => {
+      const submission = submissions[activity.activity_id];
+      const status = submission ? (submission.score !== null ? 'Graded' : 'Submitted') : 'Not Submitted';
+      const statusClass = submission ? (submission.score !== null ? 'graded' : 'submitted') : 'not-submitted';
+      const score = submission && submission.score !== null ? `${submission.score} / ${activity.max_score}` : '-';
+
+      tableHtml += `
+        <tr>
+          <td>${activity.activity_title || activity.title || 'Unnamed Activity'}</td>
+          <td>${formatDisplayDate(activity.start_date || activity.created_at)}</td>
+          <td>${formatDisplayDate(activity.due_date)}</td>
+          <td><span class="status-badge ${statusClass}">${status}</span></td>
+          <td>${score}</td>
+        </tr>
+      `;
+    });
+
+    tableHtml += `
+        </tbody>
+      </table>
+    `;
+    container.innerHTML = tableHtml;
+
+  }
+
+  // Event Delegation for dynamically added activity triggers
+  document.getElementById('modules-view').addEventListener('click', function(e) {
+    const trigger = e.target.closest('.activity-submission-trigger');
+    if (trigger) {
+      const activityId = trigger.dataset.activityId;
+      openActivityModal(activityId);
+    }
+  });
+
+  // Open and populate the activity submission modal
+  async function openActivityModal(activityId) {
+    const modal = document.getElementById('activityModal');
+    modal.classList.remove('hidden');
+    currentActivityId = activityId;
+
+    // Reset modal state
+    document.getElementById('activityModalTitle').textContent = 'Loading...';
+    document.getElementById('activityInstructions').textContent = '';
+    document.getElementById('activityDueDate').textContent = '';
+    document.getElementById('activityAttachmentContainer').classList.add('hidden');
+    uploadSection.classList.add('hidden');
+    submissionHistory.classList.add('hidden');
+    historyContent.innerHTML = '';
+
+    try {
+      const response = await fetch(`../php/get_activity_details.php?activity_id=${activityId}`);
+      const data = await response.json();
+
+      if (data.error) {
+        alert(data.error);
+        modal.classList.add('hidden');
+        return;
+      }
+
+      const activity = data.activity;
+      const submission = data.submission;
+
+      // Populate modal with activity data
+      document.getElementById('activityModalTitle').textContent = activity.activity_title;
+      document.getElementById('activityInstructions').innerHTML = activity.activity_description.replace(/\n/g, '<br>');
+      document.getElementById('activityDueDate').textContent = formatDisplayDate(activity.due_date);
+
+      if (activity.attachment_path) {
+        const attachmentLink = document.getElementById('activityAttachmentLink');
+        const isLink = activity.attachment_path.startsWith('http');
+        attachmentLink.href = isLink ? activity.attachment_path : `../uploads/activities/${activity.attachment_path}`;
+        document.getElementById('activityAttachmentContainer').classList.remove('hidden');
+      }
+
+      // Handle submission status
+      if (submission) {
+        // Already submitted, show history and hide upload section
+        uploadSection.classList.add('hidden');
+        submissionHistory.classList.remove('hidden');
+        let submissionHTML = `
+          <div class="history-item">
+            <div class="history-meta">
+              <span>Submitted on: ${formatDisplayDate(submission.submitted_at)}</span>
+              <span class="status-badge ${submission.score !== null ? 'graded' : 'submitted'}">
+                ${submission.score !== null ? 'Graded' : 'Submitted'}
+              </span>
+            </div>
+            ${submission.submission_text ? `<div class="submission-text"><p>${submission.submission_text.replace(/\n/g, '<br>')}</p></div>` : ''}
+            ${submission.file_path ? `<div class="submission-file"><i class="fas fa-paperclip"></i> <a href="../uploads/submissions/${submission.file_path}" target="_blank">${submission.file_path.split('/').pop()}</a></div>` : ''}
+            ${submission.score !== null ? `<div class="submission-score"><strong>Score:</strong> ${submission.score} / ${activity.max_score}</div>` : ''}
+            ${submission.feedback ? `<div class="submission-feedback"><strong>Trainer Feedback:</strong> <p>${submission.feedback.replace(/\n/g, '<br>')}</p></div>` : ''}
+          </div>
+        `;
+        historyContent.innerHTML = submissionHTML;
+      } else {
+        // Not submitted, show upload section
+        uploadSection.classList.remove('hidden');
+        submissionHistory.classList.add('hidden');
+        // Reset form fields
+        document.getElementById('submission_text').value = '';
+        document.getElementById('activityFileInput').value = '';
+        document.getElementById('filePreview').innerHTML = '';
+        document.getElementById('filePreview').classList.add('hidden');
+        document.getElementById('activitySubmitBtn').disabled = true;
+      }
+
+    } catch (error) {
+      console.error('Failed to load activity details:', error);
+      alert('Failed to load activity details.');
+      modal.classList.add('hidden');
+    }
   }
 
   // ========= ENROLLMENT CONFIRM ========= //
@@ -255,13 +483,12 @@ backBtn?.addEventListener("click", () => {
     button.disabled = true;
     button.textContent = "Requesting...";
 
-    try {
-      const response = await fetch("../php/request_enrollment.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `course_code=${encodeURIComponent(code)}`,
-      });
-      const data = await response.json();
+    fetch('../php/request_enrollment.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `course_code=${encodeURIComponent(code)}`
+    }).then(response => response.json())
+      .then(data => {
       if (data.success) {
         alert("✅ Enrollment request sent successfully!");
         window.location.reload();
@@ -270,10 +497,97 @@ backBtn?.addEventListener("click", () => {
         button.disabled = false;
         button.textContent = "Request to Enroll";
       }
-    } catch {
+    }).catch(() => {
       alert("⚠️ Error sending request.");
       button.disabled = false;
       button.textContent = "Request to Enroll";
+    });
+});
+
+  // Activity Modal Close Button
+  document.getElementById('closeActivityModal')?.addEventListener('click', () => {
+    document.getElementById('activityModal').classList.add('hidden');
+  });
+
+  // Submission Logic
+  const fileInput = document.getElementById("activityFileInput");
+  const filePreview = document.getElementById("filePreview");
+  const submitBtn = document.getElementById("activitySubmitBtn");
+
+  uploadArea.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files.length > 0) {
+      handleFile(fileInput.files[0]);
+    }
+  });
+
+  // Drag and Drop
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('active');
+  });
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('active');
+  });
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('active');
+    if (e.dataTransfer.files.length > 0) {
+      fileInput.files = e.dataTransfer.files;
+      handleFile(fileInput.files[0]);
+    }
+  });
+
+  function handleFile(file) {
+    filePreview.innerHTML = `
+      <div class="file-preview-item">
+          <i class="fas fa-file-alt"></i>
+          <div class="file-details">
+              <strong>${file.name}</strong>
+              <span>(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+          </div>
+          <button class="remove-file-btn">&times;</button>
+      </div>
+    `;
+    filePreview.classList.remove('hidden');
+    submitBtn.disabled = false;
+
+    filePreview.querySelector('.remove-file-btn').addEventListener('click', () => {
+      fileInput.value = '';
+      filePreview.classList.add('hidden');
+      submitBtn.disabled = true;
+    });
+  }
+
+  submitBtn.addEventListener('click', async () => {
+    const formData = new FormData();
+    formData.append('activity_id', currentActivityId);
+    formData.append('submission_text', document.getElementById('submission_text').value);
+    if (fileInput.files[0]) {
+      formData.append('submission_file', fileInput.files[0]);
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    try {
+      const response = await fetch('../php/submit_activity.php', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Submission successful!');
+        window.location.reload();
+      } else {
+        alert('Error: ' + data.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit';
+      }
+    } catch (error) {
+      alert('An error occurred during submission.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit';
     }
   });
 
@@ -383,8 +697,13 @@ backBtn?.addEventListener("click", () => {
 
   // Format date for display
   function formatDisplayDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    if (!dateString) return 'N/A'; // Handle null or undefined dates
+    // Replace space with 'T' to make it ISO 8601 compliant for robust parsing
+    const date = new Date(dateString.replace(' ', 'T'));
+    if (isNaN(date.getTime())) { // Check for invalid date
+        return 'Invalid Date';
+    }
+    return date.toLocaleString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',

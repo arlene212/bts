@@ -221,9 +221,11 @@ try {
                                 <div class="course-list">
                                     <?php if (!empty($enrolled_courses)): ?>
                                         <?php foreach ($enrolled_courses as $course): ?>
-                                        <div class="course-card" 
-                                         data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>"
-                                             data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">
+                                        <div class="course-card view-course-content-btn"
+                                             data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>"
+                                             data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>"
+                                             data-course-hours="<?php echo htmlspecialchars($course['hours']); ?>"
+                                             data-course-description="<?php echo htmlspecialchars($course['description']); ?>">
                                             <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : 'https://via.placeholder.com/250x140'; ?>" alt="Course Image">
                                             <div class="course-info">
                                                 <h3><?php echo htmlspecialchars($course['course_name']); ?></h3>
@@ -472,56 +474,61 @@ try {
     </div>
 
     <!-- ACTIVITY MODAL (keep your existing activity modal HTML) -->
-    <div class="modal hidden" id="activityModal">
-        <div class="modal-content activity-modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title" id="activityModalTitle">Activity Title</h2>
-                <button class="close-btn" id="closeActivityModal">
-                    <i class="fas fa-times"></i>
-                </button>
+<div class="modal hidden" id="activityModal">
+    <div class="modal-content activity-modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="activityModalTitle">Activity Title</h2>
+            <button class="close-btn" id="closeActivityModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <!-- Activity Details Section -->
+            <div class="activity-details-grid">
+                <div class="detail-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <div>
+                        <strong>Due Date</strong>
+                        <span id="activityDueDate"></span>
+                    </div>
+                </div>
+                <div class="detail-item" id="activityAttachmentContainer">
+                    <i class="fas fa-paperclip"></i>
+                    <div>
+                        <strong>Attachment</strong>
+                        <a href="#" target="_blank" id="activityAttachmentLink">View Attached File</a>
+                    </div>
+                </div>
             </div>
-            <div class="modal-body">
-                <!-- Activity Details Section -->
-                <div class="activity-details-grid">
-                    <div class="detail-item">
-                        <i class="fas fa-calendar-alt"></i>
-                        <div>
-                            <strong>Due Date</strong>
-                            <span id="activityDueDate"></span>
-                        </div>
-                    </div>
-                    <div class="detail-item" id="activityAttachmentContainer">
-                        <i class="fas fa-paperclip"></i>
-                        <div>
-                            <strong>Attachment</strong>
-                            <a href="#" target="_blank" id="activityAttachmentLink">View Attached File</a>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Instructions Section -->
-                <div class="activity-instructions" id="activityInstructionsSection">
-                    <h4><i class="fas fa-info-circle"></i> Instructions</h4>
-                    <div class="instructions-content" id="activityInstructions">
-                        <!-- Instructions will be populated by JS -->
-                    </div>
+            <!-- Instructions Section -->
+            <div class="activity-instructions" id="activityInstructionsSection">
+                <h4><i class="fas fa-info-circle"></i> Instructions</h4>
+                <div class="instructions-content" id="activityInstructions">
+                    <!-- Instructions will be populated by JS -->
                 </div>
+            </div>
 
-                <!-- Teacher Remarks -->
-                <div class="teacher-remarks hidden" id="teacherRemarksSection">
-                    <h4><i class="fas fa-comment-alt"></i> Trainer's Remarks</h4>
-                    <div class="remarks-content">
-                        <p id="teacherRemarksContent"></p>
-                        <strong id="teacherRemarksMeta"></strong>
-                    </div>
+            <!-- Submission History -->
+            <div class.submission-history hidden" id="submissionHistory">
+                <h4><i class="fas fa-history"></i> Your Submission</h4>
+                <div id="historyContent" class="history-content">
+                    <!-- Submission history will be populated by JS -->
                 </div>
-
-                <!-- Submission History -->
-                <div class="submission-history hidden" id="submissionHistory">
-                    <h4><i class="fas fa-history"></i> Submission History</h4>
-                    <div id="historyContent" class="history-content">
-                        <!-- Submission history will be populated by JS -->
-                    </div>
+            </div>
+            
+            <!-- File Upload Section -->
+            <div class="upload-section" id="uploadSection">
+                <h4><i class="fas fa-upload"></i> Submit Your Work</h4>
+                <div class="form-group">
+                    <label for="submission_text">Add a comment or text submission</label>
+                    <textarea id="submission_text" name="submission_text" placeholder="Type your comment or answer here..."></textarea>
+                </div>
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Click to upload or drag and drop a file</p>
+                    <small>Max file size: 10MB. Supports PDF, DOC, DOCX, JPG, PNG, etc.</small>
+                    <input type="file" id="activityFileInput" class="file-input" style="display:none;">
                 </div>
                 
                 <!-- File Upload Section -->
