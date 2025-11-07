@@ -145,7 +145,6 @@ body::before {
     align-items: center;
     text-align: center;
     padding: 1rem;
-    margin-top: 50px; /* adjust based on header height */
 }
  
 .slider {
