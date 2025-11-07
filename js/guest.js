@@ -1,12 +1,4 @@
-// ===== MODAL MANAGEMENT =====
 let currentOpenModal = null;
-
-// Profile Modal Elements
-const editProfileBtn = document.getElementById('editProfileBtn');
-const profileModal = document.getElementById('profileModal');
-const closeProfileModal = document.getElementById('closeProfileModal');
-const cancelProfileChanges = document.getElementById('cancelProfileChanges');
-const saveProfileChanges = document.getElementById('saveProfileChanges');
 
 // Delete Account Modal Elements
 const openDeleteModal = document.getElementById('openDeleteModal');
@@ -14,113 +6,19 @@ const deleteAccountModal = document.getElementById('deleteAccountModal');
 const closeDeleteModal = document.getElementById('closeDeleteModal');
 const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+const editProfileBtn = document.getElementById('editProfileBtn');
+const profileModal = document.getElementById('profileModal');
+const closeProfileModalBtn = document.getElementById('closeProfileModal');
+const cancelProfileChangesBtn = document.getElementById('cancelProfileChanges');
+const saveProfileChangesBtn = document.getElementById('saveProfileChanges');
 
-// Enrollment Modal Elements
-const enrollModal = document.getElementById('enrollModal');
-const closeEnrollModal = document.getElementById('closeEnrollModal');
-const cancelEnroll = document.getElementById('cancelEnroll');
-const confirmEnroll = document.getElementById('confirmEnroll');
-
-// Unenroll Modal Elements
-const unenrollModal = document.getElementById('unenrollModal');
-const closeUnenrollModal = document.getElementById('closeUnenrollModal');
-const cancelUnenroll = document.getElementById('cancelUnenroll');
-const confirmUnenroll = document.getElementById('confirmUnenroll');
-
-// Activity Modal Elements
-const activityModal = document.getElementById('activityModal');
-const closeActivityModal = document.getElementById('closeActivityModal');
-const activitySubmitBtn = document.getElementById('activitySubmitBtn');
-const startQuizBtn = document.getElementById('startQuizBtn');
-
-// ===== MODAL FUNCTIONS =====
-function openModal(modal) {
-    if (currentOpenModal) {
-        closeModal(currentOpenModal);
-    }
-    modal.classList.remove('hidden');
-    currentOpenModal = modal;
-    document.body.style.overflow = 'hidden'; // Prevent background scrolling
-}
-
-function closeModal(modal) {
-    modal.classList.add('hidden');
-    currentOpenModal = null;
-    document.body.style.overflow = ''; // Restore scrolling
-}
-
-function closeCurrentModal() {
-    if (currentOpenModal) {
-        closeModal(currentOpenModal);
-    }
-}
-
-// ===== MODAL EVENT LISTENERS =====
-
-// Profile Modal
 editProfileBtn.addEventListener('click', () => openModal(profileModal));
-closeProfileModal.addEventListener('click', () => closeModal(profileModal));
-cancelProfileChanges.addEventListener('click', () => closeModal(profileModal));
+closeProfileModalBtn.addEventListener('click', () => closeModal(profileModal));
+cancelProfileChangesBtn.addEventListener('click', () => closeModal(profileModal));
 
-// Delete Account Modal
-openDeleteModal.addEventListener('click', () => {
-    closeModal(profileModal);
-    openModal(deleteAccountModal);
-});
-closeDeleteModal.addEventListener('click', () => closeModal(deleteAccountModal));
-cancelDeleteBtn.addEventListener('click', () => closeModal(deleteAccountModal));
-
-// Enrollment Modal
-closeEnrollModal.addEventListener('click', () => closeModal(enrollModal));
-cancelEnroll.addEventListener('click', () => closeModal(enrollModal));
-
-// Unenroll Modal
-closeUnenrollModal.addEventListener('click', () => closeModal(unenrollModal));
-cancelUnenroll.addEventListener('click', () => closeModal(unenrollModal));
-
-// Activity Modal
-closeActivityModal.addEventListener('click', () => closeModal(activityModal));
-
-// ===== CLOSE MODAL ON OUTSIDE CLICK =====
-document.addEventListener('click', (e) => {
-    if (currentOpenModal && e.target === currentOpenModal) {
-        closeCurrentModal();
-    }
-});
-
-// ===== CLOSE MODAL ON ESC KEY =====
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && currentOpenModal) {
-        closeCurrentModal();
-    }
-});
-
-// ===== PROFILE MODAL FUNCTIONALITY =====
-saveProfileChanges.addEventListener('click', function() {
+saveProfileChangesBtn.addEventListener('click', function() {
     if (validateProfileForm()) {
         saveProfileData();
-        closeModal(profileModal);
-        showNotification('Profile updated successfully!', 'success');
-    }
-});
-
-// Profile Image Upload
-const profileUpload = document.getElementById('profileUpload');
-const changeProfileBtn = document.getElementById('changeProfileBtn');
-const profilePreview = document.getElementById('profilePreview');
-
-changeProfileBtn.addEventListener('click', function() {
-    profileUpload.click();
-});
-
-profileUpload.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            profilePreview.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
     }
 });
 
@@ -137,6 +35,35 @@ confirmDeleteBtn.addEventListener('click', function() {
 
 // ===== ENROLLMENT FUNCTIONALITY =====
 document.addEventListener('DOMContentLoaded', function() {
+    // Activate tab from URL on page load
+    activateTabFromUrl();
+
+    // Profile Image Upload
+    const profileUpload = document.getElementById('profileUpload');
+    const changeProfileBtn = document.getElementById('changeProfileBtn');
+    const profilePreview = document.getElementById('profilePreview');
+
+    if (changeProfileBtn && profileUpload) {
+        changeProfileBtn.addEventListener('click', function() {
+            profileUpload.click();
+        });
+    }
+
+    if (profileUpload) {
+        profileUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (profilePreview) {
+                        profilePreview.src = e.target.result;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
     // Add event listeners to enroll buttons
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('enroll-btn') && !e.target.disabled) {
@@ -149,17 +76,66 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Handle unenroll button clicks
         if (e.target.classList.contains('unenroll-btn') && !e.target.disabled) {
-            const courseCard = e.target.closest('.course-card');
-            const courseCode = courseCard.getAttribute('data-course');
-            const courseName = courseCard.getAttribute('data-title');
-            
+            let courseCode = e.target.getAttribute('data-course-code');
+            let courseName = e.target.getAttribute('data-course-name');
+
+            if (!courseCode) { // Fallback for other unenroll buttons
+                const courseCard = e.target.closest('.course-card');
+                courseCode = courseCard.getAttribute('data-course');
+                courseName = courseCard.getAttribute('data-title');
+            }
+
             openUnenrollModal(courseCode, courseName);
         }
     });
+
+    // Tab functionality
+    const tabLinks = document.querySelectorAll('.tab-link');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabLinks.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            // Remove active class from all tabs and contents
+            tabLinks.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+
+            // Add active class to clicked tab
+            this.classList.add('active');
+
+            // Show corresponding content
+            const tabId = this.getAttribute('data-tab');
+            const targetTab = document.getElementById(tabId);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+        });
+    });
 });
 
+function activateTabFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const tabId = params.get('current_tab');
+
+    if (tabId) {
+        const tabLink = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
+        const tabContent = document.getElementById(tabId);
+
+        if (tabLink && tabContent) {
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            // Add active class to the target tab and content
+            tabLink.classList.add('active');
+            tabContent.classList.add('active');
+        }
+    }
+}
+
 function openEnrollModal(courseCode, courseName) {
-    document.getElementById('enrollCourseName').textContent = courseName;
+    document.getElementById('enrollCourseName').textContent = courseName; // This line is correct for the enroll modal
     
     // Set up confirmation handler
     confirmEnroll.onclick = function() {
@@ -171,15 +147,15 @@ function openEnrollModal(courseCode, courseName) {
 }
 
 function openUnenrollModal(courseCode, courseName) {
-    document.getElementById('unenrollCourseName').textContent = courseName;
+    document.getElementById('unenrollConfirmCourseName').textContent = courseName;
     
     // Set up confirmation handler
     confirmUnenroll.onclick = function() {
         unenrollFromCourse(courseCode, this);
-        closeModal(unenrollModal);
+        closeModal(document.getElementById('unenrollConfirmModal'));
     };
     
-    openModal(unenrollModal);
+    openModal(document.getElementById('unenrollConfirmModal'));
 }
 
 function unenrollFromCourse(courseCode, button) {
@@ -195,7 +171,8 @@ function unenrollFromCourse(courseCode, button) {
     .then(data => {
         if (data.success) {
             showNotification(data.message, 'success');
-            setTimeout(() => window.location.reload(), 1500);
+            // Reload and stay on the current tab
+            setTimeout(() => window.location.href = `${window.location.pathname}?current_tab=enrolled`, 1500);
         } else {
             showNotification(data.message, 'error');
             button.disabled = false;
@@ -347,33 +324,6 @@ function closeModal(modal) {
 // Global function for file removal
 window.removeSelectedFile = removeSelectedFile;
 
-// ===== TAB NAVIGATION =====
-document.addEventListener('DOMContentLoaded', function() {
-    // Tab functionality
-    const tabLinks = document.querySelectorAll('.tab-link');
-    const tabContents = document.querySelectorAll('.tab-content');
-    
-    tabLinks.forEach(tab => {
-        tab.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Remove active class from all tabs and contents
-            tabLinks.forEach(t => t.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-            
-            // Add active class to clicked tab
-            this.classList.add('active');
-            
-            // Show corresponding content
-            const tabId = this.getAttribute('data-tab');
-            const targetTab = document.getElementById(tabId);
-            if (targetTab) {
-                targetTab.classList.add('active');
-            }
-        });
-    });
-});
-
 // ===== NOTIFICATION DROPDOWN =====
 document.addEventListener('DOMContentLoaded', function() {
     const notifIcon = document.getElementById('notifIcon');
@@ -433,9 +383,44 @@ function validateProfileForm() {
 
 // ===== PROFILE DATA SAVE =====
 function saveProfileData() {
-    // This would typically send data via AJAX
-    // For now, just show success notification
-    console.log('Profile save functionality - ready for backend integration');
+    const form = document.getElementById('profileForm');
+    const formData = new FormData(form);
+    const profilePictureFile = document.getElementById('profileUpload').files[0];
+    if (profilePictureFile) {
+        formData.append('profile_picture', profilePictureFile);
+    }
+
+    saveProfileChangesBtn.disabled = true;
+    saveProfileChangesBtn.textContent = 'Saving...';
+
+    fetch('../php/update_profile.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            closeModal(profileModal);
+            // Optionally, update the UI with new data without a full reload
+            document.querySelector('.user-name').textContent = `${data.user.first_name} ${data.user.last_name}`;
+            if (data.user.profile_picture) {
+                const newPicUrl = `../uploads/profiles/${data.user.profile_picture}?t=${new Date().getTime()}`;
+                document.querySelector('.user-avatar').src = newPicUrl;
+                document.getElementById('profilePreview').src = newPicUrl;
+            }
+        } else {
+            showNotification(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating profile:', error);
+        showNotification('An error occurred while updating your profile.', 'error');
+    })
+    .finally(() => {
+        saveProfileChangesBtn.disabled = false;
+        saveProfileChangesBtn.textContent = 'Save Changes';
+    });
 }
 
 // ===== COURSE VIEW FUNCTIONALITY =====
@@ -466,95 +451,75 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function viewCourseDetails(courseCode, courseName) {
-    const courseGrid = document.getElementById('courseGrid');
-    const courseDetail = document.getElementById('courseDetail');
-    const backButton = document.getElementById('backToCourses');
-    const headerTitle = document.getElementById('courseHeaderTitle');
-    
-    if (courseGrid) courseGrid.classList.add('hidden');
-    if (courseDetail) courseDetail.classList.remove('hidden');
+    const enrolledContainer = document.getElementById('enrolledCoursesContainer');
+    const courseDetailView = document.getElementById('courseDetail');
+    const backButton = document.getElementById('backToEnrolledCourses');
+
+    // Hide the course list and show the detail view
+    if (enrolledContainer) enrolledContainer.classList.add('hidden');
+    if (courseDetailView) courseDetailView.classList.remove('hidden');
     if (backButton) backButton.classList.remove('hidden');
-    if (headerTitle) headerTitle.textContent = courseName;
-    
-    // Simulate course content - in real app, this would come from AJAX
-    const courseContentContainer = document.querySelector('#courseDetail .course-content');
-    if (courseContentContainer) {
-        courseContentContainer.innerHTML = '<div>Loading course content...</div>';
 
-        fetch(`../php/get_course_details_guest.php?course_code=${courseCode}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    courseContentContainer.innerHTML = `<div class="error-message">${data.error}</div>`;
-                    return;
-                }
+    const courseContentContainer = document.getElementById('courseDetailContent');
+    if (!courseContentContainer) return;
 
-                let contentHtml = `<h3>${data.course.course_name}</h3>`;
-                contentHtml += `<p>${data.course.description}</p>`;
-                contentHtml += '<h4>Basic Competencies</h4>';
+    courseContentContainer.innerHTML = '<div>Loading course content...</div>';
 
-                if (data.content && data.content.length > 0) {
-                    // Group by topic
-                    const topics = {};
-                    data.content.forEach(item => {
-                        if (!topics[item.topic_id]) {
-                            topics[item.topic_id] = {
-                                name: item.topic_name,
-                                materials: []
-                            };
-                        }
-                        if (item.material_id) {
-                            topics[item.topic_id].materials.push(item);
-                        }
-                        if (item.activity_id) {
-                            topics[item.topic_id].materials.push({ ...item, is_activity: true });
-                        }
-                    });
-
-                    for (const topicId in topics) {
-                        const topic = topics[topicId];
-                        contentHtml += `<div class="topic-box"><h5>${topic.name}</h5><div class="materials-list">`;
-                        topic.materials.forEach(material => {
-                            contentHtml += `
-                                <div class="material-item ${material.is_activity ? 'activity' : ''}" data-activity="${material.activity_id}" data-type="${material.activity_type}">
-                                    <i class="fas ${material.is_activity ? 'fa-tasks' : 'fa-file-alt'}"></i>
-                                    <div class="material-info">
-                                        <div class="material-title">${material.material_title || material.activity_title}</div>
-                                    </div>
-                                </div>`;
-                        });
-                        contentHtml += `</div></div>`;
-                    }
-                } else {
-                    contentHtml += '<p>No basic competency materials are available for this course yet.</p>';
-                }
-                courseContentContainer.innerHTML = contentHtml;
-            })
-            .catch(error => {
-                console.error('Error fetching course details:', error);
-                courseContentContainer.innerHTML = '<div class="error-message">Failed to load course content.</div>';
-            });
+    // Set the course code on the unenroll button inside the detail view
+    const unenrollBtn = document.getElementById('unenrollCourseBtn');
+    if (unenrollBtn) {
+        unenrollBtn.setAttribute('data-course-code', courseCode);
+        unenrollBtn.setAttribute('data-course-name', courseName);
     }
+
+    fetch(`../php/get_course_details_guest.php?course_code=${courseCode}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                courseContentContainer.innerHTML = `<div class="error-message">Error: ${data.error}</div>`;
+                return;
+            }
+
+            let contentHtml = `<h2>${data.course.course_name}</h2>`;
+            contentHtml += `<p class="course-description-detail">${data.course.description}</p>`;
+
+            const basicCompetencies = data.competencies.filter(comp => comp.type === 'basic');
+
+            if (basicCompetencies.length > 0) {
+                contentHtml += '<h4>Basic Competencies</h4>';
+                basicCompetencies.forEach(comp => {
+                    contentHtml += `<div class="competency-box">`;
+                    contentHtml += `<div class="competency-header"><h4>${comp.name}</h4></div>`;
+
+                    if (comp.topics && comp.topics.length > 0) {
+                        comp.topics.forEach(topic => {
+                            contentHtml += `<div class="topic-box"><h5>${topic.name}</h5></div>`;
+                        });
+                    } else {
+                        contentHtml += '<p class="no-materials">No topics for this competency.</p>';
+                    }
+                    contentHtml += `</div>`;
+                });
+            } else {
+                contentHtml += '<p>No basic competency materials are available for this course.</p>';
+            }
+            courseContentContainer.innerHTML = contentHtml;
+        })
+        .catch(error => {
+            console.error('Error fetching course details:', error);
+            courseContentContainer.innerHTML = '<div class="error-message">Failed to load course content.</div>';
+        });
 }
 
 function resetDetailViews() {
-    const courseGrid = document.getElementById('courseGrid');
-    const courseDetail = document.getElementById('courseDetail');
     const enrolledContainer = document.getElementById('enrolledCoursesContainer');
-    const backButtons = document.querySelectorAll('.back-btn');
-    const headerTitle = document.getElementById('courseHeaderTitle');
-    
-    if (courseGrid) courseGrid.classList.remove('hidden');
-    if (courseDetail) courseDetail.classList.add('hidden');
+    const courseDetailView = document.getElementById('courseDetail');
+    const backButton = document.getElementById('backToEnrolledCourses');
+
+    // Hide detail view, show course list
     if (enrolledContainer) enrolledContainer.classList.remove('hidden');
-    
-    backButtons.forEach(btn => {
-        btn.classList.add('hidden');
-    });
-    
-    if (headerTitle) {
-        headerTitle.textContent = 'Offered Courses';
-    }
+    if (courseDetailView) courseDetailView.classList.add('hidden');
+    if (backButton) backButton.classList.add('hidden');
 }
 
 // ===== NOTIFICATION FUNCTION =====
@@ -654,7 +619,8 @@ function enrollInCourse(courseCode, courseName) {
                 enrollBtn.classList.add('enrolled');
             }
             // Reload the page to update the "Enrolled Courses" tab
-            setTimeout(() => window.location.reload(), 1500);
+            // Reload and stay on the 'courses' tab
+            setTimeout(() => window.location.href = `${window.location.pathname}?current_tab=courses`, 1500);
         } else {
             showNotification(data.message, 'error');
             if (enrollBtn) {

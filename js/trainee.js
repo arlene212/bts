@@ -129,7 +129,10 @@ document.querySelectorAll('#mycourses .course-card').forEach(card => {
   card.addEventListener("click", () => {
     const courseCode = card.dataset.courseId;
     const courseName = card.dataset.courseName;
-    document.querySelectorAll('#mycourses .course-box').forEach(box => box.classList.add('hidden'));
+    
+    // Hide all main tab contents before showing the detail view
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+
     courseDetail.classList.remove("hidden");
     courseDetail.classList.add("active");
 
@@ -144,7 +147,10 @@ document.querySelectorAll('#mycourses .course-card').forEach(card => {
 backBtn?.addEventListener("click", () => {
   courseDetail.classList.add("hidden");
   courseDetail.classList.remove("active");
-  document.querySelectorAll("#mycourses .course-box").forEach(box => box.classList.remove("hidden"));
+  
+  // Show the "My Courses" tab again
+  const myCoursesTab = document.getElementById('mycourses');
+  if (myCoursesTab) myCoursesTab.classList.add('active');
   
   // Reset to Modules view for next time
   resetCourseDetailView();
@@ -379,29 +385,6 @@ function renderActivitiesTable(activities, container) {
     courseToEnroll = { code: null, name: null, button: null };
   });
 
-  /* ========= ENROLLMENT REQUEST TABLE ========= */
-  const enrollmentRequests = [
-    { course: "Intro to JavaScript", status: "pending...", remarks: "-" },
-    { course: "Advanced CSS", status: "accepted", remarks: "-" },
-    { course: "Database Management", status: "rejected", remarks: "Prerequisite not met" }
-  ];
-
-  const requestsBody = document.getElementById("requests-body");
-  enrollmentRequests.forEach(req => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td class="course-name">${req.course}</td>
-      <td class="status ${req.status}">${req.status.charAt(0).toUpperCase() + req.status.slice(1)}</td>
-      <td>${req.remarks}</td>
-      <td><button class="cancel-btn-request">Cancel Request</button></td>
-    `;
-    row.querySelector(".cancel-btn-request").addEventListener("click", () => {
-      alert(`Request for ${req.course} has been canceled.`);
-      row.remove();
-    });
-    requestsBody.appendChild(row);
-  });
-
   /* ========= PROFILE MODAL ========= */
   const editProfileBtn = document.querySelector(".user-card #editProfileBtn, #editProfileBtn");
   const profileModal = document.getElementById("profileModal");
@@ -449,6 +432,43 @@ function renderActivitiesTable(activities, container) {
   confirmDeleteBtn?.addEventListener("click", () => {
     alert("❌ Account deleted permanently.");
     deleteModal.classList.add("hidden");
+  });
+
+  // Handle Profile Form Submission
+  const profileForm = document.getElementById('profileForm');
+  profileForm?.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const profilePictureFile = document.getElementById('profileUpload').files[0];
+      if (profilePictureFile) {
+          formData.append('profile_picture', profilePictureFile);
+      }
+
+      const saveBtn = this.querySelector('.primary-btn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+
+      fetch('../php/update_profile.php', {
+          method: 'POST',
+          body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              alert('Profile updated successfully!');
+              profileModal?.classList.add("hidden");
+              // Update UI without reloading
+              document.querySelector('.user-name').textContent = `${data.user.first_name} ${data.user.last_name}`;
+              if (data.user.profile_picture) {
+                  const newPicUrl = `../uploads/profiles/${data.user.profile_picture}?t=${new Date().getTime()}`;
+                  document.querySelector('.user-avatar').src = newPicUrl;
+                  document.getElementById('profilePreview').src = newPicUrl;
+              }
+          } else {
+              alert('Error: ' + data.message);
+          }
+      })
+      .finally(() => { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; });
   });
 
     /* ========= ACTIVITY MODAL ========= */
