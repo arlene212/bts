@@ -39,11 +39,11 @@ try {
     $courseStmt->execute([$courseCode]);
     $course = $courseStmt->fetch();
 
-    // Insert new enrollment with 'approved' status
-    $insertStmt = $pdo->prepare("INSERT INTO enrollments (trainee_id, course_code, course_name, status, date_requested, processed_date, processed_by) VALUES (?, ?, ?, 'approved', NOW(), NOW(), ?)");
-    $insertStmt->execute([$guestId, $courseCode, $course['course_name'], $guestId]); // Mark as processed by the guest themselves
+    // Insert new enrollment with 'pending' status
+    $insertStmt = $pdo->prepare("INSERT INTO enrollments (trainee_id, course_code, course_name, status, date_requested) VALUES (?, ?, ?, 'pending', NOW())");
+    $insertStmt->execute([$guestId, $courseCode, $course['course_name']]); // Status will be updated when processed by admin/trainer
 
-    echo json_encode(['success' => true, 'message' => 'You have been successfully enrolled!']);
+    echo json_encode(['success' => true, 'message' => 'Your enrollment request has been submitted and is pending approval.']);
 
 } catch (PDOException $e) {
     error_log("Guest enrollment error: " . $e->getMessage());

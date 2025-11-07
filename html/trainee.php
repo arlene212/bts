@@ -147,7 +147,7 @@ try {
                 <div class="user-card">
                     <div class="user-card-header">
                         <img src="<?php echo !empty($user['profile_picture']) ? '../uploads/profiles/' . htmlspecialchars($user['profile_picture']) : '../images/school.png'; ?>" alt="User Avatar" class="user-avatar">
-                        <button class="edit-profile-btn" id="editProfileBtn" title="Edit Profile">
+                        <button type="button" class="edit-profile-btn" id="editProfileBtn" title="Edit Profile" onclick="document.getElementById('profileModal').style.display='flex';">
                             <i class="fas fa-edit"></i>
                         </button>
                     </div>
@@ -382,7 +382,7 @@ try {
                                         <?php elseif ($is_pending): ?>
                                             <button class="enroll-btn pending" disabled>Request Pending</button>
                                         <?php else: ?>
-                                            <a href="" class="enroll-btn" data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">Request to Enroll</a>
+                                            <button type="button" class="enroll-btn" data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">Request to Enroll</button>
                                         <?php endif; ?>
                                     </div>
                                     <?php endforeach; ?>
@@ -430,45 +430,65 @@ try {
     </div>
 
     <!-- PROFILE MODAL -->
-    <div class="modal hidden" id="profileModal">
+    <div class="modal" id="profileModal" onclick="if(event.target===this){this.style.display='none';document.body.style.overflow='';}">
         <div class="modal-content">
-            <span class="close-btn" id="closeProfileModal">&times;</span>
-            <h2>Edit Profile</h2>
+            <div class="modal-header">
+                <h2>Edit Profile</h2>
+                <button type="button" class="close-btn" id="closeProfileModal" onclick="document.getElementById('profileModal').style.display='none';document.body.style.overflow='';">&times;</button>
+            </div>
 
             <!-- Profile Picture Section -->
             <div class="profile-wrapper">
-                <img id="profilePreview" src="<?php echo htmlspecialchars($user['profile_picture'] ?: '../images/school.png'); ?>" alt="Profile">
-                <button type="button" id="changeProfileBtn" class="change-profile-btn">Upload Profile</button>
-                <input type="file" id="profileUpload" accept="image/*" style="display:none;">
+                <img id="profilePreview" 
+                     src="<?php echo !empty($user['profile_picture']) ? '../uploads/profiles/' . htmlspecialchars($user['profile_picture']) : '../images/school.png'; ?>" 
+                     alt="Profile Picture">
+                <button type="button" id="changeProfileBtn" class="change-profile-btn" onclick="document.getElementById('profileUpload').click();">
+                    <i class="fas fa-camera"></i> Change Photo
+                </button>
+                <input type="file" id="profileUpload" accept="image/*" style="display:none;" onchange="previewProfileImage(this);">
             </div>
 
             <!-- Form Fields -->
-            <form class="modal-form" id="profileForm" method="POST" action="../php/update_profile.php">
-                <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($user['user_id']); ?>">
-                <div>
-                    <label>First Name</label>
-                    <input type="text" id="firstName" name="first_name" placeholder="Enter First Name" value="<?php echo htmlspecialchars($user['first_name']); ?>">
+            <form class="modal-form" id="profileForm" onsubmit="return submitProfileForm(event);">
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" 
+                           id="firstName" 
+                           name="first_name" 
+                           value="<?php echo htmlspecialchars($user['first_name']); ?>" 
+                           required>
                 </div>
-                <div>
-                    <label>Last Name</label>
-                    <input type="text" id="lastName" name="last_name" placeholder="Enter Last Name" value="<?php echo htmlspecialchars($user['last_name']); ?>">
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" 
+                           id="lastName" 
+                           name="last_name" 
+                           value="<?php echo htmlspecialchars($user['last_name']); ?>" 
+                           required>
                 </div>
-                <div>
-                    <label>Email</label>
-                    <input type="email" id="email" name="email" placeholder="Enter Email" value="<?php echo htmlspecialchars($user['email']); ?>">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" 
+                           id="email" 
+                           name="email" 
+                           value="<?php echo htmlspecialchars($user['email']); ?>" 
+                           required>
                 </div>
-                <div>
-                    <label>Contact Number</label>
-                    <input type="text" id="contactNumber" name="contact_number" placeholder="Enter Contact Number" value="<?php echo htmlspecialchars($user['contact_number']); ?>">
+                <div class="form-group">
+                    <label for="contactNumber">Contact Number</label>
+                    <input type="tel" 
+                           id="contactNumber" 
+                           name="contact_number" 
+                           value="<?php echo htmlspecialchars($user['contact_number']); ?>" 
+                           pattern="[0-9\+\-\s]+" 
+                           title="Please enter a valid phone number">
                 </div>
                 
-                <!-- Buttons -->
-                <div class="modal-buttons">
-                    <button type="button" class="delete-account-btn" id="openDeleteModal">Delete Account</button>
-                    <div>
-                        <button type="button" class="cancel-btn" id="cancelProfileChanges">Cancel</button>
-                        <button type="submit" class="primary-btn">Save Changes</button>
-                    </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" id="cancelProfileChanges" onclick="document.getElementById('profileModal').style.display='none';document.body.style.overflow='';">Cancel</button>
+                    <button type="submit" class="save-btn">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
                 </div>
             </form>
         </div>
@@ -594,6 +614,87 @@ try {
                 document.getElementById(tabId)?.classList.add('active');
             }
         });
+    </script>
+
+    <script>
+        function submitProfileForm(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            const fileInput = document.getElementById('profileUpload');
+            
+            if (fileInput.files[0]) {
+                formData.append('profile_picture', fileInput.files[0]);
+            }
+
+            const submitBtn = form.querySelector('.save-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            fetch('../php/update_profile.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update the sidebar avatar if a new image was uploaded
+                    if (data.user.profile_picture) {
+                        const sidebarAvatar = document.querySelector('.user-avatar');
+                        if (sidebarAvatar) {
+                            sidebarAvatar.src = '../uploads/profiles/' + data.user.profile_picture + '?t=' + new Date().getTime();
+                        }
+                    }
+                    
+                    // Update the sidebar name
+                    const userName = document.querySelector('.user-name');
+                    if (userName) {
+                        userName.textContent = data.user.first_name + ' ' + data.user.last_name;
+                    }
+
+                    alert('Profile updated successfully!');
+                    document.getElementById('profileModal').style.display = 'none';
+                    document.body.style.overflow = '';
+                } else {
+                    throw new Error(data.message || 'Failed to update profile');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating profile: ' + error.message);
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            });
+
+            return false;
+        }
+
+        function previewProfileImage(input) {
+            if (input.files && input.files[0]) {
+                // Check file size (limit to 5MB)
+                if (input.files[0].size > 5 * 1024 * 1024) {
+                    alert('File size must be less than 5MB');
+                    input.value = '';
+                    return;
+                }
+
+                // Check file type
+                if (!input.files[0].type.match('image.*')) {
+                    alert('Please select an image file');
+                    input.value = '';
+                    return;
+                }
+
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('profilePreview').src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
     </script>
 </body>
 </html>

@@ -986,6 +986,7 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
   <title>Benguet Technical School-eLMS</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/utils.css">
   <link rel="icon" type="image/png" href="../images/school.png">
 </head>
 
@@ -1744,27 +1745,27 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
               </div>
               <!-- In the courses section, update the course-actions div -->
 <div class="course-actions">
-    <button class="edit-course-btn" 
-            data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>"
-            data-course-data='<?php echo json_encode([
-                'course_name' => $course['course_name'],
-                'course_code' => $course['course_code'],
-                'hours' => $course['hours'],
-                'description' => $course['description'],
-                'image' => $course['image'],
-                'competency_types' => json_decode($course['competency_types'] ?? '[]', true)
-            ]); ?>'>
+  <button class="edit-course-btn" 
+      data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>"
+      data-course-data='<?php echo htmlspecialchars(json_encode([
+        'course_name' => $course['course_name'],
+        'course_code' => $course['course_code'],
+        'hours' => $course['hours'],
+        'description' => $course['description'],
+        'image' => $course['image'],
+        'competency_types' => json_decode($course['competency_types'] ?? '[]', true)
+      ]), ENT_QUOTES, "UTF-8"); ?>'>
         Edit
     </button>
-    <button class="view-details-btn" 
-            data-course='<?php echo json_encode([
-                'course_code' => $course['course_code'],
-                'course_name' => $course['course_name'],
-                'hours' => $course['hours'],
-                'description' => $course['description'],
-                'image' => $course['image'],
-                'competency_types' => json_decode($course['competency_types'] ?? '[]', true)
-            ]); ?>'>
+  <button class="view-details-btn" 
+      data-course='<?php echo htmlspecialchars(json_encode([
+        'course_code' => $course['course_code'],
+        'course_name' => $course['course_name'],
+        'hours' => $course['hours'],
+        'description' => $course['description'],
+        'image' => $course['image'],
+        'competency_types' => json_decode($course['competency_types'] ?? '[]', true)
+      ]), ENT_QUOTES, "UTF-8"); ?>'>
         View Details
     </button>
 </div>

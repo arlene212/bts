@@ -72,7 +72,7 @@ try {
             <div class="profile">
                 <div class="user-card">
                     <div class="user-card-header"> 
-                        <img src="<?php echo htmlspecialchars($user['profile_picture'] ?: '../images/school.png'); ?>" alt="User Avatar" class="user-avatar">
+                        <img src="<?php echo !empty($user['profile_picture']) ? '../uploads/profiles/' . htmlspecialchars($user['profile_picture']) : '../images/school.png'; ?>" alt="User Avatar" class="user-avatar">
                         <button class="edit-profile-btn" id="editProfileBtn" title="Edit Profile">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -268,7 +268,7 @@ try {
         <h2>Edit Profile</h2>
         
         <div class="profile-wrapper">
-            <img id="profilePreview" src="<?php echo htmlspecialchars($user['profile_picture'] ?: '../images/school.png'); ?>" alt="Profile">
+            <img id="profilePreview" src="<?php echo !empty($user['profile_picture']) ? '../uploads/profiles/' . htmlspecialchars($user['profile_picture']) : '../images/school.png'; ?>" alt="Profile">
             <button type="button" id="changeProfileBtn" class="change-profile-btn">Upload Profile</button>
             <input type="file" id="profileUpload" accept="image/*" style="display:none;">
         </div>

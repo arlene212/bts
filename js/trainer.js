@@ -1,7 +1,81 @@
 document.addEventListener("DOMContentLoaded", () => {
     console.log("DOM loaded - trainer.js executing");
-    console.log("Tab links found:", document.querySelectorAll(".tab-link").length);
+    // Initialize all modals
+    initializeModals();
+    console.log("Modals initialized");
 
+    function initializeModals() {
+        // Add Material Modal
+        const addMaterialModal = document.getElementById("addMaterialModal");
+        document.getElementById("closeMaterialModal")?.addEventListener("click", () => {
+            addMaterialModal.classList.add("hidden");
+        });
+        document.getElementById("cancelMaterial")?.addEventListener("click", () => {
+            addMaterialModal.classList.add("hidden");
+        });
+
+        // Add Activity Modal
+        const addActivityModal = document.getElementById("addActivityModal");
+        document.getElementById("closeActivityModal")?.addEventListener("click", () => {
+            addActivityModal.classList.add("hidden");
+        });
+        document.getElementById("cancelActivity")?.addEventListener("click", () => {
+            addActivityModal.classList.add("hidden");
+        });
+
+        // Add Topic Modal
+        const addTopicModal = document.getElementById("addTopicModal");
+        document.getElementById("closeTopicModal")?.addEventListener("click", () => {
+            addTopicModal.classList.add("hidden");
+        });
+        document.getElementById("cancelTopic")?.addEventListener("click", () => {
+            addTopicModal.classList.add("hidden");
+        });
+
+        // Profile Modal
+        const profileModal = document.getElementById("profileModal");
+        document.getElementById("editProfileBtn")?.addEventListener("click", () => {
+            profileModal.classList.remove("hidden");
+        });
+        document.getElementById("closeProfileModal")?.addEventListener("click", () => {
+            profileModal.classList.add("hidden");
+        });
+        document.getElementById("cancelProfileChanges")?.addEventListener("click", () => {
+            profileModal.classList.add("hidden");
+        });
+
+        // Grade Submission Modal
+        const gradeModal = document.getElementById("gradeSubmissionModal");
+        document.getElementById("closeGradeModal")?.addEventListener("click", () => {
+            gradeModal.classList.add("hidden");
+        });
+        document.getElementById("cancelGrade")?.addEventListener("click", () => {
+            gradeModal.classList.add("hidden");
+        });
+
+        // Delete Account Modal
+        const deleteAccountModal = document.getElementById("deleteAccountModal");
+        document.getElementById("openDeleteModal")?.addEventListener("click", () => {
+            profileModal.classList.add("hidden");
+            deleteAccountModal.classList.remove("hidden");
+        });
+        document.getElementById("closeDeleteModal")?.addEventListener("click", () => {
+            deleteAccountModal.classList.add("hidden");
+        });
+        document.getElementById("cancelDeleteBtn")?.addEventListener("click", () => {
+            deleteAccountModal.classList.add("hidden");
+        });
+
+        // Close modals when clicking outside
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        });
+    }
     // ===== TAB SWITCHING =====
     const tabLinks = document.querySelectorAll(".tab-link");
     const tabContents = document.querySelectorAll(".tab-content");
@@ -14,6 +88,18 @@ document.addEventListener("DOMContentLoaded", () => {
             link.classList.add("active");
             const tab = document.getElementById(link.dataset.tab);
             if (tab) tab.classList.add("active");
+            // Persist current tab in URL so refresh stays on the same tab
+            try {
+                const params = new URLSearchParams(window.location.search);
+                params.set('current_tab', link.dataset.tab);
+                // Remove course_code/view when switching to other tabs
+                params.delete('course_code');
+                params.delete('view');
+                const newUrl = `${window.location.pathname}?${params.toString()}`;
+                history.replaceState(null, '', newUrl);
+            } catch (err) {
+                console.warn('Could not update URL params for tab switch', err);
+            }
         });
     });
 
@@ -21,6 +107,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const courseDetailToggleBtns = document.querySelectorAll('.course-detail-toggle .switch-btn');
     const courseDetailViews = document.querySelectorAll('#course-detail .detail-view');
     const courseDetailSwitchInner = document.querySelector('.course-detail-toggle .switch-inner');
+
+    function updateSwitchPosition(buttons, switchInner) {
+        const activeBtn = [...buttons].find(btn => btn.classList.contains('active'));
+        if (activeBtn) {
+            const index = [...buttons].indexOf(activeBtn);
+            switchInner.style.transform = `translateX(${index * 100}%)`;
+        }
+    }
 
     courseDetailToggleBtns.forEach(btn => {
         btn.addEventListener('click', function() {
@@ -33,6 +127,16 @@ document.addEventListener("DOMContentLoaded", () => {
             const viewToShow = document.getElementById(`${target}-view`);
             if (viewToShow) viewToShow.classList.add('active');
             updateSwitchPosition(courseDetailToggleBtns, courseDetailSwitchInner);
+            // Persist the selected view (e.g., 'submissions' or 'view-material') in URL
+            try {
+                const params = new URLSearchParams(window.location.search);
+                params.set('view', target);
+                // keep current_tab/course_code if present
+                const newUrl = `${window.location.pathname}?${params.toString()}`;
+                history.replaceState(null, '', newUrl);
+            } catch (err) {
+                console.warn('Could not persist detail view to URL', err);
+            }
         });
     });
 
@@ -55,6 +159,16 @@ document.addEventListener("DOMContentLoaded", () => {
             // Show course detail, hide batches
             enrolledTab.classList.add("hidden");
             courseDetail.classList.remove("hidden");
+            // Update URL so refresh will restore course detail
+            try {
+                const params = new URLSearchParams(window.location.search);
+                params.set('current_tab', 'mycourses');
+                params.set('course_code', courseCode);
+                const newUrl = `${window.location.pathname}?${params.toString()}`;
+                history.replaceState(null, '', newUrl);
+            } catch (err) {
+                console.warn('Could not persist course_code to URL', err);
+            }
         });
     });
 
@@ -62,10 +176,20 @@ document.addEventListener("DOMContentLoaded", () => {
     courseBackBtn.addEventListener("click", () => {
         courseDetail.classList.add("hidden");
         enrolledTab.classList.remove("hidden");
+        // Remove course_code from URL when navigating back
+        try {
+            const params = new URLSearchParams(window.location.search);
+            params.delete('course_code');
+            params.set('current_tab', 'mycourses');
+            const newUrl = `${window.location.pathname}?${params.toString()}`;
+            history.replaceState(null, '', newUrl);
+        } catch (err) {
+            console.warn('Could not update URL on back to courses', err);
+        }
     });
 
     // ===== COURSE DETAIL FUNCTIONALITY =====
-    function loadCourseDetails(courseCode, courseName, courseHours, courseDataStr) {
+    function loadCourseDetails(courseCode, courseName, courseHours, courseDataStr, desiredView) {
         console.log("Loading details for:", courseCode);
         
         // Set basic course details
@@ -97,6 +221,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 // Render the new submissions view
                 renderSubmissionsView(data.topicsByCompetency || {});
+                // If a desired view (e.g., 'submissions') was requested via URL, switch to it
+                if (desiredView) {
+                    const switchBtn = document.querySelector(`.course-detail-toggle .switch-btn[data-view="${desiredView}"]`);
+                    if (switchBtn) {
+                        switchBtn.click();
+                    }
+                }
             })
             .catch(error => {
                 console.error('Error loading course details:', error);
@@ -775,6 +906,154 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // ===== EDIT / DELETE HELPERS =====
+    function openEditMaterialModal(materialId) {
+        const modal = document.getElementById('editMaterialModal');
+        const idField = document.getElementById('edit_material_id');
+        const titleField = document.getElementById('edit_material_title');
+        const descField = document.getElementById('edit_material_description');
+        const fileInfo = document.getElementById('edit_material_file_info');
+
+        // Try to locate the material item in the DOM to prefill fields
+        const btn = document.querySelector(`.edit-material-btn[data-material-id="${materialId}"]`);
+        if (btn) {
+            const item = btn.closest('.material-item');
+            if (item) {
+                const title = item.querySelector('.material-info strong')?.textContent?.trim() || '';
+                const desc = item.querySelector('.material-info p')?.textContent?.trim() || '';
+                idField.value = materialId;
+                titleField.value = title;
+                descField.value = desc;
+                fileInfo.innerHTML = '';
+            }
+        } else {
+            // Fallback: just set id
+            idField.value = materialId;
+            titleField.value = '';
+            descField.value = '';
+            fileInfo.innerHTML = '';
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    function openEditActivityModal(activityId) {
+        const modal = document.getElementById('editActivityModal');
+        const idField = document.getElementById('edit_activity_id');
+        const titleField = document.getElementById('edit_activity_title');
+        const descField = document.getElementById('edit_activity_description');
+        const dueField = document.getElementById('edit_due_date');
+        const maxScoreField = document.getElementById('edit_max_score');
+
+        const btn = document.querySelector(`.edit-activity-btn[data-activity-id="${activityId}"]`);
+        if (btn) {
+            const item = btn.closest('.activity-item');
+            if (item) {
+                const title = item.querySelector('.activity-info strong')?.textContent?.trim() || '';
+                const metaSmall = item.querySelector('.activity-meta small');
+                // Attempt to extract due date and max score if present
+                let dueText = '';
+                let maxScore = '';
+                const metaTexts = Array.from(item.querySelectorAll('.activity-meta small')).map(s => s.textContent.trim());
+                metaTexts.forEach(t => {
+                    if (t.toLowerCase().includes('due:')) dueText = t.replace(/due:\s*/i, '').trim();
+                    if (t.toLowerCase().includes('max score:')) maxScore = t.replace(/max score:\s*/i, '').trim();
+                });
+
+                idField.value = activityId;
+                titleField.value = title;
+                descField.value = item.querySelector('.activity-info p')?.textContent?.trim() || '';
+                // leave due date as-is if we couldn't parse; otherwise try to set ISO
+                dueField.value = '';
+                maxScoreField.value = maxScore || '';
+            }
+        } else {
+            idField.value = activityId;
+            titleField.value = '';
+            descField.value = '';
+            dueField.value = '';
+            maxScoreField.value = '';
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    function openConfirmationModal(type, id, title) {
+        const modal = document.getElementById('confirmationModal');
+        const confirmationTitle = document.getElementById('confirmationTitle');
+        const confirmationMessage = document.getElementById('confirmationMessage');
+        const confirmBtn = document.getElementById('confirmActionBtn');
+
+        confirmationTitle.textContent = 'Confirm Action';
+        if (type === 'material') {
+            confirmationMessage.textContent = `Are you sure you want to delete the material "${title || ''}"? This action cannot be undone.`;
+        } else if (type === 'activity') {
+            confirmationMessage.textContent = `Are you sure you want to delete the activity "${title || ''}"? This action cannot be undone.`;
+        } else {
+            confirmationMessage.textContent = 'Are you sure?';
+        }
+
+        confirmBtn.dataset.actionType = type;
+        confirmBtn.dataset.actionId = id;
+
+        modal.classList.remove('hidden');
+    }
+
+    // Confirm action handler (delete placeholders)
+    const confirmActionBtn = document.getElementById('confirmActionBtn');
+    if (confirmActionBtn) {
+        confirmActionBtn.addEventListener('click', function () {
+            const type = this.dataset.actionType;
+            const id = this.dataset.actionId;
+            // Try to call server-side delete endpoints if available, otherwise just hide modal
+            if (type === 'material') {
+                // Attempt to POST to a presumed endpoint; if it doesn't exist the catch will handle it
+                fetch('../php/delete_material.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ material_id: id })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Material deleted.');
+                        window.location.reload();
+                    } else {
+                        alert('Delete failed: ' + (data.message || 'Unknown'));
+                    }
+                })
+                .catch(() => {
+                    // Endpoint likely not implemented — fallback behavior
+                    console.warn('delete_material.php not found or returned error. No server deletion executed.');
+                    alert('Delete action not available on this build.');
+                })
+                .finally(() => document.getElementById('confirmationModal').classList.add('hidden'));
+            } else if (type === 'activity') {
+                fetch('../php/delete_activity.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ activity_id: id })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Activity deleted.');
+                        window.location.reload();
+                    } else {
+                        alert('Delete failed: ' + (data.message || 'Unknown'));
+                    }
+                })
+                .catch(() => {
+                    console.warn('delete_activity.php not found or returned error.');
+                    alert('Delete action not available on this build.');
+                })
+                .finally(() => document.getElementById('confirmationModal').classList.add('hidden'));
+            } else {
+                document.getElementById('confirmationModal').classList.add('hidden');
+            }
+        });
+    }
+
     // ===== BATCH MANAGEMENT FUNCTIONS =====
     function viewBatchTrainees(batchName, courseCode, courseName) {
         alert(`View trainees for ${batchName} in ${courseName}`);
@@ -803,6 +1082,43 @@ document.addEventListener("DOMContentLoaded", () => {
             if (tabLink) tabLink.click();
         });
     });
+
+    // Restore state from URL on load: tab, course_code, and desired view
+    (function restoreStateFromUrl() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const tabId = params.get('current_tab');
+            const courseCode = params.get('course_code');
+            const desiredView = params.get('view');
+
+            if (tabId) {
+                // Activate tab link
+                document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                const link = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
+                if (link) link.classList.add('active');
+                const tab = document.getElementById(tabId);
+                if (tab) tab.classList.add('active');
+            }
+
+            if (courseCode) {
+                // Find the batch card with matching course code and open details
+                const batch = [...document.querySelectorAll('#enrolled .batch-card')].find(b => b.dataset.code === courseCode);
+                if (batch) {
+                    const courseName = batch.dataset.course;
+                    const courseHours = batch.dataset.hours;
+                    const courseDataStr = batch.dataset.courseData;
+
+                    // Load details and show the detail view
+                    loadCourseDetails(courseCode, courseName, courseHours, courseDataStr, desiredView);
+                    document.getElementById('enrolled').classList.add('hidden');
+                    document.getElementById('course-detail').classList.remove('hidden');
+                }
+            }
+        } catch (err) {
+            console.warn('Could not restore state from URL', err);
+        }
+    })();
 
     // ===== NOTIFICATION BELL =====
     const notifIcon = document.getElementById("notifIcon");

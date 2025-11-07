@@ -1,0 +1,256 @@
+// DOM Elements - Wait for full DOM load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Admin JS loaded - Initializing...');
+    
+    // Initialize all functionality with defensive checks
+    safeInitialize();
+    
+    console.log('Initialization complete');
+});
+
+function safeInitialize() {
+    // Use utility functions for safe initialization
+    const functions = [
+        initializeModalButtons,
+        initializeSwitches,
+        initializeCompetencyHandlers,
+        initializeEditCompetencyHandlers,
+        setupGlobalEventListeners,
+        setupTabNavigation,
+        setupDashboardCards,
+        setupNotificationDropdown,
+        setupDynamicBatchLoading,
+        setupUserManagement,
+        setupFormValidation,
+        setupCourseEditing,
+        activateTabFromUrl,
+        setupAjaxPagination,
+        setupEnrollmentActions,
+        setupGuestEnrollment,
+        setupConfirmationModals
+    ];
+
+    functions.forEach(fn => {
+        try {
+            fn();
+        } catch (error) {
+            console.error(`Error initializing ${fn.name}:`, error);
+        }
+    });
+}
+
+// Function to process enrollment request
+function processEnrollment(enrollmentId, action, remarks, button) {
+    if (!enrollmentId || !action) {
+        console.error('Missing required parameters for enrollment processing');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('enrollment_id', enrollmentId);
+    formData.append('action', action);
+    formData.append('remarks', remarks || '');
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Processing...';
+    }
+
+    BtsUtils.showLoading('Processing enrollment...');
+
+    fetch('../php/process_enrollment.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(BtsUtils.handleApiError)
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            const row = button?.closest('tr');
+            if (row) row.remove();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error processing enrollment:', error);
+        alert('An unexpected error occurred. Please try again.');
+    })
+    .finally(() => {
+        if (button) {
+            button.disabled = false;
+            button.textContent = action.charAt(0).toUpperCase() + action.slice(1);
+        }
+        BtsUtils.hideLoading();
+    });
+}
+
+// Rest of your existing functions with added defensive programming...
+// Add defensive checks to all major functions
+function setupEnrollmentActions() {
+    const enrollmentTable = BtsUtils.safeQuerySelector('#enrollments');
+    if (!enrollmentTable) {
+        console.log('Enrollment table not found, skipping setup');
+        return;
+    }
+
+    enrollmentTable.addEventListener('click', function(e) {
+        const button = e.target.closest('.action-btn');
+        if (!button) return;
+
+        const actions = button.closest('.enrollment-actions');
+        if (!actions) {
+            console.error('Could not find enrollment actions container');
+            return;
+        }
+
+        const enrollmentId = actions.dataset.enrollmentId;
+        if (!enrollmentId) {
+            console.error('No enrollment ID found');
+            return;
+        }
+
+        const action = button.dataset.action;
+        if (!action) {
+            console.error('No action specified');
+            return;
+        }
+
+        let remarks = '';
+        if (action === 'reject') {
+            remarks = prompt('Please provide a reason for rejection (optional):');
+            // User cancelled the prompt
+            if (remarks === null) return;
+        } else {
+            // Optional remarks for approval
+            remarks = prompt('Optional remarks for approval:');
+            if (remarks === null) return;
+        }
+
+        processEnrollment(enrollmentId, action, remarks, button);
+    });
+}
+
+// Update modal handling with defensive programming
+function openModal(modalId) {
+    if (!modalId) {
+        console.error('Modal ID is required');
+        return;
+    }
+
+    const modal = document.getElementById(modalId);
+    if (!modal) {
+        console.error(`Modal not found: ${modalId}`);
+        return;
+    }
+
+    try {
+        // Remove hidden class and set display to flex
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.opacity = '0';
+
+        // Prevent background scrolling
+        document.body.style.overflow = 'hidden';
+        
+        // Animate fade in
+        requestAnimationFrame(() => {
+            modal.style.opacity = '1';
+            modal.style.transition = 'opacity 0.3s ease';
+        });
+        
+        // Focus on first input
+        const firstInput = modal.querySelector('input, textarea, select');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 300);
+        }
+        
+        console.log(`Modal ${modalId} opened successfully`);
+
+        // Dispatch modal opened event
+        try {
+            document.dispatchEvent(new CustomEvent('modalOpened', { 
+                detail: { modalId } 
+            }));
+        } catch (error) {
+            console.error('Error dispatching modalOpened event:', error);
+        }
+    } catch (error) {
+        console.error(`Error opening modal ${modalId}:`, error);
+    }
+}
+
+// Close modal with error handling
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) {
+        console.error(`Modal not found: ${modalId}`);
+        return;
+    }
+
+    try {
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            
+            // Reset form if exists
+            const form = modal.querySelector('form');
+            if (form) form.reset();
+        }, 300);
+    } catch (error) {
+        console.error(`Error closing modal ${modalId}:`, error);
+        // Fallback: force modal closed
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// Safe form submission for trainers
+function submitTrainerForm(form) {
+    if (!form) {
+        console.error('Form not found');
+        return;
+    }
+
+    const formData = new FormData(form);
+    const confirmBtn = document.getElementById('confirmTrainerBtn');
+    const originalText = confirmBtn?.textContent || 'Create Trainer';
+    
+    if (confirmBtn) {
+        confirmBtn.textContent = 'Creating...';
+        confirmBtn.disabled = true;
+    }
+
+    BtsUtils.showLoading('Creating trainer account...');
+    
+    fetch('../php/create_trainer.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(BtsUtils.handleApiError)
+    .then(data => {
+        if (data.success) {
+            updateConfirmationWithCredentials('trainer', data.credentials);
+        } else {
+            alert('Error creating trainer: ' + data.message);
+            closeModal('trainerConfirmationModal');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error creating trainer. Please try again.');
+        closeModal('trainerConfirmationModal');
+    })
+    .finally(() => {
+        if (confirmBtn) {
+            confirmBtn.textContent = originalText;
+            confirmBtn.disabled = false;
+        }
+        BtsUtils.hideLoading();
+    });
+}
+
+// Rest of your code with similar defensive programming patterns...

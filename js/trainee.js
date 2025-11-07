@@ -494,16 +494,85 @@ backBtn?.addEventListener("click", () => {
 
   let courseToEnroll = { code: null, name: null, button: null };
 
-  offeredCourses?.addEventListener("click", (e) => {
+  // Event handler for enrollment button clicks
+  document.body.addEventListener("click", (e) => {
     const btn = e.target.closest(".enroll-btn");
     if (btn && !btn.disabled) {
-      courseToEnroll = {
-        code: btn.dataset.courseCode || null,
-        name: btn.dataset.courseName || "Unnamed Course",
-        button: btn,
-      };
-      enrollCourseName.textContent = courseToEnroll.name;
-      enrollModal?.classList.remove("hidden");
+        e.preventDefault(); // Prevent any default button action
+        const code = btn.getAttribute("data-course-code");
+        const name = btn.getAttribute("data-course-name");
+        
+        if (!code) {
+            console.error("Course code is missing from the button data attributes");
+            return;
+        }
+
+        // Update button state
+        btn.disabled = true;
+        btn.textContent = "Requesting...";
+
+        // Prepare and send the enrollment request
+        const formData = new FormData();
+        formData.append('course_code', code);
+
+        fetch('../php/request_enrollment.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Create notification
+                const notification = `
+                    <div class="notification-item">
+                        <i class="fas fa-info-circle"></i>
+                        <div class="notification-content">
+                            <div class="notification-title">Enrollment Request Sent</div>
+                            <div class="notification-message">Your request to enroll in ${name} is pending approval.</div>
+                            <div class="notification-time">Just now</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add notification to dropdown
+                const notifDropdown = document.getElementById('notifDropdown');
+                if (notifDropdown) {
+                    if (notifDropdown.innerHTML.includes('No new notifications')) {
+                        notifDropdown.innerHTML = '';
+                    }
+                    notifDropdown.insertAdjacentHTML('afterbegin', notification);
+                }
+                
+                // Update button state
+                btn.textContent = "Pending Approval";
+                btn.classList.add('pending');
+                
+                // Show success message
+                alert("✅ " + data.message);
+                
+                // Reload page after a short delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                alert("⚠️ " + (data.message || "An error occurred while sending the enrollment request."));
+                btn.disabled = false;
+                btn.textContent = "Request to Enroll";
+                btn.classList.remove('pending');
+            }
+        })
+        .catch(error => {
+            console.error('Enrollment request error:', error);
+            alert("⚠️ An error occurred while sending the enrollment request. Please try again.");
+            btn.disabled = false;
+            btn.textContent = "Request to Enroll";
+            btn.classList.remove('pending');
+        });
     }
   });
 
@@ -512,33 +581,7 @@ backBtn?.addEventListener("click", () => {
     courseToEnroll = { code: null, name: null, button: null };
   });
 
-  confirmEnroll?.addEventListener("click", async () => {
-    enrollModal?.classList.add("hidden");
-    const { code, button } = courseToEnroll;
-    if (!code || !button) return;
-    button.disabled = true;
-    button.textContent = "Requesting...";
-
-    fetch('../php/request_enrollment.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `course_code=${encodeURIComponent(code)}`
-    }).then(response => response.json())
-      .then(data => {
-      if (data.success) {
-        alert("✅ Enrollment request sent successfully!");
-        window.location.reload();
-      } else {
-        alert("⚠️ " + (data.message || "An error occurred."));
-        button.disabled = false;
-        button.textContent = "Request to Enroll";
-      }
-    }).catch(() => {
-      alert("⚠️ Error sending request.");
-      button.disabled = false;
-      button.textContent = "Request to Enroll";
-    });
-});
+  // Event handlers for enrollment modal are no longer needed since we're handling enrollment directly
 
   // Handle file selection for dynamic activity forms
   document.getElementById('modules-view').addEventListener('change', function(e) {
@@ -570,36 +613,181 @@ backBtn?.addEventListener("click", () => {
   });
 
   /* ========= PROFILE MODAL ========= */
-  const editProfileBtn = document.querySelector(".user-card #editProfileBtn, #editProfileBtn");
-  const profileModal = document.getElementById("profileModal");
-  const closeProfileModal = document.getElementById("closeProfileModal");
-  const cancelProfileChanges = document.getElementById("cancelProfileChanges");
-  const changeProfileBtn = document.getElementById("changeProfileBtn");
-  const profileUpload = document.getElementById("profileUpload");
-  const profilePreview = document.getElementById("profilePreview");
+  // Direct click handler for debugging
+const editProfileBtn = document.getElementById('editProfileBtn');
+console.log('Edit button found:', !!editProfileBtn);
 
-  // 🔹 Works even if Edit button is inside user card
-  editProfileBtn?.addEventListener("click", (e) => {
-    e.preventDefault();
-    profileModal?.classList.remove("hidden");
-    profileModal?.classList.add("active");
-  });
+if (editProfileBtn) {
+    editProfileBtn.onclick = function(e) {
+        console.log('Edit button clicked!');
+        e.preventDefault();
+        
+        const profileModal = document.getElementById('profileModal');
+        console.log('Modal found:', !!profileModal);
+        
+        if (profileModal) {
+            profileModal.style.display = 'flex';
+            console.log('Modal display set to flex');
+        }
+    };
+}
 
-  const closeProfile = () => {
-    profileModal?.classList.add("hidden");
-    profileModal?.classList.remove("active");
-  };
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM loaded, initializing profile modal...");
+    
+    // Get all required elements
+    const editProfileBtn = document.getElementById("editProfileBtn");
+    const profileModal = document.getElementById("profileModal");
+    const closeProfileModal = document.getElementById("closeProfileModal");
+    const cancelProfileChanges = document.getElementById("cancelProfileChanges");
+    const changeProfileBtn = document.getElementById("changeProfileBtn");
+    const profileUpload = document.getElementById("profileUpload");
+    const profilePreview = document.getElementById("profilePreview");
+    const profileForm = document.getElementById("profileForm");
 
-  closeProfileModal?.addEventListener("click", closeProfile);
-  cancelProfileChanges?.addEventListener("click", closeProfile);
+    console.log("Elements found:", {
+        editProfileBtn: !!editProfileBtn,
+        profileModal: !!profileModal,
+        closeProfileModal: !!closeProfileModal,
+        cancelProfileChanges: !!cancelProfileChanges
+    });
 
-  changeProfileBtn?.addEventListener("click", () => profileUpload?.click());
-  profileUpload?.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = ev => { profilePreview.src = ev.target.result; };
-      reader.readAsDataURL(file);
+    if (!editProfileBtn || !profileModal) {
+        console.error("Could not find required profile modal elements!");
+        return;
+    }
+
+    function showModal() {
+        console.log("Showing modal");
+        profileModal.classList.add("show");
+        document.body.style.overflow = 'hidden';
+        console.log("Modal class list:", profileModal.classList);
+        console.log("Modal style display:", window.getComputedStyle(profileModal).display);
+    }
+
+    function hideModal() {
+        console.log("Hiding modal");
+        profileModal.classList.remove("show");
+        document.body.style.overflow = '';
+    }
+
+    // Profile Picture Upload
+    if (changeProfileBtn && profileUpload) {
+        changeProfileBtn.addEventListener("click", () => {
+            profileUpload.click();
+        });
+
+        profileUpload.addEventListener("change", function() {
+            const file = this.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                    alert("File size must be less than 5MB");
+                    this.value = "";
+                    return;
+                }
+
+                if (!file.type.match('image.*')) {
+                    alert("Please select an image file");
+                    this.value = "";
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    profilePreview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Modal Open/Close
+    editProfileBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        showModal();
+    });
+
+    [closeProfileModal, cancelProfileChanges].forEach(btn => {
+        if (btn) {
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                hideModal();
+            });
+        }
+    });
+
+    // Close on outside click
+    profileModal.addEventListener("click", (e) => {
+        if (e.target === profileModal) {
+            hideModal();
+        }
+    });
+
+    // Form Submission
+    if (profileForm) {
+        profileForm.onsubmit = async function(e) {
+            e.preventDefault();
+            console.log("Form submission started");
+
+            const saveBtn = this.querySelector('.save-btn');
+            if (!saveBtn) {
+                console.error("Save button not found");
+                return;
+            }
+
+            try {
+                const formData = new FormData(this);
+                
+                // Add profile picture if one was selected
+                const profilePicFile = profileUpload?.files[0];
+                if (profilePicFile) {
+                    formData.append('profile_picture', profilePicFile);
+                }
+
+                // Disable submit button and show loading state
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+                const response = await fetch('../php/update_profile.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update UI elements
+                    const sidebarAvatar = document.querySelector('.user-avatar');
+                    const userName = document.querySelector('.user-name');
+                    const timestamp = new Date().getTime();
+
+                    if (sidebarAvatar && data.user.profile_picture) {
+                        const newPicUrl = `../uploads/profiles/${data.user.profile_picture}?t=${timestamp}`;
+                        sidebarAvatar.src = newPicUrl;
+                        profilePreview.src = newPicUrl;
+                    }
+                    
+                    if (userName) {
+                        userName.textContent = `${data.user.first_name} ${data.user.last_name}`;
+                    }
+
+                    alert('Profile updated successfully!');
+                    hideModal();
+                } else {
+                    throw new Error(data.message || 'Failed to update profile');
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                alert('Error updating profile: ' + error.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            }
+        };
     }
   });
 
@@ -618,42 +806,7 @@ backBtn?.addEventListener("click", () => {
     deleteModal.classList.add("hidden");
   });
 
-  // Handle Profile Form Submission
-  const profileForm = document.getElementById('profileForm');
-  profileForm?.addEventListener('submit', function(e) {
-      e.preventDefault();
-      const formData = new FormData(this);
-      const profilePictureFile = document.getElementById('profileUpload').files[0];
-      if (profilePictureFile) {
-          formData.append('profile_picture', profilePictureFile);
-      }
-
-      const saveBtn = this.querySelector('.primary-btn');
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving...';
-
-      fetch('../php/update_profile.php', {
-          method: 'POST',
-          body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-          if (data.success) {
-              alert('Profile updated successfully!');
-              profileModal?.classList.add("hidden");
-              // Update UI without reloading
-              document.querySelector('.user-name').textContent = `${data.user.first_name} ${data.user.last_name}`;
-              if (data.user.profile_picture) {
-                  const newPicUrl = `../uploads/profiles/${data.user.profile_picture}?t=${new Date().getTime()}`;
-                  document.querySelector('.user-avatar').src = newPicUrl;
-                  document.getElementById('profilePreview').src = newPicUrl;
-              }
-          } else {
-              alert('Error: ' + data.message);
-          }
-      })
-      .finally(() => { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; });
-  });
+  /* Profile form submission is now handled in the DOMContentLoaded event listener */
 
     /* ========= ACTIVITY MODAL ========= */
   const activityModal = document.getElementById("activityModal");

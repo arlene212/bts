@@ -135,14 +135,35 @@ function activateTabFromUrl() {
 }
 
 function openEnrollModal(courseCode, courseName) {
-    document.getElementById('enrollCourseName').textContent = courseName; // This line is correct for the enroll modal
+    const enrollModal = document.getElementById('enrollModal');
+    const enrollCourseName = document.getElementById('enrollCourseName');
+    const confirmEnroll = document.getElementById('confirmEnroll');
+    const cancelEnroll = document.getElementById('cancelEnroll');
     
-    // Set up confirmation handler
-    confirmEnroll.onclick = function() {
+    if (!enrollModal || !enrollCourseName || !confirmEnroll || !cancelEnroll) {
+        console.error('Required modal elements not found');
+        return;
+    }
+    
+    // Set course name in modal
+    enrollCourseName.textContent = courseName;
+    
+    // Clear any previous handlers
+    const newConfirmBtn = confirmEnroll.cloneNode(true);
+    confirmEnroll.parentNode.replaceChild(newConfirmBtn, confirmEnroll);
+    
+    // Set up new confirmation handler
+    newConfirmBtn.onclick = function() {
         enrollInCourse(courseCode, courseName);
         closeModal(enrollModal);
     };
     
+    // Set up cancel handler
+    cancelEnroll.onclick = function() {
+        closeModal(enrollModal);
+    };
+    
+    // Open the modal
     openModal(enrollModal);
 }
 
@@ -195,66 +216,113 @@ document.addEventListener('click', function(e) {
 
 function openActivityModal(activityId, activityType, activityTitle) {
     currentActivity = { id: activityId, type: activityType, title: activityTitle };
-    
-    // Set modal content based on activity type
-    document.getElementById('activityModalTitle').textContent = activityTitle;
-    
-    // Set instructions based on activity type
-    const instructions = getActivityInstructions(activityType, activityTitle);
-    document.getElementById('activityInstructions').innerHTML = instructions;
-    
-    // Set due date
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 7);
-    document.getElementById('activityDueDate').textContent = dueDate.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-    
-    // Show/hide sections based on activity type
+
+    // Safely get modal elements
+    const activityModal = document.getElementById('activityModal');
+    const activityModalTitle = document.getElementById('activityModalTitle');
+    const activityInstructionsEl = document.getElementById('activityInstructions');
+    const activityDueDateEl = document.getElementById('activityDueDate');
     const uploadSection = document.getElementById('uploadSection');
     const quizSection = document.getElementById('quizSection');
-    
-    if (activityType === 'quiz') {
-        uploadSection.classList.add('hidden');
-        quizSection.classList.remove('hidden');
-    } else {
-        uploadSection.classList.remove('hidden');
-        quizSection.classList.add('hidden');
+
+    if (activityModalTitle) activityModalTitle.textContent = activityTitle;
+
+    // Set instructions based on activity type
+    const instructions = getActivityInstructions(activityType, activityTitle);
+    if (activityInstructionsEl) activityInstructionsEl.innerHTML = instructions;
+
+    // Set a placeholder due date (server should provide if needed)
+    if (activityDueDateEl) {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 7);
+        activityDueDateEl.textContent = dueDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
     }
-    
+
+    // Show/hide sections based on activity type
+    if (uploadSection && quizSection) {
+        if (activityType === 'quiz') {
+            uploadSection.classList.add('hidden');
+            quizSection.classList.remove('hidden');
+        } else {
+            uploadSection.classList.remove('hidden');
+            quizSection.classList.add('hidden');
+        }
+    }
+
     // Reset file upload
     resetFileUpload();
-    
-    openModal(activityModal);
+
+    // Open modal
+    if (activityModal) openModal(activityModal);
 }
 
-// Activity Submission
-activitySubmitBtn.addEventListener('click', function() {
-    if (selectedFile) {
-        // Simulate file upload
-        showNotification('Assignment submitted successfully!', 'success');
-        
-        // Update activity status
-        updateActivityStatus(currentActivity.id, 'submitted');
-        
-        // Show success message
-        document.getElementById('submissionSuccess').classList.remove('hidden');
-        activitySubmitBtn.disabled = true;
-        
-        // Close modal after delay
-        setTimeout(() => {
-            closeModal(activityModal);
-        }, 2000);
+// Activity Submission - delegated click handler to support dynamic modal elements
+document.addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'activitySubmitBtn') {
+        (async function(){
+            const submitBtn = document.getElementById('activitySubmitBtn');
+            const activityModal = document.getElementById('activityModal');
+
+            if (!selectedFile) {
+                showNotification('Please select a file to submit.', 'error');
+                return;
+            }
+            if (!currentActivity || !currentActivity.id) {
+                showNotification('Activity not selected.', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                const formData = new FormData();
+                formData.append('activity_id', currentActivity.id);
+                formData.append('submission_file', selectedFile);
+
+                const resp = await fetch('../php/submit_activity.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await resp.json();
+                if (data.success) {
+                    showNotification('Assignment submitted successfully!', 'success');
+                    updateActivityStatus(currentActivity.id, 'submitted');
+                    const submissionSuccessEl = document.getElementById('submissionSuccess');
+                    if (submissionSuccessEl) submissionSuccessEl.classList.remove('hidden');
+                    submitBtn.disabled = true;
+                    setTimeout(() => {
+                        if (activityModal) closeModal(activityModal);
+                    }, 1200);
+                } else {
+                    showNotification(data.error || data.message || 'Submission failed.', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Submit Assignment';
+                }
+            } catch (err) {
+                console.error('Submission error', err);
+                showNotification('An error occurred during submission. Please try again.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Assignment';
+            }
+        })();
     }
 });
 
-// Quiz Start
-startQuizBtn.addEventListener('click', function() {
-    showNotification('Quiz functionality would be implemented with full backend integration', 'info');
-    closeModal(activityModal);
-});
+// Quiz Start (bind if element exists)
+const startQuizBtnEl = document.getElementById('startQuizBtn');
+if (startQuizBtnEl) {
+    startQuizBtnEl.addEventListener('click', function() {
+        showNotification('Quiz functionality would be implemented with full backend integration', 'info');
+        const activityModal = document.getElementById('activityModal');
+        if (activityModal) closeModal(activityModal);
+    });
+}
 
 // File Upload Handling
 const uploadArea = document.getElementById('uploadArea');
@@ -271,7 +339,8 @@ activityFileInput.addEventListener('change', function(e) {
     if (file) {
         selectedFile = file;
         displayFilePreview(file);
-        activitySubmitBtn.disabled = false;
+        const submitBtn = document.getElementById('activitySubmitBtn');
+        if (submitBtn) submitBtn.disabled = false;
     }
 });
 
@@ -296,14 +365,16 @@ function removeSelectedFile() {
     selectedFile = null;
     activityFileInput.value = '';
     activityFilePreview.classList.add('hidden');
-    activitySubmitBtn.disabled = true;
+    const submitBtn = document.getElementById('activitySubmitBtn');
+    if (submitBtn) submitBtn.disabled = true;
 }
 
 function resetFileUpload() {
     selectedFile = null;
     activityFileInput.value = '';
     activityFilePreview.classList.add('hidden');
-    activitySubmitBtn.disabled = true;
+    const submitBtn = document.getElementById('activitySubmitBtn');
+    if (submitBtn) submitBtn.disabled = true;
     document.getElementById('submissionSuccess').classList.add('hidden');
 }
 function openModal(modal) {
@@ -483,7 +554,7 @@ function viewCourseDetails(courseCode, courseName) {
             let contentHtml = `<h2>${data.course.course_name}</h2>`;
             contentHtml += `<p class="course-description-detail">${data.course.description}</p>`;
 
-            const basicCompetencies = data.competencies.filter(comp => comp.type === 'basic');
+            const basicCompetencies = (data.competencies || []).filter(comp => comp.type === 'basic');
 
             if (basicCompetencies.length > 0) {
                 contentHtml += '<h4>Basic Competencies</h4>';
@@ -493,7 +564,39 @@ function viewCourseDetails(courseCode, courseName) {
 
                     if (comp.topics && comp.topics.length > 0) {
                         comp.topics.forEach(topic => {
-                            contentHtml += `<div class="topic-box"><h5>${topic.name}</h5></div>`;
+                            contentHtml += `<div class="topic-box">`;
+                            contentHtml += `<h5>${topic.name}</h5>`;
+
+                            // Materials
+                            if (topic.materials && topic.materials.length > 0) {
+                                contentHtml += `<div class="materials-list">`;
+                                topic.materials.forEach(mat => {
+                                    const fileLink = mat.file_path ? `../uploads/courses/${mat.file_path}` : '#';
+                                    contentHtml += `
+                                        <div class="material-item material" data-material-id="${mat.id}">
+                                            <div class="material-title"><a href="${fileLink}" target="_blank" rel="noopener noreferrer" ${mat.file_path ? 'download' : ''}>${mat.title || 'Material'}</a></div>
+                                            <div class="material-desc">${mat.description || ''}</div>
+                                        </div>
+                                    `;
+                                });
+                                contentHtml += `</div>`;
+                            }
+
+                            // Activities
+                            if (topic.activities && topic.activities.length > 0) {
+                                contentHtml += `<div class="activities-list">`;
+                                topic.activities.forEach(act => {
+                                    contentHtml += `
+                                        <div class="material-item activity" data-activity="${act.id}" data-type="${act.type}">
+                                            <div class="material-title">${act.title}</div>
+                                            <div class="material-status not-submitted">Not submitted</div>
+                                        </div>
+                                    `;
+                                });
+                                contentHtml += `</div>`;
+                            }
+
+                            contentHtml += `</div>`; // topic-box
                         });
                     } else {
                         contentHtml += '<p class="no-materials">No topics for this competency.</p>';
@@ -503,6 +606,7 @@ function viewCourseDetails(courseCode, courseName) {
             } else {
                 contentHtml += '<p>No basic competency materials are available for this course.</p>';
             }
+
             courseContentContainer.innerHTML = contentHtml;
         })
         .catch(error => {
@@ -596,42 +700,96 @@ function getActivityInstructions(activityType, activityTitle) {
 
 // ===== ENROLLMENT FUNCTION =====
 function enrollInCourse(courseCode, courseName) {
-    const enrollBtn = document.querySelector(`.enroll-btn[data-course-code="${courseCode}"]`);
+    const enrollBtn = document.querySelector(`.enroll-btn[data-course-code="${courseCode}"]`) || 
+                     document.querySelector(`.course-card[data-course="${courseCode}"] .enroll-btn`);
+                     
     if (enrollBtn) {
         enrollBtn.disabled = true;
         enrollBtn.textContent = 'Enrolling...';
     }
 
+    // Create FormData object
+    const formData = new FormData();
+    formData.append('course_code', courseCode);
+
     fetch('../php/guest_enroll.php', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `course_code=${encodeURIComponent(courseCode)}`
+        body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             showNotification(data.message, 'success');
+            
+            // Update UI to show pending status
             if (enrollBtn) {
-                enrollBtn.textContent = 'Enrolled';
-                enrollBtn.classList.remove('enroll-btn');
-                enrollBtn.classList.add('enrolled');
+                enrollBtn.textContent = 'Pending Approval';
+                enrollBtn.classList.add('pending');
+                enrollBtn.disabled = true;
             }
-            // Reload the page to update the "Enrolled Courses" tab
-            // Reload and stay on the 'courses' tab
-            setTimeout(() => window.location.href = `${window.location.pathname}?current_tab=courses`, 1500);
+            
+            // Find and update the course card status
+            const courseCard = document.querySelector(`.course-card[data-course="${courseCode}"]`);
+            if (courseCard) {
+                const button = courseCard.querySelector('.enroll-btn');
+                button.textContent = 'Pending Approval';
+                button.classList.add('pending');
+                button.disabled = true;
+                
+                // Add a pending status indicator
+                const statusDiv = document.createElement('div');
+                statusDiv.className = 'enrollment-status pending';
+                statusDiv.innerHTML = '<i class="fas fa-clock"></i> Awaiting Approval';
+                courseCard.appendChild(statusDiv);
+            }
+            
+            // Add entry to notifications
+            const notifDropdown = document.getElementById('notifDropdown');
+            if (notifDropdown) {
+                const notif = document.createElement('div');
+                notif.className = 'notification-item';
+                notif.innerHTML = `
+                    <i class="fas fa-info-circle"></i>
+                    <div class="notification-content">
+                        <div class="notification-title">Enrollment Request Sent</div>
+                        <div class="notification-message">Your request to enroll in ${courseName} is pending approval.</div>
+                        <div class="notification-time">Just now</div>
+                    </div>
+                `;
+                if (notifDropdown.firstChild) {
+                    notifDropdown.insertBefore(notif, notifDropdown.firstChild);
+                } else {
+                    notifDropdown.innerHTML = '';
+                    notifDropdown.appendChild(notif);
+                }
+            }
+            
+            // Reload the page to update the courses tab
+            setTimeout(() => {
+                window.location.href = `${window.location.pathname}?current_tab=courses`;
+            }, 2000);
         } else {
-            showNotification(data.message, 'error');
+            showNotification(data.message || 'Enrollment failed. Please try again.', 'error');
             if (enrollBtn) {
                 enrollBtn.disabled = false;
                 enrollBtn.textContent = 'Enroll';
+                enrollBtn.classList.remove('pending');
             }
         }
     })
     .catch(error => {
         console.error('Enrollment Error:', error);
-        showNotification('An error occurred during enrollment.', 'error');
+        showNotification('An error occurred during enrollment. Please try again.', 'error');
+        if (enrollBtn) {
+            enrollBtn.disabled = false;
+            enrollBtn.textContent = 'Enroll';
+            enrollBtn.classList.remove('pending');
+        }
     });
 }
 

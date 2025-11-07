@@ -1,28 +1,61 @@
-// DOM Elements - Wait for full DOM load
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Admin JS loaded - Initializing...');
-    
-    // Initialize all functionality
-    initializeModalButtons();
-    initializeSwitches();
-    initializeCompetencyHandlers();
-    initializeEditCompetencyHandlers();
-    setupGlobalEventListeners();
-    setupTabNavigation();
-    setupDashboardCards();
-    setupNotificationDropdown();
-    setupDynamicBatchLoading();
-    setupUserManagement();
-    setupFormValidation();
-    setupCourseEditing();
-    activateTabFromUrl(); // Add this line to handle tab state on load
-    setupAjaxPagination();
-    setupEnrollmentActions(); // Add this line
-    setupGuestEnrollment();
-    setupConfirmationModals();
+// Utility function for handling API responses
+function handleApiError(response) {
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+}
 
-    console.log('Initialization complete');
+// DOM Elements - Wait for full DOM load
+// Initialize all functionality on DOM load with comprehensive error handling
+document.addEventListener('DOMContentLoaded', function initApp() {
+    console.log('Admin JS loaded - Beginning initialization...');
+    safeInitialize();
 });
+
+// Function to safely initialize all modules with error tracking
+function safeInitialize() {
+    const functions = [
+        initializeModalButtons,
+        initializeSwitches,
+        initializeCompetencyHandlers,
+        initializeEditCompetencyHandlers,
+        setupGlobalEventListeners,
+        setupTabNavigation,
+        setupDashboardCards,
+        setupNotificationDropdown,
+        setupDynamicBatchLoading,
+        setupUserManagement,
+        setupFormValidation,
+        setupCourseEditing,
+        activateTabFromUrl,
+        setupAjaxPagination,
+        setupEnrollmentActions,
+        setupGuestEnrollment,
+        setupConfirmationModals
+    ];
+
+    let successCount = 0;
+    let failureCount = 0;
+
+    functions.forEach(fn => {
+        if (typeof fn === 'function') {
+            try {
+                fn();
+                console.log(`✓ ${fn.name} initialized successfully`);
+                successCount++;
+            } catch (error) {
+                console.error(`✗ Error initializing ${fn.name}:`, error);
+                failureCount++;
+            }
+        } else {
+            console.warn(`! Function ${String(fn)} is not defined`);
+            failureCount++;
+        }
+    });
+
+    console.log(`Initialization complete - Success: ${successCount}, Failures: ${failureCount}`);
+}
 // Competency Management Functions
 function initializeCompetencyHandlers() {
     // Add competency button handlers
@@ -85,7 +118,7 @@ function processEnrollment(enrollmentId, action, remarks, button) {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(handleApiError)
     .then(data => {
         if (data.success) {
             alert(data.message);
@@ -284,10 +317,30 @@ function openModal(modalId) {
         
         console.log(`Modal ${modalId} opened successfully`);
 
-        // Dispatch a custom event
-        dispatchModalOpened(modalId);
+        // Dispatch a custom event so other parts of the app can react when a modal opens
+        if (typeof dispatchModalOpened === 'function') {
+            dispatchModalOpened(modalId);
+        } else {
+            // Fallback: dispatch the event directly
+            document.dispatchEvent(new CustomEvent('modalOpened', { detail: { modalId } }));
+        }
     } else {
         console.error(`Modal not found: ${modalId}`);
+    }
+}
+
+// Helper: dispatch a modalOpened custom event (kept for backward compatibility)
+function dispatchModalOpened(modalId) {
+    document.dispatchEvent(new CustomEvent('modalOpened', { detail: { modalId } }));
+}
+
+// Backward-compatible wrapper used by older codepaths
+function updateConfirmationWithCredentials(type, credentials) {
+    if (typeof showAccountCreationSuccess === 'function') {
+        showAccountCreationSuccess(type, credentials);
+    } else {
+        // If the unified function isn't present for some reason, dispatch event
+        document.dispatchEvent(new CustomEvent('accountCredentials', { detail: { type, credentials } }));
     }
 }
 
@@ -907,7 +960,9 @@ document.querySelectorAll('.view-details-btn').forEach(btn => {
                 })
                 .catch(error => {
                     console.error('Error fetching course details:', error);
-                    content.innerHTML = '<div class="error">Error loading course details. Please try again.</div>';
+                    if (detailView) {
+                        detailView.innerHTML = '<div class="error">Error loading course details. Please try again.</div>';
+                    }
                 });
         } catch (error) {
             console.error('Error parsing course data:', error);
@@ -1055,7 +1110,7 @@ function renderCourseDetails(content, data) {
                                             
                                             <!-- Submissions for this activity -->
                                             <div class="submissions-section hidden">
-                                                <h6>📤 Submissions (${activity.submissions.length}):</h6>
+                                                        <h6>📤 Submissions (${(activity.submissions || []).length}):</h6>
                                     `;
                                     if (activity.submissions && activity.submissions.length > 0) {
                                         html += `
@@ -1155,20 +1210,22 @@ function initializeBatchView(modalContent) {
         item.addEventListener('click', () => {
             batchSection.classList.add('hidden');
             if (contentSection) contentSection.classList.remove('hidden');
-            backButton.classList.remove('hidden');
+            if (backButton) backButton.classList.remove('hidden');
         });
     });
 
-    backButton.addEventListener('click', () => {
-        batchSection.classList.remove('hidden');
-        if (contentSection) {
-            contentSection.classList.add('hidden');
-        }
-        if (fallbackContentSection) {
-            fallbackContentSection.classList.add('hidden');
-        }
-        backButton.classList.add('hidden');
-    });
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            batchSection.classList.remove('hidden');
+            if (contentSection) {
+                contentSection.classList.add('hidden');
+            }
+            if (fallbackContentSection) {
+                fallbackContentSection.classList.add('hidden');
+            }
+            backButton.classList.add('hidden');
+        });
+    }
 }
 
 function initializeAccordions() {
@@ -1206,7 +1263,7 @@ function showTextSubmissionModal(text) {
             </div>
             <div class="modal-body">
                 <div class="submission-text-content">
-                    ${text.replace(/\n/g, '<br>')}
+                    ${(text || '').replace(/\n/g, '<br>')}
                 </div>
             </div>
             <div class="modal-footer">
