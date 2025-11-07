@@ -725,54 +725,29 @@ function enrollInCourse(courseCode, courseName) {
     .then(data => {
         if (data.success) {
             showNotification(data.message, 'success');
-            
-            // Update UI to show pending status
-            if (enrollBtn) {
-                enrollBtn.textContent = 'Pending Approval';
-                enrollBtn.classList.add('pending');
-                enrollBtn.disabled = true;
-            }
-            
-            // Find and update the course card status
+
+            // Update UI to show enrolled status: convert enroll button to unenroll
             const courseCard = document.querySelector(`.course-card[data-course="${courseCode}"]`);
             if (courseCard) {
-                const button = courseCard.querySelector('.enroll-btn');
-                button.textContent = 'Pending Approval';
-                button.classList.add('pending');
-                button.disabled = true;
-                
-                // Add a pending status indicator
-                const statusDiv = document.createElement('div');
-                statusDiv.className = 'enrollment-status pending';
-                statusDiv.innerHTML = '<i class="fas fa-clock"></i> Awaiting Approval';
-                courseCard.appendChild(statusDiv);
-            }
-            
-            // Add entry to notifications
-            const notifDropdown = document.getElementById('notifDropdown');
-            if (notifDropdown) {
-                const notif = document.createElement('div');
-                notif.className = 'notification-item';
-                notif.innerHTML = `
-                    <i class="fas fa-info-circle"></i>
-                    <div class="notification-content">
-                        <div class="notification-title">Enrollment Request Sent</div>
-                        <div class="notification-message">Your request to enroll in ${courseName} is pending approval.</div>
-                        <div class="notification-time">Just now</div>
-                    </div>
-                `;
-                if (notifDropdown.firstChild) {
-                    notifDropdown.insertBefore(notif, notifDropdown.firstChild);
-                } else {
-                    notifDropdown.innerHTML = '';
-                    notifDropdown.appendChild(notif);
+                const oldBtn = courseCard.querySelector('.enroll-btn');
+                if (oldBtn) {
+                    // Create a new unenroll button so event listeners behave consistently
+                    const newBtn = document.createElement('button');
+                    newBtn.className = 'unenroll-btn';
+                    newBtn.setAttribute('data-course-code', courseCode);
+                    newBtn.setAttribute('data-course-name', courseName);
+                    newBtn.textContent = 'Unenroll';
+                    oldBtn.parentNode.replaceChild(newBtn, oldBtn);
                 }
+                // Remove any pending indicators if present
+                const pendingEl = courseCard.querySelector('.enrollment-status.pending');
+                if (pendingEl) pendingEl.remove();
             }
-            
-            // Reload the page to update the courses tab
+
+            // Optionally navigate to enrolled tab to show the newly enrolled course
             setTimeout(() => {
-                window.location.href = `${window.location.pathname}?current_tab=courses`;
-            }, 2000);
+                window.location.href = `${window.location.pathname}?current_tab=enrolled`;
+            }, 1200);
         } else {
             showNotification(data.message || 'Enrollment failed. Please try again.', 'error');
             if (enrollBtn) {
