@@ -22,11 +22,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
     $password = trim($_POST['password']);
     $confirmPassword = trim($_POST['confirmPassword']);
     
-    // SIMPLIFIED VALIDATION FOR TESTING
+    // Validation
+    $phoneRegex = '/^(09\d{9}|\+639\d{9})$/';
+
     if (empty($firstname) || empty($lastname) || empty($email) || empty($password)) {
         $register_error = "All required fields must be filled!";
     } elseif ($password !== $confirmPassword) {
         $register_error = "Passwords do not match!";
+    } elseif (!preg_match($phoneRegex, $contact)) {
+        $register_error = "Please enter a valid Philippine phone number (e.g., 09xxxxxxxxx or +639xxxxxxxxx).";
     } else {
         try {
             $db = new DatabaseConnection();
@@ -60,7 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
                     
                     if ($newUser) {
                         SessionManager::loginUser($newUser);
-                        header("Location: html/force_change_password.php");
+                        // This function correctly handles routing for all roles, including the password change check for trainers/trainees.
+                        SessionManager::redirectBasedOnRole(); // Redirect based on role (will go to guest.php)
                         exit();
                     } else {
                         $register_error = "Registration successful but failed to login.";
@@ -308,17 +313,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
         </div>
     </footer>
 
-<script src="js/landingpage.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if a login error message exists in the DOM
-    const loginError = document.querySelector('#loginModal .error-message');
-    
-    if (loginError) {
-        // If an error message is found, open the login modal automatically
-        document.getElementById('loginModal').style.display = 'flex';
-    }
-});
-</script>
+    <script src="js/landingpage.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if a login error message exists and open the login modal
+        const loginError = document.querySelector('#loginModal .error-message');
+        if (loginError && loginError.textContent.trim() !== '') {
+            const loginModal = document.getElementById('loginModal');
+            if(loginModal) loginModal.style.display = 'flex';
+        }
+
+        // Check if a registration error message exists and open the register modal
+        const registerError = document.querySelector('#registerModal .error-message');
+        if (registerError && registerError.textContent.trim() !== '') {
+            const registerModal = document.getElementById('registerModal');
+            if(registerModal) registerModal.style.display = 'flex';
+        }
+    });
+    </script>
 </body>
 </html>

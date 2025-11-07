@@ -47,6 +47,15 @@ try {
         exit;
     }
     
+    // Server-side duplicate check for the same role
+    $dupStmt = $pdo->prepare("SELECT user_id FROM users WHERE first_name = ? AND middle_name = ? AND last_name = ? AND role = 'trainee'");
+    $dupStmt->execute([$firstName, $middleName, $lastName]);
+    if ($dupStmt->fetch()) {
+        http_response_code(409); // Conflict
+        echo json_encode(['success' => false, 'message' => 'A trainee with this exact full name already exists.']);
+        exit;
+    }
+
     // Generate user ID (format: 3 + MMDD + random 3 digits)
     $datePart = date('md');
     $randomPart = str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT);
