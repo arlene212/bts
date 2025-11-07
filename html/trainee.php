@@ -178,14 +178,6 @@ try {
 
                     <!-- HOME TAB -->
                     <section class="tab-content active" id="home">
-                        <div class="news-switch-wrapper">
-                            <div class="switch-oval">
-                                <div class="switch-inner" id="switchInner"></div>
-                                <button class="switch-btn active" data-tab="dashboard">Dashboard</button>
-                                <button class="switch-btn" data-tab="news">News</button>
-                            </div>
-                        </div>
-
                        <div class="dashboard tab-inner active" id="dashboard">
                             <div class="dashboard-header">Quick Overview</div>
                             <div class="dashboard-cards">
@@ -206,26 +198,6 @@ try {
                                     <div class="label-text">Pending Requests</div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- NEWS TAB -->
-                        <div class="news tab-inner" id="news">
-                            <div class="news-header">
-                                <h2>Latest News & Announcements</h2>
-                            </div>
-                            <ul class="news-list">
-                                <?php if (!empty($announcements)): ?>
-                                    <?php foreach ($announcements as $announcement): ?>
-                                    <li>
-                                        <strong><?php echo htmlspecialchars($announcement['title']); ?></strong>
-                                        <p><?php echo htmlspecialchars(substr($announcement['content'], 0, 150)); ?>...</p>
-                                        <small><?php echo date('M d, Y', strtotime($announcement['date_posted'])); ?></small>
-                                    </li>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <li>No news yet. Stay tuned!</li>
-                                <?php endif; ?>
-                            </ul>
                         </div>
                     </section>
 

@@ -54,16 +54,14 @@ try {
             SELECT 
                 ct.id as topic_id, ct.competency_id, ct.topic_name, ct.topic_description,
                 tm.id as material_id, tm.material_title, tm.material_description, tm.file_path as material_file_path,
-                ta.id as activity_id, ta.activity_title, ta.activity_description, ta.activity_type, ta.due_date, ta.max_score, ta.attachment_path,
-                s.id as submission_id, s.score, s.submitted_at, s.file_path as submission_file_path, s.submission_text, s.feedback
+                ta.id as activity_id, ta.activity_title, ta.activity_description, ta.activity_type, ta.due_date, ta.max_score, ta.attachment_path
             FROM course_topics ct
             LEFT JOIN topic_materials tm ON ct.id = tm.topic_id
             LEFT JOIN topic_activities ta ON ct.id = ta.topic_id
-            LEFT JOIN submissions s ON ta.id = s.activity_id AND s.trainee_id = ?
             WHERE ct.course_code = ? AND ct.competency_id IN ($inClause)
             ORDER BY ct.created_at ASC, tm.uploaded_at ASC, ta.created_at ASC
         ");
-        $params = array_merge([$guestId, $courseCode], $basicCompetencyNames);
+        $params = array_merge([$courseCode], $basicCompetencyNames);
         $stmt->execute($params);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -97,10 +95,17 @@ try {
             }
         }
 
-        // Group topics under their respective basic competencies
+        // Group topics under their respective basic competencies and clean up the structure
         foreach ($courseCompetencies as $comp) {
             if ($comp['type'] === 'basic') {
-                $compTopics = array_values(array_filter($topics, fn($t) => $t['competency_id'] === $comp['name']));
+                $compTopics = [];
+                foreach ($topics as $topic) {
+                    if ($topic['competency_id'] === $comp['name']) {
+                        $topic['materials'] = array_values($topic['materials']);
+                        $topic['activities'] = array_values($topic['activities']);
+                        $compTopics[] = $topic;
+                    }
+                }
                 $structuredContent[] = array_merge($comp, ['topics' => $compTopics]);
             }
         }
@@ -108,7 +113,7 @@ try {
     
     echo json_encode([
         'course' => $course,
-        'content' => $structuredContent // Send the structured, filtered content
+        'competencies' => $structuredContent // Send the structured, filtered content as 'competencies'
     ]);
 
 } catch (PDOException $e) {

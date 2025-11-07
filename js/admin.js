@@ -14,11 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
     setupDynamicBatchLoading();
     setupUserManagement();
     setupFormValidation();
-    setupCompetencyFields();
-    setupCourseEditing(); // Make sure this is called
+    setupCourseEditing();
     activateTabFromUrl(); // Add this line to handle tab state on load
-    setupAjaxPagination(); // Add this line
-    setupCourseEditing(); // Add this line
+    setupAjaxPagination();
     setupEnrollmentActions(); // Add this line
     setupGuestEnrollment();
     setupConfirmationModals();
@@ -285,6 +283,9 @@ function openModal(modalId) {
         }
         
         console.log(`Modal ${modalId} opened successfully`);
+
+        // Dispatch a custom event
+        dispatchModalOpened(modalId);
     } else {
         console.error(`Modal not found: ${modalId}`);
     }
@@ -1928,67 +1929,6 @@ function reindexCompetencies() {
     }
 }
 
-// Add new competency
-document.addEventListener('click', function(e) {
-    if (e.target.id === 'add_new_competency_btn') {
-        addNewCompetencyField();
-    }
-});
-
-function addNewCompetencyField() {
-    const container = document.getElementById('edit_competencies_container');
-    
-    // Remove "no competencies" message if present
-    if (container.innerHTML.includes('No competencies defined')) {
-        container.innerHTML = '';
-    }
-    
-    const currentCount = document.querySelectorAll('.competency-edit-group').length;
-    const newIndex = currentCount;
-    
-    const compHtml = `
-        <div class="competency-edit-group" data-index="${newIndex}">
-            <div class="competency-header">
-                <h4>New Competency</h4>
-                <button type="button" class="remove-competency-btn" data-index="${newIndex}">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Type:</label>
-                    <select name="competencies[${newIndex}][type]" required>
-                        <option value="basic">Basic</option>
-                        <option value="common">Common</option>
-                        <option value="core">Core</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Name:</label>
-                    <input type="text" name="competencies[${newIndex}][name]" 
-                           required placeholder="Enter competency name">
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Description:</label>
-                <textarea name="competencies[${newIndex}][description]" 
-                          rows="2" placeholder="Enter description (optional)"></textarea>
-            </div>
-            <hr>
-        </div>
-    `;
-    
-    container.innerHTML += compHtml;
-    
-    // Add event listener for the new remove button
-    const newRemoveBtn = container.querySelector(`.remove-competency-btn[data-index="${newIndex}"]`);
-    if (newRemoveBtn) {
-        newRemoveBtn.addEventListener('click', function() {
-            removeCompetency(newIndex);
-        });
-    }
-}
-
 function submitEditCourseForm(form) {
     const formData = new FormData(form);
     const submitBtn = form.querySelector('.submit-btn');
@@ -2108,21 +2048,6 @@ function setupFormValidation() {
     });
 }
 
-function setupCompetencyFields() {
-    const competencyTypeSelect = document.getElementById('competency_type');
-    const competencyNameInput = document.getElementById('competency_name');
-    
-    if (competencyTypeSelect && competencyNameInput) {
-        competencyTypeSelect.addEventListener('change', function() {
-            const selectedType = this.value;
-            const placeholder = selectedType === 'core' ? 'Enter core competency name' : 'Enter common competency name';
-            competencyNameInput.placeholder = placeholder;
-        });
-    }
-}
-
-    // Handle AJAX search requests on server side
-   
 function showTrainerConfirmation(form) {
     const formData = new FormData(form);
     const firstName = formData.get('trainer_first_name') || '';

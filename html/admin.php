@@ -1772,10 +1772,6 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
             <?php endforeach; ?>
           </div>
 
-          <!-- Container for viewing course details in-page -->
-          <div id="course-detail-view" class="hidden" style="padding: 20px;">
-              <!-- Course details will be populated here by JavaScript -->
-          </div>
         </section>
 
         <!-- ===== ENROLLMENTS TAB ===== -->
@@ -2375,6 +2371,23 @@ $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 't
       </form>
     </div>
   </div>
+
+<!-- View Course Detail Modal -->
+<div class="modal hidden" id="viewCourseDetailModal">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h2 id="viewCourseDetailTitle">Course Details</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body" id="viewCourseDetailBody">
+            <!-- Course details will be populated here by JavaScript -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="cancel-btn">Close</button>
+        </div>
+    </div>
+</div>
+
 
   <!-- Edit Profile Modal -->
   <div class="modal hidden" id="editProfileModal">

@@ -140,29 +140,35 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  document.querySelectorAll("#mycourses .course-card").forEach((card) => {
-    card.addEventListener("click", () => {
-      const courseCode = card.dataset.courseCode;
-      const courseName = card.dataset.courseName;
-      document
-        .querySelectorAll("#mycourses .course-box")
-        .forEach((box) => box.classList.add("hidden"));
-      courseDetail?.classList.remove("hidden");
-      courseDetail?.classList.add("active");
+// Open course detail
+document.querySelectorAll('#mycourses .course-card').forEach(card => {
+  card.addEventListener("click", () => {
+    const courseCode = card.dataset.courseId;
+    const courseName = card.dataset.courseName;
+    
+    // Hide all main tab contents before showing the detail view
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+
+    courseDetail.classList.remove("hidden");
+    courseDetail.classList.add("active");
 
       loadCourseDetails(courseCode, courseName);
       resetCourseDetailView();
     });
   });
 
-  backBtn?.addEventListener("click", () => {
-    courseDetail?.classList.add("hidden");
-    courseDetail?.classList.remove("active");
-    document
-      .querySelectorAll("#mycourses .course-box")
-      .forEach((box) => box.classList.remove("hidden"));
-    resetCourseDetailView();
-  });
+// Back button - only ONE event listener
+backBtn?.addEventListener("click", () => {
+  courseDetail.classList.add("hidden");
+  courseDetail.classList.remove("active");
+  
+  // Show the "My Courses" tab again
+  const myCoursesTab = document.getElementById('mycourses');
+  if (myCoursesTab) myCoursesTab.classList.add('active');
+  
+  // Reset to Modules view for next time
+  resetCourseDetailView();
+});
 
   if (courseSwitchBtns && courseSwitchInner && modulesView && activitiesView) {
     courseSwitchBtns.forEach((btn, index) => {
@@ -271,30 +277,203 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  /* ========= CANCEL ENROLLMENT REQUEST ========= */
-  document.getElementById("requests-body")?.addEventListener("click", (e) => {
-    const btn = e.target.closest(".btn-cancel, .cancel-btn-request");
-    if (btn) {
-      const id = btn.dataset.requestId || btn.dataset.id;
-      const courseName =
-        btn.closest("tr")?.querySelector("td:first-child")?.textContent || "";
-      if (confirm(`Cancel request for "${courseName}"?`)) {
-        btn.disabled = true;
-        btn.textContent = "Cancelling...";
-        fetch("../php/cancel_enrollment_request.php", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: `enrollment_id=${encodeURIComponent(id)}`,
-        })
-          .then((r) => r.json())
-          .then((data) => {
-            alert(data.message);
-            if (data.success) window.location.reload();
-            else {
-              btn.disabled = false;
-              btn.textContent = "Cancel";
-            }
-          });
+  /* ========= PROFILE MODAL ========= */
+  const editProfileBtn = document.querySelector(".user-card #editProfileBtn, #editProfileBtn");
+  const profileModal = document.getElementById("profileModal");
+  const closeProfileModal = document.getElementById("closeProfileModal");
+  const cancelProfileChanges = document.getElementById("cancelProfileChanges");
+  const changeProfileBtn = document.getElementById("changeProfileBtn");
+  const profileUpload = document.getElementById("profileUpload");
+  const profilePreview = document.getElementById("profilePreview");
+
+  // 🔹 Works even if Edit button is inside user card
+  editProfileBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+    profileModal?.classList.remove("hidden");
+    profileModal?.classList.add("active");
+  });
+
+  const closeProfile = () => {
+    profileModal?.classList.add("hidden");
+    profileModal?.classList.remove("active");
+  };
+
+  closeProfileModal?.addEventListener("click", closeProfile);
+  cancelProfileChanges?.addEventListener("click", closeProfile);
+
+  changeProfileBtn?.addEventListener("click", () => profileUpload?.click());
+  profileUpload?.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = ev => { profilePreview.src = ev.target.result; };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  /* ========= DELETE ACCOUNT MODAL ========= */
+  const deleteModal = document.getElementById("deleteAccountModal");
+  const openDeleteModal = document.getElementById("openDeleteModal");
+  const closeDeleteModal = document.getElementById("closeDeleteModal");
+  const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+  const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+
+  openDeleteModal?.addEventListener("click", () => deleteModal.classList.remove("hidden"));
+  closeDeleteModal?.addEventListener("click", () => deleteModal.classList.add("hidden"));
+  cancelDeleteBtn?.addEventListener("click", () => deleteModal.classList.add("hidden"));
+  confirmDeleteBtn?.addEventListener("click", () => {
+    alert("❌ Account deleted permanently.");
+    deleteModal.classList.add("hidden");
+  });
+
+  // Handle Profile Form Submission
+  const profileForm = document.getElementById('profileForm');
+  profileForm?.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const profilePictureFile = document.getElementById('profileUpload').files[0];
+      if (profilePictureFile) {
+          formData.append('profile_picture', profilePictureFile);
+      }
+
+      const saveBtn = this.querySelector('.primary-btn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+
+      fetch('../php/update_profile.php', {
+          method: 'POST',
+          body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              alert('Profile updated successfully!');
+              profileModal?.classList.add("hidden");
+              // Update UI without reloading
+              document.querySelector('.user-name').textContent = `${data.user.first_name} ${data.user.last_name}`;
+              if (data.user.profile_picture) {
+                  const newPicUrl = `../uploads/profiles/${data.user.profile_picture}?t=${new Date().getTime()}`;
+                  document.querySelector('.user-avatar').src = newPicUrl;
+                  document.getElementById('profilePreview').src = newPicUrl;
+              }
+          } else {
+              alert('Error: ' + data.message);
+          }
+      })
+      .finally(() => { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; });
+  });
+
+    /* ========= ACTIVITY MODAL ========= */
+  const activityModal = document.getElementById("activityModal");
+  const closeActivityModal = document.getElementById("closeActivityModal");
+  const activityModalTitle = document.getElementById("activityModalTitle");
+  let currentActivityId = null; // To store the ID of the currently open activity
+  const uploadSection = document.getElementById("uploadSection");
+  const uploadArea = document.getElementById("uploadArea");
+  const activityFileInput = document.getElementById("activityFileInput");
+  const activityFilePreview = document.getElementById("activityFilePreview");
+  const activitySubmitBtn = document.getElementById("activitySubmitBtn");
+  const submissionSuccess = document.getElementById("submissionSuccess");
+  const studentComment = document.getElementById("studentComment");
+  const teacherRemarksSection = document.getElementById("teacherRemarksSection");
+  const teacherRemarksContent = document.getElementById("teacherRemarksContent");
+  const teacherRemarksMeta = document.getElementById("teacherRemarksMeta");
+  const submissionHistory = document.getElementById("submissionHistory");
+  const historyContent = document.getElementById("historyContent");
+
+  // Format date for display
+  function formatDisplayDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  // Render submission history
+  function renderSubmissionHistory(submissions) {
+    historyContent.innerHTML = '';
+    submissions.forEach(submission => {
+      const historyItem = document.createElement('div');
+      historyItem.className = 'history-item';
+
+      historyItem.innerHTML = `
+        <div class="history-meta">
+          <span>Submitted: ${formatDisplayDate(submission.date)}</span>
+        </div>
+        ${submission.file ? `
+          <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #6c757d;">
+            <i class="fas fa-paperclip"></i> <a href="../uploads/submissions/${submission.file}" target="_blank">${submission.file}</a>
+          </div>
+        ` : ''}
+      `;
+      historyContent.appendChild(historyItem);
+    });
+  }
+
+  // Submit assignment
+  activitySubmitBtn.addEventListener("click", () => {
+    if (!activityFileInput.files[0]) {
+      alert("Please select a file to upload");
+      return;
+    }
+
+    const file = activityFileInput.files[0];
+    const comment = studentComment.value.trim();
+
+    // Simulate upload process
+    activitySubmitBtn.disabled = true;
+    activitySubmitBtn.textContent = "Uploading...";
+
+    setTimeout(() => {
+      // Add to submission history (in a real app, this would be sent to a server)
+      const currentActivity = getCurrentActivity();
+      if (currentActivity) {
+        const newSubmission = {
+          id: Date.now(),
+          date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+          comment: comment || null,
+          fileName: file.name,
+          fileSize: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+          status: 'submitted'
+        };
+        
+        if (!currentActivity.submissions) {
+          currentActivity.submissions = [];
+        }
+        currentActivity.submissions.unshift(newSubmission);
+        
+        // Update submission history display
+        renderSubmissionHistory(currentActivity.submissions);
+        submissionHistory.classList.remove('hidden');
+      }
+
+      submissionSuccess.classList.remove("hidden");
+      activitySubmitBtn.textContent = "Submitted";
+      
+      // Reset form
+      studentComment.value = "";
+      activityFileInput.value = "";
+      activityFilePreview.classList.add("hidden");
+      
+      // Close modal after 3 seconds
+      setTimeout(() => {
+        activityModal.classList.add("hidden");
+        activitySubmitBtn.textContent = "Submit Assignment";
+        activitySubmitBtn.disabled = true;
+      }, 3000);
+    }, 1500);
+  });
+
+  // Helper function to get current activity
+  function getCurrentActivity() {
+    const activityTitle = activityModalTitle.textContent;
+    for (const [key, activity] of Object.entries(activityData)) {
+      if (activity.title === activityTitle) {
+        return activity;
       }
     }
   });
