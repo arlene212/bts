@@ -5,6 +5,9 @@ require_once 'SessionManager.php';
 SessionManager::startSession();
 SessionManager::requireRole('admin');
 
+$database = new DatabaseConnection();
+$pdo = $database->getConnection();
+
 header('Content-Type: application/json');
 
 if (!isset($_GET['course_code'])) {
@@ -13,24 +16,29 @@ if (!isset($_GET['course_code'])) {
 }
 
 $courseCode = $_GET['course_code'];
-$database = new DatabaseConnection();
-$pdo = $database->getConnection();
 
 try {
-    // Get course basic info
-    $courseStmt = $pdo->prepare("SELECT * FROM courses WHERE course_code = ?");
-    $courseStmt->execute([$courseCode]);
-    $course = $courseStmt->fetch(PDO::FETCH_ASSOC);
-    
+    // 1. Fetch main course details.
+    $stmt = $pdo->prepare("SELECT * FROM courses WHERE course_code = ?");
+    $stmt->execute([$courseCode]);
+    $course = $stmt->fetch();
+
     if (!$course) {
         echo json_encode(['error' => 'Course not found']);
         exit;
     }
-    
-    $response = ['course' => $course];
-    
-    // Get batches for this course
-    $batchesStmt = $pdo->prepare("
+
+    // 2. Decode competencies from the course table.
+    $course['competency_types'] = [];
+    if (!empty($course['competency_types'])) {
+        $decodedCompetencies = json_decode($course['competency_types'], true);
+        if (is_array($decodedCompetencies)) {
+            $course['competency_types'] = $decodedCompetencies;
+        }
+    }
+
+    // 3. Fetch course batches.
+    $batchStmt = $pdo->prepare("
         SELECT cb.*, COUNT(ba.id) as trainee_count
         FROM course_batches cb
         LEFT JOIN batch_assignments ba ON cb.course_code = ba.course_code AND cb.batch_name = ba.batch_name
@@ -38,80 +46,69 @@ try {
         GROUP BY cb.id
         ORDER BY cb.created_at DESC
     ");
-    $batchesStmt->execute([$courseCode]);
-    $response['batches'] = $batchesStmt->fetchAll(PDO::FETCH_ASSOC);
+    $batchStmt->execute([$courseCode]);
+    $batches = $batchStmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get competencies
-    $competencies = json_decode($course['competency_types'] ?? '[]', true);
-    $response['competencies'] = [];
-    
-    foreach ($competencies as $competency) {
-        if (!isset($competency['type']) || !isset($competency['name'])) {
-            continue;
-        }
-        
-        // Get topics for this competency
-        $topicsStmt = $pdo->prepare("
-            SELECT * FROM course_topics 
-            WHERE course_code = ? AND competency_type = ?
-            ORDER BY created_at
-        ");
-        $topicsStmt->execute([$courseCode, $competency['type']]);
-        $topics = $topicsStmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        $competencyWithTopics = $competency;
-        $competencyWithTopics['topics'] = [];
-        
+    // 4. Fetch all content (topics, materials, activities, submissions) for the course.
+    $competenciesWithContent = [];
+    foreach ($course['competency_types'] as $competency) {
+        if (empty($competency['name'])) continue;
+
+        $competencyName = $competency['name']; // The competency name is used as the ID in the topics table.
+        $competency['topics'] = [];
+
+        // Fetch topics for this competency.
+        $topicStmt = $pdo->prepare("SELECT * FROM course_topics WHERE course_code = ? AND competency_id = ? ORDER BY created_at ASC");
+        $topicStmt->execute([$courseCode, $competencyName]);
+        $topics = $topicStmt->fetchAll(PDO::FETCH_ASSOC);
+
         foreach ($topics as $topic) {
-            // Get materials for this topic
-            $materialsStmt = $pdo->prepare("
-                SELECT tm.*, u.first_name, u.last_name, 
-                       CONCAT(u.first_name, ' ', u.last_name) as trainer_name
-                FROM topic_materials tm
-                LEFT JOIN users u ON tm.uploaded_by = u.user_id
-                WHERE tm.topic_id = ?
-                ORDER BY tm.uploaded_at
-            ");
-            $materialsStmt->execute([$topic['id']]);
-            $materials = $materialsStmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Get activities for this topic
-            $activitiesStmt = $pdo->prepare("
-                SELECT ta.*, u.first_name, u.last_name
-                FROM topic_activities ta
-                LEFT JOIN users u ON ta.created_by = u.user_id
-                WHERE ta.topic_id = ?
-                ORDER BY ta.created_at
-            ");
-            $activitiesStmt->execute([$topic['id']]);
-            $activities = $activitiesStmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Get submissions for each activity
-            foreach ($activities as &$activity) {
-                $submissionsStmt = $pdo->prepare("
-                    SELECT asub.*, u.first_name, u.last_name,
-                           CONCAT(u.first_name, ' ', u.last_name) as trainee_name
-                    FROM activity_submissions asub
-                    LEFT JOIN users u ON asub.trainee_id = u.user_id
-                    WHERE asub.activity_id = ?
-                    ORDER BY asub.submitted_at DESC
+            $topicId = $topic['id'];
+            $topic['materials'] = [];
+            $topic['activities'] = [];
+
+            // Fetch materials for this topic.
+            $materialStmt = $pdo->prepare("SELECT tm.*, u.first_name, u.last_name FROM topic_materials tm LEFT JOIN users u ON tm.uploaded_by = u.user_id WHERE tm.topic_id = ? ORDER BY tm.uploaded_at ASC");
+            $materialStmt->execute([$topicId]);
+            $topic['materials'] = $materialStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Fetch activities for this topic.
+            $activityStmt = $pdo->prepare("SELECT * FROM topic_activities WHERE topic_id = ? ORDER BY created_at ASC");
+            $activityStmt->execute([$topicId]);
+            $activities = $activityStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($activities as $activity) {
+                $activityId = $activity['id'];
+                
+                // Fetch submissions for this activity.
+                $submissionStmt = $pdo->prepare("
+                    SELECT s.*, u.first_name, u.last_name
+                    FROM activity_submissions s
+                    JOIN users u ON s.trainee_id = u.user_id 
+                    WHERE s.activity_id = ? 
+                    ORDER BY s.submitted_at DESC
                 ");
-                $submissionsStmt->execute([$activity['id']]);
-                $activity['submissions'] = $submissionsStmt->fetchAll(PDO::FETCH_ASSOC);
+                $submissionStmt->execute([$activityId]);
+                $activity['submissions'] = $submissionStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $topic['activities'][] = $activity;
             }
-            
-            $topic['materials'] = $materials;
-            $topic['activities'] = $activities;
-            $competencyWithTopics['topics'][] = $topic;
+            $competency['topics'][] = $topic;
         }
-        
-        $response['competencies'][] = $competencyWithTopics;
+        $competenciesWithContent[] = $competency;
     }
-    
+
+    // 5. Assemble the final JSON response.
+    $response = [
+        'course' => $course,
+        'batches' => $batches,
+        'competencies' => $competenciesWithContent
+    ];
+
     echo json_encode($response);
-    
+
 } catch (PDOException $e) {
-    error_log("Database error in get_course_details: " . $e->getMessage());
-    echo json_encode(['error' => 'Database error occurred']);
+    error_log("Admin - Error fetching course details: " . $e->getMessage());
+    echo json_encode(['error' => 'Database error while fetching course details.']);
 }
 ?>

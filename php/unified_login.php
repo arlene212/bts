@@ -29,10 +29,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $updateStmt->execute([$user['user_id']]);
             
             // Use the correct login method
-            SessionManager::loginUser($user);
+            SessionManager::loginUser([
+                'id' => $user['id'] ?? $user['user_id'],
+                'user_id' => $user['user_id'],
+                'role' => $user['role'],
+                'first_name' => $user['first_name'],
+                'last_name' => $user['last_name'],
+                'email' => $user['email'],
+                'contact_number' => $user['contact_number'] ?? '',
+                'password_changed_at' => $user['password_changed_at'] ?? null
+            ]);
 
             // Check if password needs to be changed
-            if ($user['password_changed_at'] === null) {
+            if (in_array($user['role'], ['trainer', 'trainee']) && $user['password_changed_at'] === null) {
                 header("Location: ../html/force_change_password.php");
                 exit();
             }
