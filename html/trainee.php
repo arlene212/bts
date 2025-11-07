@@ -139,8 +139,8 @@ try {
             <nav class="nav">
                 <a href="#" class="tab-link active" data-tab="home">Home</a>
                 <a href="#" class="tab-link" data-tab="mycourses">My Courses</a>
-                <a href="#" class="tab-link" data-tab="offeredCourses">Offered Courses</a>
-                <a href="#" class="tab-link" data-tab="courses">Enrollment Request</a>
+                <a href="#" class="tab-link" data-tab="offered-courses">Offered Courses</a>
+                <a href="#" class="tab-link" data-tab="enrollment-requests">Enrollment Request</a>
             </nav>
         </aside>
 
@@ -247,7 +247,7 @@ try {
                                     <?php if (!empty($enrolled_courses)): ?>
                                         <?php foreach ($enrolled_courses as $course): ?>
                                         <div class="course-card" 
-                                             data-course-id="<?php echo htmlspecialchars($course['course_code']); ?>"
+                                         data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>"
                                              data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">
                                             <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : 'https://via.placeholder.com/250x140'; ?>" alt="Course Image">
                                             <div class="course-info">
@@ -312,7 +312,7 @@ try {
                     </section>
 
                     <!-- ENROLLMENT REQUEST TAB -->
-                    <section class="tab-content" id="courses">
+                    <section class="tab-content" id="enrollment-requests">
                         <h2 class="section-header">My Enrollment Requests</h2>
                         <table class="requests-table">
                             <thead>
@@ -324,30 +324,30 @@ try {
                                     <th>Action</th>
                                 </tr>
                             </thead>
-                            <tbody id="requests-body">
+                            <tbody id="requests-body"> 
                                 <?php if (!empty($enrollment_requests)): ?>
                                     <?php foreach ($enrollment_requests as $request): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($request['course_name']); ?></td>
-                                        <td><?php echo date('M d, Y', strtotime($request['date_requested'])); ?></td>
-                                        <td>
-                                            <span class="status-<?php echo htmlspecialchars($request['status']); ?>">
+                                        <tr>
+                                            <td class="course-name"><?php echo htmlspecialchars($request['course_name']); ?></td>
+                                            <td><?php echo date('M d, Y', strtotime($request['date_requested'])); ?></td>
+                                            <td class="status <?php echo htmlspecialchars($request['status']); ?>">
                                                 <?php echo htmlspecialchars(ucfirst($request['status'])); ?>
-                                            </span>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($request['remarks'] ?: 'No remarks'); ?></td>
-                                        <td>
-                                            <?php if ($request['status'] == 'pending'): ?>
-                                                <button class="btn-cancel" data-request-id="<?php echo $request['id']; ?>">Cancel</button>
-                                            <?php else: ?>
-                                                <span class="processed">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($request['remarks'] ?? '-'); ?></td>
+                                            <td class="table-actions">
+                                                <?php if ($request['status'] === 'pending'): ?>
+                                                    <button class="btn-cancel" data-request-id="<?php echo htmlspecialchars($request['id']); ?>">
+                                                        Cancel
+                                                    </button>
+                                                <?php else: ?>
+                                                    -
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="5" style="text-align: center;">No enrollment requests found.</td>
+                                        <td colspan="5" class="no-data">No enrollment requests found.</td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>
@@ -355,40 +355,40 @@ try {
                     </section>
 
                     <!-- OFFERED COURSES TAB -->
-                    <section class="tab-content" id="offeredCourses">
+                    <section class="tab-content" id="offered-courses">
                         <h2 class="section-header">Available Courses</h2>
                         <div class="course-box">
                             <div class="course-list">
                                 <?php if (!empty($offered_courses)): ?>
                                     <?php foreach ($offered_courses as $course): ?>
-                                    <div class="course-card">
-                                        <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : 'https://via.placeholder.com/250x140'; ?>" alt="Course Image">
-                                        <div class="course-info">
-                                            <h3><?php echo htmlspecialchars($course['course_name']); ?></h3>
-                                            <p>Code: <?php echo htmlspecialchars($course['course_code']); ?></p>
-                                            <p>Hours: <?php echo htmlspecialchars($course['hours']); ?> hrs</p>
-                                            <p class="course-desc"><?php echo htmlspecialchars(substr($course['description'], 0, 100)); ?>...</p>
+                                    <div class="dashboard-card course-card" 
+                                         data-course="<?php echo htmlspecialchars($course['course_code']); ?>" 
+                                         data-title="<?php echo htmlspecialchars($course['course_name']); ?>">
+                                        <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : '../images/course-placeholder.jpg'; ?>" alt="<?php echo htmlspecialchars($course['course_name']); ?>" class="course-img">
+                                        <div class="label-text"><?php echo htmlspecialchars($course['course_name']); ?></div>
+                                        <div class="sub-text"><?php echo htmlspecialchars($course['course_code']); ?> | <?php echo htmlspecialchars($course['hours']); ?> hours</div>
+                                        <div class="course-description">
+                                            <?php echo htmlspecialchars(substr($course['description'], 0, 100)); ?>...
                                         </div>
-                                        <?php 
-                                        // Check if already enrolled
-                                        $is_enrolled = false;
-                                        $is_pending = false;
-                                        foreach ($enrollment_requests as $request) {
-                                            if ($request['course_code'] == $course['course_code']) {
-                                                if ($request['status'] == 'approved') {
-                                                    $is_enrolled = true;
-                                                } elseif ($request['status'] == 'pending') {
-                                                    $is_pending = true;
+                                        <?php
+                                            $is_enrolled = false;
+                                            $is_pending = false;
+                                            foreach ($enrollment_requests as $request) {
+                                                if ($request['course_code'] == $course['course_code']) {
+                                                    if ($request['status'] == 'approved') {
+                                                        $is_enrolled = true;
+                                                    } elseif ($request['status'] == 'pending') {
+                                                        $is_pending = true;
+                                                    }
                                                 }
                                             }
-                                        }
                                         ?>
                                         <?php if ($is_enrolled): ?>
                                             <button class="enroll-btn enrolled" disabled>Already Enrolled</button>
                                         <?php elseif ($is_pending): ?>
                                             <button class="enroll-btn pending" disabled>Request Pending</button>
                                         <?php else: ?>
-                                            <button class="enroll-btn" data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">Enroll</button>
+                                            <button class="enroll-btn" data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">Request to Enroll</button>
                                         <?php endif; ?>
                                     </div>
                                     <?php endforeach; ?>
