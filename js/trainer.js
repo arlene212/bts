@@ -18,20 +18,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ===== COURSE DETAIL TOGGLE =====
-    const courseDetailToggleBtns = document.querySelectorAll('#course-detail .toggle-btn');
+    const courseDetailToggleBtns = document.querySelectorAll('.course-detail-toggle .switch-btn');
     const courseDetailViews = document.querySelectorAll('#course-detail .detail-view');
+    const courseDetailSwitchInner = document.querySelector('.course-detail-toggle .switch-inner');
 
     courseDetailToggleBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', function() {
             courseDetailToggleBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            const target = btn.dataset.view;
+            this.classList.add('active');
+    
+            const target = this.dataset.view;
             courseDetailViews.forEach(view => view.classList.remove('active'));
-
+    
             const viewToShow = document.getElementById(`${target}-view`);
             if (viewToShow) viewToShow.classList.add('active');
-
+            updateSwitchPosition(courseDetailToggleBtns, courseDetailSwitchInner);
         });
     });
 
@@ -71,25 +72,18 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("course-detail-title").textContent = courseName;
         document.getElementById("course-code").textContent = courseCode;
         document.getElementById("course-hours").textContent = courseHours;
-        document.getElementById("competencies-list").innerHTML = ''; // Clear old competencies
+        document.getElementById("competencies-list").innerHTML = '<div class="loading">Loading...</div>';
+        document.getElementById("submissions-list").innerHTML = '<div class="loading">Loading...</div>';
         document.getElementById("course-description").textContent = "Loading...";
         
         // Fetch course details including batches
         fetch(`../php/get_course_details_trainer.php?course_code=${courseCode}`)
             .then(response => response.json())
             .then(data => {
-                if (data.error) {
-                    console.error('Error:', data.error);
-                    document.getElementById("course-description").textContent = "Error loading course details";
-                    showErrorInBatches(data.error);
-                    return;
-                }
+                if (data.error) { throw new Error(data.error); }
                 
                 // Set course description
                 document.getElementById("course-description").textContent = data.course.description || 'No description available';
-                
-                // Render batches
-                renderBatches(data.batches || [], courseCode, courseName);
 
                 // Render competencies from the passed course data
                 if (courseDataStr) {
@@ -100,68 +94,16 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                     renderCompetencies(courseData.competency_types || [], courseCode);
                 }
-
+                
+                // Render the new submissions view
+                renderSubmissionsView(data.topicsByCompetency || {});
             })
             .catch(error => {
                 console.error('Error loading course details:', error);
                 document.getElementById("course-description").textContent = "Error loading course details";
-                showErrorInBatches('Failed to load batches');
+                document.getElementById("competencies-list").innerHTML = `<div class="error-message">${error.message}</div>`;
+                document.getElementById("submissions-list").innerHTML = `<div class="error-message">${error.message}</div>`;
             });
-    }
-
-    function renderBatches(batches, courseCode, courseName) {
-        const container = document.getElementById("batches-list");
-        container.innerHTML = '';
-        
-        if (batches.length === 0) {
-            container.innerHTML = `
-                <div class="no-batches">
-                    <p>No batches available for this course.</p>
-                </div>
-            `;
-            return;
-        }
-        
-        batches.forEach((batch, index) => {
-            const batchElement = document.createElement('div');
-            batchElement.className = 'batch-item';
-            batchElement.innerHTML = `
-                <div class="batch-card-detail">
-                    <div class="batch-info">
-                        <h4>${batch.batch_name || `Batch ${index + 1}`}</h4>
-                        <p><strong>Trainees Enrolled:</strong> ${batch.trainee_count || 0}</p>
-                        <p><strong>Start Date:</strong> ${batch.start_date ? new Date(batch.start_date).toLocaleDateString() : 'Not set'}</p>
-                        <p><strong>Status:</strong> <span class="status-${batch.status || 'active'}">${batch.status || 'Active'}</span></p>
-                    </div>
-                    <div class="batch-actions">
-                        <button class="view-trainees-btn" data-batch-name="${batch.batch_name}" data-course-code="${courseCode}">
-                            View Trainees
-                        </button>
-                        <button class="manage-batch-btn" data-batch-name="${batch.batch_name}" data-course-code="${courseCode}">
-                            Manage Batch
-                        </button>
-                    </div>
-                </div>
-            `;
-            container.appendChild(batchElement);
-        });
-        
-        // Add event listeners for batch actions
-        document.querySelectorAll('.view-trainees-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const batchName = this.dataset.batchName;
-                const courseCode = this.dataset.courseCode;
-                viewBatchTrainees(batchName, courseCode, courseName);
-            });
-        });
-        
-        document.querySelectorAll('.manage-batch-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const batchName = this.dataset.batchName;
-                const courseCode = this.dataset.courseCode;
-                manageBatch(batchName, courseCode);
-            });
-        });
     }
 
     // ===== COMPETENCIES FUNCTIONALITY =====
@@ -253,10 +195,10 @@ document.addEventListener("DOMContentLoaded", () => {
                             <i class="fas fa-tasks"></i> Add Activity
                         </button>
                         <button class="edit-topic-btn" data-topic-id="${topic.id}" title="Edit Topic">
-                            <i class="fas fa-edit"></i>
+                            <i class="fas fa-edit"></i> Edit
                         </button>
                         <button class="delete-topic-btn" data-topic-id="${topic.id}" title="Delete Topic">
-                            <i class="fas fa-trash"></i>
+                            <i class="fas fa-trash"></i> Delete
                         </button>
                         <button class="toggle-materials-btn" title="Show/Hide Materials">
                             <i class="fas fa-chevron-down"></i>
@@ -285,13 +227,19 @@ document.addEventListener("DOMContentLoaded", () => {
                             <i class="${getIconForMaterial(material.file_path)}"></i>
                         </div>
                         <div class="material-details">
-                            <strong>${material.material_title}</strong>
-                            <p>${material.material_description || ''}</p>
-                            <small>
-                                <a href="${material.material_file_path.startsWith('http') ? material.material_file_path : '../uploads/courses/' + material.material_file_path}" target="_blank">
-                                    View Material
-                                </a>
-                            </small>
+                            <div class="material-info">
+                                <strong>${material.material_title}</strong>
+                                <p>${material.material_description || ''}</p>
+                                <small>
+                                    <a href="${material.material_file_path.startsWith('http') ? material.material_file_path : '../uploads/courses/' + material.material_file_path}" target="_blank">
+                                        View Material
+                                    </a>
+                                </small>
+                            </div>
+                            <div class="material-actions">
+                                <button class="icon-btn edit-material-btn" title="Edit Material" data-material-id="${material.id}"><i class="fas fa-edit"></i></button>
+                                <button class="icon-btn delete-material-btn" title="Delete Material" data-material-id="${material.id}" data-material-title="${material.material_title}"><i class="fas fa-trash"></i></button>
+                            </div>
                         </div>
                     </div>
                 `).join('')}
@@ -306,9 +254,15 @@ document.addEventListener("DOMContentLoaded", () => {
         return activities.map(activity => `
             <div class="activity-item">
                 <div class="activity-header">
-                    <div class="activity-info">
-                        <strong>${activity.activity_title}</strong>
-                        <span class="activity-type ${activity.activity_type}">${activity.activity_type}</span>
+                    <div class="activity-info-main">
+                        <div class="activity-info">
+                            <strong>${activity.activity_title}</strong>
+                            <span class="activity-type ${activity.activity_type}">${activity.activity_type}</span>
+                        </div>
+                        <div class="activity-actions">
+                            <button class="icon-btn edit-activity-btn" title="Edit Activity" data-activity-id="${activity.id}"><i class="fas fa-edit"></i></button>
+                            <button class="icon-btn delete-activity-btn" title="Delete Activity" data-activity-id="${activity.id}" data-activity-title="${activity.activity_title}"><i class="fas fa-trash"></i></button>
+                        </div>
                     </div>
                     <div class="activity-meta">
                         <small>Due: ${new Date(activity.due_date).toLocaleString()}</small>
@@ -321,10 +275,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             </small>
                         ` : ''}
                     </div>
-                </div>
-                <div class="submissions-container">
-                    <h6>Submissions (${activity.submissions.length})</h6>
-                    ${renderSubmissions(activity.submissions, activity.max_score, activity.activity_id)}
                 </div>
             </div>
         `).join('');
@@ -372,7 +322,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
     }
 
-    // Event delegation for grading
+    // Event delegation for grading and other dynamic buttons
     document.getElementById('competencies-list').addEventListener('click', function(e) {
         if (e.target.closest('.grade-btn')) {
             const btn = e.target.closest('.grade-btn');
@@ -380,43 +330,29 @@ document.addEventListener("DOMContentLoaded", () => {
             const currentScore = btn.dataset.currentScore;
             const maxScore = btn.dataset.maxScore;
             const feedback = btn.dataset.feedback;
-            
-            const score = prompt(`Enter score for submission (out of ${maxScore}):`, currentScore);
-            if (score !== null) {
-                const newFeedback = prompt("Enter feedback (optional):", feedback);
-                gradeSubmission(submissionId, score, newFeedback);
-            }
-        }
-    });
 
-    function getIconForMaterial(filePath) {
-        if (!filePath) return 'fas fa-file';
-        if (String(filePath).startsWith('http')) return 'fas fa-link';
-        
-        const extension = filePath.split('.').pop().toLowerCase();
-        switch (extension) {
-            case 'pdf': return 'fas fa-file-pdf';
-            case 'doc':
-            case 'docx': return 'fas fa-file-word';
-            case 'xls':
-            case 'xlsx': return 'fas fa-file-excel';
-            case 'ppt':
-            case 'pptx': return 'fas fa-file-powerpoint';
-            case 'zip':
-            case 'rar': return 'fas fa-file-archive';
-            case 'jpg':
-            case 'jpeg':
-            case 'png':
-            case 'gif': return 'fas fa-file-image';
-            case 'mp4':
-            case 'mov':
-            case 'avi': return 'fas fa-file-video';
-            default: return 'fas fa-file';
+            openGradeModal(submissionId, currentScore, maxScore, feedback);
         }
-    }
 
-    // Event delegation for dynamically added elements
-    document.getElementById('competencies-list').addEventListener('click', function(e) {
+        // Handle Edit/Delete Material
+        if (e.target.closest('.edit-material-btn')) {
+            const materialId = e.target.closest('.edit-material-btn').dataset.materialId;
+            openEditMaterialModal(materialId);
+        }
+        if (e.target.closest('.delete-material-btn')) {
+            const btn = e.target.closest('.delete-material-btn');
+            openConfirmationModal('material', btn.dataset.materialId, btn.dataset.materialTitle);
+        }
+
+        // Handle Edit/Delete Activity
+        if (e.target.closest('.edit-activity-btn')) {
+            openEditActivityModal(e.target.closest('.edit-activity-btn').dataset.activityId);
+        }
+        if (e.target.closest('.delete-activity-btn')) {
+            const btn = e.target.closest('.delete-activity-btn');
+            openConfirmationModal('activity', btn.dataset.activityId, btn.dataset.activityTitle);
+        }
+
         const addTopicBtn = e.target.closest('.add-topic-btn, .add-topic-btn-inline');
         if (addTopicBtn) {
             const competencyId = addTopicBtn.dataset.competencyId;
@@ -446,6 +382,74 @@ document.addEventListener("DOMContentLoaded", () => {
             toggleBtn.querySelector('i').classList.toggle('fa-chevron-up');
         }
     });
+
+    // Event delegation specifically for the Submissions tab
+    document.getElementById('submissions-list').addEventListener('click', function(e) {
+        if (e.target.closest('.grade-btn')) {
+            const btn = e.target.closest('.grade-btn');
+            const submissionId = btn.dataset.submissionId;
+            const currentScore = btn.dataset.currentScore;
+            const maxScore = btn.dataset.maxScore;
+            const feedback = btn.dataset.feedback;
+
+            // Open the existing grading modal
+            openGradeModal(submissionId, currentScore, maxScore, feedback);
+        }
+    });
+
+    function getIconForMaterial(filePath) {
+        if (!filePath) return 'fas fa-file';
+        if (String(filePath).startsWith('http')) return 'fas fa-link';
+        
+        const extension = filePath.split('.').pop().toLowerCase();
+        switch (extension) {
+            case 'pdf': return 'fas fa-file-pdf';
+            case 'doc':
+            case 'docx': return 'fas fa-file-word';
+            case 'xls':
+            case 'xlsx': return 'fas fa-file-excel';
+            case 'ppt':
+            case 'pptx': return 'fas fa-file-powerpoint';
+            case 'zip':
+            case 'rar': return 'fas fa-file-archive';
+            case 'jpg':
+            case 'jpeg':
+            case 'png':
+            case 'gif': return 'fas fa-file-image';
+            case 'mp4':
+            case 'mov':
+            case 'avi': return 'fas fa-file-video';
+            default: return 'fas fa-file';
+        }
+    }
+
+    // ===== SUBMISSIONS VIEW =====
+    function renderSubmissionsView(topicsByCompetency) {
+        const container = document.getElementById("submissions-list");
+        let allActivities = [];
+        Object.values(topicsByCompetency).forEach(competency => {
+            competency.forEach(topic => {
+                if (topic.activities) {
+                    allActivities.push(...topic.activities);
+                }
+            });
+        });
+
+        if (allActivities.length === 0) {
+            container.innerHTML = '<p class="no-data">No activities have been created for this course yet.</p>';
+            return;
+        }
+
+        let html = allActivities.map(activity => `
+            <div class="activity-submission-item">
+                <div class="activity-header">
+                    <strong>${activity.activity_title}</strong> (${activity.submissions.length} submissions)
+                </div>
+                ${renderSubmissions(activity.submissions, activity.max_score, activity.id)}
+            </div>
+        `).join('');
+        container.innerHTML = html;
+    }
 
     // ===== ADD MATERIAL MODAL =====
     function openAddMaterialModal(topicId) {
@@ -495,7 +499,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert('Material added successfully!');
                 document.getElementById("addMaterialModal").classList.add("hidden");
                 this.reset();
-                location.reload(); // Easiest way to show the new material
+                // Reload and stay on the courses tab
+                window.location.href = window.location.pathname + '?current_tab=mycourses';
             } else {
                 alert('Error adding material: ' + data.message);
             }
@@ -640,7 +645,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert('Activity added successfully!');
                 document.getElementById("addActivityModal").classList.add("hidden");
                 this.reset();
-                location.reload();
+                // Reload and stay on the courses tab
+                window.location.href = window.location.pathname + '?current_tab=mycourses';
             } else {
                 alert('Error adding activity: ' + data.message);
             }
@@ -655,10 +661,69 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    function gradeSubmission(submissionId, score, feedback) {
-        // This will be implemented to call a PHP script to save the grade.
-        console.log(`Grading submission ${submissionId} with score ${score} and feedback "${feedback}"`);
-        alert(`Grading submission ${submissionId} with score ${score}.`);
+    // ===== GRADING MODAL LOGIC =====
+    const gradeModal = document.getElementById('gradeSubmissionModal');
+    const gradeForm = document.getElementById('gradeSubmissionForm');
+
+    function openGradeModal(submissionId, currentScore, maxScore, feedback) {
+        document.getElementById('grade_submission_id').value = submissionId;
+        document.getElementById('submission_score').value = currentScore;
+        document.getElementById('submission_score').max = maxScore;
+        document.getElementById('submission_max_score').textContent = maxScore;
+        document.getElementById('submission_feedback').value = feedback;
+        gradeModal.classList.remove('hidden');
+    }
+
+    document.getElementById('closeGradeModal').addEventListener('click', () => gradeModal.classList.add('hidden'));
+    document.getElementById('cancelGrade').addEventListener('click', () => gradeModal.classList.add('hidden'));
+
+    gradeForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const submissionId = formData.get('submission_id');
+        const score = formData.get('score');
+        const maxScore = document.getElementById('submission_max_score').textContent;
+
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+
+        fetch('../php/grade_submission.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Grade saved successfully!');
+                gradeModal.classList.add('hidden');
+
+                // --- UPDATE UI IN REAL-TIME ---
+                const submissionRow = document.querySelector(`tr[data-submission-id="${submissionId}"]`);
+                if (submissionRow) {
+                    const scoreCell = submissionRow.querySelector('.score-cell');
+                    scoreCell.textContent = `${score} / ${maxScore}`;
+
+                    const gradeBtn = submissionRow.querySelector('.grade-btn');
+                    gradeBtn.textContent = 'Edit Grade';
+                    gradeBtn.dataset.currentScore = score;
+                    gradeBtn.dataset.feedback = formData.get('feedback');
+                }
+            } else {
+                alert('Error saving grade: ' . data.message);
+            }
+        })
+        .catch(error => console.error('Error:', error))
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Save Grade';
+        });
+    });
+
+    // ===== ADD TOPIC MODAL =====
+    function openAddTopicModal(courseCode, courseName, competencyId, competencyName) {
+        const modal = document.getElementById("addTopicModal");
+        document.getElementById("topic_competency_name").textContent = competencyName;
     }
 
     // ===== ADD TOPIC MODAL =====

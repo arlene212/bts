@@ -1,0 +1,17 @@
+Cagurangan, Wyvern
+BSIT3
+
+1. SELECT EmployeeID, FirstName, LastName, Status
+   FROM Employee;
+
+
+2. SELECT * 
+   FROM Product;
+
+   SELECT * 
+   FROM Purchase;
+
+
+3. DROP DATABASE IF EXISTS dbo.Items;
+
+   CREATE DATABASE dbo.Products;

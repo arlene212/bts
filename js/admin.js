@@ -1947,9 +1947,8 @@ function submitEditCourseForm(form) {
             alert('Course updated successfully!');
             closeModal('editCourseModal');
             // Reload the page and navigate to the courses tab
-            setTimeout(() => {
-                window.location.href = window.location.pathname + '?current_tab=courses';
-            }, 300);
+            // Use a full reload to ensure all data is fresh
+            window.location.href = window.location.pathname + '?current_tab=courses';
         } else {
             alert('Error updating course: ' + data.message);
         }

@@ -1823,6 +1823,31 @@ body::before {
 .submission-success i {
     font-size: 1.2rem;
 }
+
+/* ===========================
+   Module Activity Accordion
+=========================== */
+.topic-activity-item {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    background: #fff;
+    overflow: hidden;
+}
+
+.activity-header {
+    padding: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.activity-header:hover {
+    background-color: #f8f9fa; /* Light grey hover effect */
+}
+
+.activity-content {
+    padding: 0 1rem 1rem 1rem;
+}
 /* ===========================
    Activity Modal Additional Styles
 =========================== */

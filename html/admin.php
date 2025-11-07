@@ -434,7 +434,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$courseName, $courseCode, $courseHours, $courseDescription, $courseImage, json_encode($competencies)]);
         
         $_SESSION['success_message'] = "Course added successfully with " . count($competencies) . " competencies!";
-        header("Location: " . $_SERVER['PHP_SELF'] . "#courses");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses#courses");
         exit;
     }
     
@@ -456,7 +456,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['success_message'] = "Course batch '$batchName' created successfully!";
         }
         
-        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses#courses");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses");
         exit;
     }
     
@@ -672,7 +672,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Validate phone number
         if (!validatePhilippinePhoneNumber($contactNumber)) {
             $_SESSION['error_message'] = "Please enter a valid Philippine phone number (starting with 09 or +63)";
-            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainers#trainers");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainers");
             exit;
         }
         
@@ -680,18 +680,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $duplicateCheck = checkDuplicateUser($pdo, $firstName, $lastName, $middleName, $contactNumber);
         if ($duplicateCheck['name_duplicate']) {
             $_SESSION['error_message'] = "A user with the same name already exists!";
-            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainers#trainers");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainers");
             exit;
         }
         if ($duplicateCheck['contact_duplicate']) {
             $_SESSION['error_message'] = "A user with the same contact number already exists!";
-            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainers#trainers");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainers");
             exit;
         }
         
         // Rest of trainer creation logic...
         $_SESSION['success_message'] = "Trainer created successfully!";
-        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainers#trainers");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainers");
         exit;
     }
 
@@ -705,7 +705,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Validate phone number
         if (!validatePhilippinePhoneNumber($contactNumber)) {
             $_SESSION['error_message'] = "Please enter a valid Philippine phone number (starting with 09 or +63)";
-            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainees#trainees");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainees");
             exit;
         }
         
@@ -713,18 +713,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $duplicateCheck = checkDuplicateUser($pdo, $firstName, $lastName, $middleName, $contactNumber);
         if ($duplicateCheck['name_duplicate']) {
             $_SESSION['error_message'] = "A user with the same name already exists!";
-            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainees#trainees");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainees");
             exit;
         }
         if ($duplicateCheck['contact_duplicate']) {
             $_SESSION['error_message'] = "A user with the same contact number already exists!";
-            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainees#trainees");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainees");
             exit;
         }
         
         // Rest of trainee creation logic...
         $_SESSION['success_message'] = "Trainee created successfully!";
-        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainees#trainees");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=trainees");
         exit;
     }
 

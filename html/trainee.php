@@ -25,6 +25,9 @@ if ($currentPage !== 'force_change_password.php' &&
 
 $user = SessionManager::getCurrentUser();
 
+// Get current tab from URL, default to 'home'
+$currentTab = $_GET['current_tab'] ?? 'home';
+
 // Include database connection
 require_once '../php/DatabaseConnection.php';
 
@@ -116,6 +119,23 @@ try {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="../images/school.png">
     <link rel="stylesheet" href="../css/trainee.css">
+    <style>
+        /* Styles for topic containers and titles */
+        .topic-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: #fff;
+        }
+        .topic-title {
+            font-size: 1.5rem; /* Make topic title bigger */
+            color: #297acc;   /* Lighter blue color */
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e6f2ff;
+        }
+    </style>
 </head>
 
 <body>
@@ -137,10 +157,10 @@ try {
                 </div>
             </div>
             <nav class="nav">
-                <a href="#" class="tab-link active" data-tab="home">Home</a>
-                <a href="#" class="tab-link" data-tab="mycourses">My Courses</a>
-                <a href="#" class="tab-link" data-tab="offered-courses">Offered Courses</a>
-                <a href="#" class="tab-link" data-tab="enrollment-requests">Enrollment Request</a>
+                <a href="#" class="tab-link <?php echo $currentTab === 'home' ? 'active' : ''; ?>" data-tab="home">Home</a>
+                <a href="#" class="tab-link <?php echo $currentTab === 'mycourses' ? 'active' : ''; ?>" data-tab="mycourses">My Courses</a>
+                <a href="#" class="tab-link <?php echo $currentTab === 'offered-courses' ? 'active' : ''; ?>" data-tab="offered-courses">Offered Courses</a>
+                <a href="#" class="tab-link <?php echo $currentTab === 'enrollment-requests' ? 'active' : ''; ?>" data-tab="enrollment-requests">Enrollment Request</a>
             </nav>
         </aside>
 
@@ -177,7 +197,7 @@ try {
                 <div class="main-content">
 
                     <!-- HOME TAB -->
-                    <section class="tab-content active" id="home">
+                    <section class="tab-content <?php echo $currentTab === 'home' ? 'active' : ''; ?>" id="home">
                        <div class="dashboard tab-inner active" id="dashboard">
                             <div class="dashboard-header">Quick Overview</div>
                             <div class="dashboard-cards">
@@ -202,7 +222,7 @@ try {
                     </section>
 
                     <!-- MY COURSES TAB -->
-                    <section class="tab-content" id="mycourses">
+                    <section class="tab-content <?php echo $currentTab === 'mycourses' ? 'active' : ''; ?>" id="mycourses">
                         <div class="course-box">
                             <div class="news-switch-wrapper">
                                 <div class="switch-oval">
@@ -218,9 +238,11 @@ try {
                                 <div class="course-list">
                                     <?php if (!empty($enrolled_courses)): ?>
                                         <?php foreach ($enrolled_courses as $course): ?>
-                                        <div class="course-card" 
-                                         data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>"
-                                             data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">
+                                        <div class="course-card view-course-content-btn"
+                                             data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>"
+                                             data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>"
+                                             data-course-hours="<?php echo htmlspecialchars($course['hours']); ?>"
+                                             data-course-description="<?php echo htmlspecialchars($course['description']); ?>">
                                             <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : 'https://via.placeholder.com/250x140'; ?>" alt="Course Image">
                                             <div class="course-info">
                                                 <h3><?php echo htmlspecialchars($course['course_name']); ?></h3>
@@ -284,7 +306,7 @@ try {
                     </section>
 
                     <!-- ENROLLMENT REQUEST TAB -->
-                    <section class="tab-content" id="enrollment-requests">
+                    <section class="tab-content <?php echo $currentTab === 'enrollment-requests' ? 'active' : ''; ?>" id="enrollment-requests">
                         <h2 class="section-header">My Enrollment Requests</h2>
                         <table class="requests-table">
                             <thead>
@@ -327,7 +349,7 @@ try {
                     </section>
 
                     <!-- OFFERED COURSES TAB -->
-                    <section class="tab-content" id="offered-courses">
+                    <section class="tab-content <?php echo $currentTab === 'offered-courses' ? 'active' : ''; ?>" id="offered-courses">
                         <h2 class="section-header">Available Courses</h2>
                         <div class="course-box">
                             <div class="course-list">
@@ -469,56 +491,61 @@ try {
     </div>
 
     <!-- ACTIVITY MODAL (keep your existing activity modal HTML) -->
-    <div class="modal hidden" id="activityModal">
-        <div class="modal-content activity-modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title" id="activityModalTitle">Activity Title</h2>
-                <button class="close-btn" id="closeActivityModal">
-                    <i class="fas fa-times"></i>
-                </button>
+<div class="modal hidden" id="activityModal">
+    <div class="modal-content activity-modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="activityModalTitle">Activity Title</h2>
+            <button class="close-btn" id="closeActivityModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <!-- Activity Details Section -->
+            <div class="activity-details-grid">
+                <div class="detail-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <div>
+                        <strong>Due Date</strong>
+                        <span id="activityDueDate"></span>
+                    </div>
+                </div>
+                <div class="detail-item" id="activityAttachmentContainer">
+                    <i class="fas fa-paperclip"></i>
+                    <div>
+                        <strong>Attachment</strong>
+                        <a href="#" target="_blank" id="activityAttachmentLink">View Attached File</a>
+                    </div>
+                </div>
             </div>
-            <div class="modal-body">
-                <!-- Activity Details Section -->
-                <div class="activity-details-grid">
-                    <div class="detail-item">
-                        <i class="fas fa-calendar-alt"></i>
-                        <div>
-                            <strong>Due Date</strong>
-                            <span id="activityDueDate"></span>
-                        </div>
-                    </div>
-                    <div class="detail-item" id="activityAttachmentContainer">
-                        <i class="fas fa-paperclip"></i>
-                        <div>
-                            <strong>Attachment</strong>
-                            <a href="#" target="_blank" id="activityAttachmentLink">View Attached File</a>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Instructions Section -->
-                <div class="activity-instructions" id="activityInstructionsSection">
-                    <h4><i class="fas fa-info-circle"></i> Instructions</h4>
-                    <div class="instructions-content" id="activityInstructions">
-                        <!-- Instructions will be populated by JS -->
-                    </div>
+            <!-- Instructions Section -->
+            <div class="activity-instructions" id="activityInstructionsSection">
+                <h4><i class="fas fa-info-circle"></i> Instructions</h4>
+                <div class="instructions-content" id="activityInstructions">
+                    <!-- Instructions will be populated by JS -->
                 </div>
+            </div>
 
-                <!-- Teacher Remarks -->
-                <div class="teacher-remarks hidden" id="teacherRemarksSection">
-                    <h4><i class="fas fa-comment-alt"></i> Trainer's Remarks</h4>
-                    <div class="remarks-content">
-                        <p id="teacherRemarksContent"></p>
-                        <strong id="teacherRemarksMeta"></strong>
-                    </div>
+            <!-- Submission History -->
+            <div class.submission-history hidden" id="submissionHistory">
+                <h4><i class="fas fa-history"></i> Your Submission</h4>
+                <div id="historyContent" class="history-content">
+                    <!-- Submission history will be populated by JS -->
                 </div>
-
-                <!-- Submission History -->
-                <div class="submission-history hidden" id="submissionHistory">
-                    <h4><i class="fas fa-history"></i> Submission History</h4>
-                    <div id="historyContent" class="history-content">
-                        <!-- Submission history will be populated by JS -->
-                    </div>
+            </div>
+            
+            <!-- File Upload Section -->
+            <div class="upload-section" id="uploadSection">
+                <h4><i class="fas fa-upload"></i> Submit Your Work</h4>
+                <div class="form-group">
+                    <label for="submission_text">Add a comment or text submission</label>
+                    <textarea id="submission_text" name="submission_text" placeholder="Type your comment or answer here..."></textarea>
+                </div>
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Click to upload or drag and drop a file</p>
+                    <small>Max file size: 10MB. Supports PDF, DOC, DOCX, JPG, PNG, etc.</small>
+                    <input type="file" id="activityFileInput" class="file-input" style="display:none;">
                 </div>
                 
                 <!-- File Upload Section -->
@@ -551,5 +578,22 @@ try {
     </div>
 
     <script src="../js/trainee.js"></script>
+    <script>
+        // This script ensures the correct tab is shown on page load based on the URL parameter.
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            const tabId = params.get('current_tab');
+
+            if (tabId) {
+                // Deactivate all tabs first
+                document.querySelectorAll('.tab-link').forEach(link => link.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+                // Activate the target tab
+                document.querySelector(`.tab-link[data-tab="${tabId}"]`)?.classList.add('active');
+                document.getElementById(tabId)?.classList.add('active');
+            }
+        });
+    </script>
 </body>
 </html>
