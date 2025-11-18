@@ -151,7 +151,7 @@ body::before {
 .nav a:hover,
 .nav a.active {
   background: rgba(255, 255, 255, 0.2);
-  transform: translateX(0.3rem);
+  transform: none;
 }
 
 /* ================= MAIN CONTENT ================= */
@@ -209,7 +209,17 @@ body::before {
   padding: 8px;
   border-radius: 50%;
   transition: background 0.3s;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
+
+/* Stabilize action buttons in table cells */
+.table-actions { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.table-actions .action-btn { display: inline-flex; align-items: center; }
+.table-actions .action-btn .btn-text { display: inline-block; }
 
 .notif-icon:hover {
   background: rgba(255, 255, 255, 0.1);
@@ -3621,3 +3631,18 @@ input:invalid, textarea:invalid, select:invalid {
 .view-details-btn:hover {
     background: #545b62;
 }
+/* Make main tabs span full width from sidebar to page end */
+.content { grid-template-columns: 1fr; width: 100%; }
+.main-content { width: 100%; }
+.announcements { margin-top: 20px; }
+
+/* Home dashboard: place announcements beside cards at < 20% width */
+.home-content-wrapper { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.2fr); gap: 20px; align-items: start; }
+.home-main-content { width: 100%; }
+.home-content-wrapper .announcements { margin-top: 0; }
+
+@media (max-width: 992px) {
+  .home-content-wrapper { grid-template-columns: 1fr; }
+}
+.container { max-width: 100% !important; width: 100% !important; }
+.main { width: 100%; }

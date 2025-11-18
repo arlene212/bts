@@ -53,6 +53,9 @@ body::before {
   bottom: 0;
 }
 
+/* Ensure vertical sidebar navigation regardless of Bootstrap .nav defaults */
+.sidebar .nav { display: flex; flex-direction: column; gap: 0.25rem; }
+
 .user-card {
   text-align: center;
   margin-bottom: 2rem;
@@ -95,7 +98,7 @@ body::before {
 .nav a:hover,
 .nav a.active {
   background: rgba(255, 255, 255, 0.2);
-  transform: translateX(0.3rem);
+  transform: none;
 }
 
 /* ===========================
@@ -147,6 +150,11 @@ body::before {
 .notif-icon {
   font-size: 1.2rem;
   cursor: pointer;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ===========================
@@ -211,9 +219,16 @@ body::before {
 =========================== */
 .content {
   display: grid;
-  grid-template-columns: 3fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.2fr);
   gap: 20px;
   padding: 2rem;
+}
+.main-content { width: 100%; }
+.announcements { margin-top: 0; }
+
+@media (max-width: 992px) {
+  .content { grid-template-columns: 1fr; }
+  .announcements { margin-top: 20px; }
 }
 
 .main-content,
@@ -2183,3 +2198,5 @@ body::before {
         transform: translateX(0);
     }
 }
+.container { max-width: 100% !important; width: 100% !important; }
+.main { width: 100%; }

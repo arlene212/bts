@@ -4,9 +4,35 @@ require_once 'php/DatabaseConnection.php';
 
 SessionManager::startSession();
 
-// Check if user is already logged in
+// Check if user is already logged in and redirect to the refactored module pages
 if (SessionManager::isLoggedIn()) {
-    SessionManager::redirectBasedOnRole();
+    $user = SessionManager::getCurrentUser();
+    if ($user) {
+        $role = $user['role'] ?? '';
+        $mustChange = in_array($role, ['trainer', 'trainee']) && isset($user['password_changed_at']) && $user['password_changed_at'] === null;
+        if ($mustChange) {
+            header('Location: /bts/html/force_change_password.php');
+            exit;
+        }
+        switch ($role) {
+            case 'admin':
+                header('Location: /bts/admin/index.php');
+                break;
+            case 'trainer':
+                header('Location: /bts/trainer/index.php');
+                break;
+            case 'trainee':
+                header('Location: /bts/trainee/index.php');
+                break;
+            case 'guest':
+                header('Location: /bts/guest/index.php');
+                break;
+            default:
+                // fall through to show landing page
+                break;
+        }
+        exit;
+    }
 }
 
 $register_error = '';
@@ -64,8 +90,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
                     
                     if ($newUser) {
                         SessionManager::loginUser($newUser);
-                        // This function correctly handles routing for all roles, including the password change check for trainers/trainees.
-                        SessionManager::redirectBasedOnRole(); // Redirect based on role (will go to guest.php)
+                        $role = $newUser['role'] ?? 'guest';
+                        $mustChange = in_array($role, ['trainer', 'trainee']) && isset($newUser['password_changed_at']) && $newUser['password_changed_at'] === null;
+                        if ($mustChange) {
+                            header('Location: /bts/html/force_change_password.php');
+                            exit();
+                        }
+                        switch ($role) {
+                            case 'admin':
+                                header('Location: /bts/admin/index.php');
+                                break;
+                            case 'trainer':
+                                header('Location: /bts/trainer/index.php');
+                                break;
+                            case 'trainee':
+                                header('Location: /bts/trainee/index.php');
+                                break;
+                            case 'guest':
+                            default:
+                                header('Location: /bts/guest/index.php');
+                                break;
+                        }
                         exit();
                     } else {
                         $register_error = "Registration successful but failed to login.";
@@ -89,7 +134,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
     <meta http-equiv="Pragma" content="no-cache" />
     <title>Benguet Technical School-eLMS</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/landingpage.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/v4-shims.min.css">
+  <link rel="stylesheet" href="css/landingpage.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
     <link rel="icon" type="image/png" href="images/school.png">
 </head>
 
@@ -314,6 +361,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
     </footer>
 
     <script src="js/landingpage.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Check if a login error message exists and open the login modal

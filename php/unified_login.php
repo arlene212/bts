@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (empty($email) || empty($password)) {
         $_SESSION['login_error'] = "Please enter both email and password.";
-        header("Location: /bts/bts/landingpage.php");
+        header("Location: /bts/landingpage.php");
         exit();
     }
     
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Check if password needs to be changed
             if (in_array($user['role'], ['trainer', 'trainee']) && $user['password_changed_at'] === null) {
-                header("Location: ../html/force_change_password.php");
+                header("Location: /bts/force_change_password.php");
                 exit();
             }
             
@@ -51,19 +51,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else if ($user) {
             // User exists, but password was incorrect
             $_SESSION['login_error'] = "Invalid password.";
-            header("Location: /bts/bts/landingpage.php");
+            header("Location: /bts/landingpage.php");
             exit();
         } else {
             // User does not exist or is not active
             $_SESSION['login_error'] = "Invalid email or password.";
-            header("Location: /bts/bts/landingpage.php");
+            header("Location: /bts/landingpage.php");
             exit();
         }
         
     } catch (PDOException $e) {
         error_log("Login error: " . $e->getMessage());
         $_SESSION['login_error'] = "Login failed. Please try again.";
-        header("Location: /bts/bts/landingpage.php");
+        header("Location: /bts/landingpage.php");
         exit();
     }
 }

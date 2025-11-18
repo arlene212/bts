@@ -1,0 +1,29 @@
+<?php ?>
+<div class="modal hidden" id="profileModal">
+  <div class="modal-content">
+    <span class="close-btn" id="closeProfileModal">&times;</span>
+    <h2>Edit Profile</h2>
+    <div class="profile-wrapper">
+      <img id="profilePreview" src="<?php echo !empty($user['profile_picture']) ? '../uploads/profiles/' . htmlspecialchars($user['profile_picture']) : '../images/school.png'; ?>" alt="Profile">
+      <button type="button" id="changeProfileBtn" class="change-profile-btn">Upload Profile</button>
+      <input type="file" id="profileUpload" accept="image/*" style="display:none;">
+    </div>
+    <form class="modal-form" id="profileForm">
+      <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($user['user_id']); ?>">
+      <div><label>First Name</label><input type="text" id="firstName" name="first_name" value="<?php echo htmlspecialchars($user['first_name']); ?>"></div>
+      <div><label>Last Name</label><input type="text" id="lastName" name="last_name" value="<?php echo htmlspecialchars($user['last_name']); ?>"></div>
+      <div><label>Email</label><input type="email" id="email" name="email" value="<?php echo htmlspecialchars($user['email']); ?>"><div class="validation-error hidden" id="emailError">Please enter a valid email address</div></div>
+      <div><label>Contact Number</label><input type="text" id="contactNumber" name="contact_number" value="<?php echo htmlspecialchars($user['contact_number'] ?? ''); ?>"><div class="validation-error hidden" id="contactError">Please enter a valid contact number</div></div>
+      <div class="password-change-section"><h3>Change Password</h3><div><label>Old Password</label><input type="password" id="oldPassword" name="old_password"></div><div><label>New Password</label><input type="password" id="newPassword" name="new_password"></div><div><label>Confirm New Password</label><input type="password" id="confirmPassword" name="confirm_password"><div class="validation-error hidden" id="passwordError">Passwords do not match</div></div></div>
+    </form>
+    <div class="modal-buttons"><button type="button" class="delete-account-btn" id="openDeleteModal">Delete Account</button><div><button type="button" class="cancel-btn" id="cancelProfileChanges">Cancel</button><button type="button" class="primary-btn" id="saveProfileChanges">Save Changes</button></div></div>
+  </div>
+  </div>
+
+<div class="modal hidden" id="deleteAccountModal"><div class="modal-content small-modal"><span class="close-btn" id="closeDeleteModal">&times;</span><h2>⚠️ Delete Account</h2><p>Are you sure you want to permanently delete your account? <br>This action cannot be undone.</p><div class="modal-buttons"><button class="cancel-btn" id="cancelDeleteBtn">Cancel</button><button type="button" class="delete-btn" id="confirmDeleteBtn">Delete</button></div></div></div>
+
+<div id="enrollModal" class="modal hidden"><div class="modal-content"><span class="close-btn" id="closeEnrollModal">&times;</span><h3>⚠️ Confirmation</h3><p>Are you sure you want to enroll in <strong id="enrollCourseName"></strong>?</p><div class="modal-actions"><button id="confirmEnroll" class="confirm-btn">Yes, Enroll</button><button id="cancelEnroll" class="cancel-btn">Cancel</button></div></div></div>
+
+<div id="unenrollConfirmModal" class="modal hidden"><div class="modal-content small-modal"><span class="close-btn" id="closeUnenrollConfirmModal">&times;</span><h3>⚠️ Unenroll Confirmation</h3><p>Are you sure you want to unenroll from <strong id="unenrollConfirmCourseName"></strong>? Your progress in this course will be lost.</p><div class="modal-actions"><button id="cancelUnenrollConfirm" class="cancel-btn">Cancel</button><form id="unenrollForm" method="POST" action="../php/guest_unenroll.php" style="display:inline;"><input type="hidden" name="course_code" id="unenrollCourseCodeInput"><button id="confirmUnenroll" type="button" class="delete-btn">Yes, Unenroll</button></form></div></div></div>
+
+<div class="modal hidden" id="activityModal"><div class="modal-content activity-modal-content"><div class="modal-header"><h2 class="modal-title" id="activityModalTitle">Activity Title</h2><button class="close-btn" id="closeActivityModal"><i class="fas fa-times"></i></button></div><div class="modal-body"><div class="activity-instructions"><div class="instructions-title"><i class="fas fa-info-circle"></i>Instructions</div><div class="instructions-content" id="activityInstructions"></div></div><div class="due-date"><i class="fas fa-calendar-alt"></i><span>Due: <strong id="activityDueDate">December 15, 2023</strong></span></div><div class="upload-section" id="uploadSection"><div class="upload-header"><i class="fas fa-upload"></i><span>Submit Your Work</span></div><div class="upload-area" id="uploadArea"><div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div><div class="upload-text">Click to upload your file</div><div class="upload-hint">Max file size: 10MB | Supported: PDF, DOC, DOCX, JPG, PNG</div><input type="file" id="activityFileInput" class="file-input" style="display:none;"></div><div class="file-preview hidden" id="activityFilePreview"></div><button class="submit-btn" id="activitySubmitBtn" disabled>Submit Assignment</button></div><div class="quiz-section hidden" id="quizSection"><div class="quiz-instructions"><p>This quiz contains 10 multiple-choice questions. You have 30 minutes to complete it.</p><button class="primary-btn" id="startQuizBtn">Start Quiz</button></div></div><div class="submission-success hidden" id="submissionSuccess"><i class="fas fa-check-circle"></i><span>Your assignment has been submitted successfully!</span></div></div></div></div>

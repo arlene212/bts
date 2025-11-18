@@ -1,5 +1,5 @@
 
-        /* ===========================
+/* ===========================
            Base & Background
         =========================== */
         * {
@@ -35,7 +35,10 @@
         .container {
           display: flex;
           min-height: 100vh;
+          max-width: 100% !important;
+          width: 100% !important;
         }
+        .main { width: 100%; }
 
         /* ===========================
            Sidebar
@@ -53,6 +56,8 @@
           left: 0;
           bottom: 0;
         }
+
+        .sidebar .nav { display: flex; flex-direction: column; gap: 0.25rem; }
 
         .user-card {
           text-align: center;
@@ -95,7 +100,7 @@
 
         .nav a:hover {
           background: rgba(255, 255, 255, 0.2);
-          transform: translateX(0.3rem);
+          transform: none;
         }
 
         /* ===========================
@@ -132,6 +137,11 @@
         .notif-icon {
           font-size: 1.2rem;
           cursor: pointer;
+          width: 28px;
+          height: 28px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
 
         /* ===========================
@@ -181,7 +191,21 @@
            Content Area
         =========================== */
         .content {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 0.2fr);
+          gap: 20px;
           padding: 2rem;
+          width: 100%;
+        }
+        .main-content, .main-section { width: 100%; }
+        .announcements { margin-top: 0; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid #e0e0e0; }
+        .announcements h2 { color: #297acc; font-size: 1.25rem; font-weight: 600; border-bottom: 3px solid #1f5f99; padding-bottom: 6px; margin-bottom: 1rem; }
+        .announcements ul { list-style: none; padding: 0; margin: 0; }
+        .announcements li { padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; }
+        .announcements li:last-child { border-bottom: none; }
+        @media (max-width: 992px) {
+          .content { grid-template-columns: 1fr; }
+          .announcements { margin-top: 20px; }
         }
 
         .tab-header {

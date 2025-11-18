@@ -1,104 +1,56 @@
 <?php
-require_once 'SessionManager.php';
-require_once 'DatabaseConnection.php';
-
-SessionManager::startSession();
+require_once __DIR__ . '/DatabaseConnection.php';
+require_once __DIR__ . '/SessionManager.php';
 
 header('Content-Type: application/json');
 
-if (!SessionManager::isLoggedIn()) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Invalid request method']);
-    exit;
-}
-
-$user = SessionManager::getCurrentUser();
-$userId = $user['user_id'];
-
-$response = ['success' => false, 'message' => 'An error occurred.'];
+SessionManager::startSession();
+if (!SessionManager::isLoggedIn()) { echo json_encode(['success' => false, 'message' => 'Unauthorized']); exit; }
 
 try {
-    $database = new DatabaseConnection();
-    $pdo = $database->getConnection();
+  $db = new DatabaseConnection();
+  $pdo = $db->getConnection();
+  $user = SessionManager::getCurrentUser();
+  $userId = $user['user_id'];
 
-    // Get current user data
-    $currentUserStmt = $pdo->prepare("SELECT profile_picture, password FROM users WHERE user_id = ?");
-    $currentUserStmt->execute([$userId]);
-    $currentUserData = $currentUserStmt->fetch();
+  $firstName = trim($_POST['first_name'] ?? '');
+  $middleName = trim($_POST['middle_name'] ?? '');
+  $lastName = trim($_POST['last_name'] ?? '');
+  $suffix = trim($_POST['suffix'] ?? '');
+  $contactNumber = trim($_POST['contact_number'] ?? '');
+  $email = trim($_POST['email'] ?? '');
 
-    if (!$currentUserData) {
-        throw new Exception("User not found in database.");
-    }
+  $profilePictureName = null;
+  if (isset($_FILES['profile_picture']) && is_uploaded_file($_FILES['profile_picture']['tmp_name'])) {
+    $uploadDir = __DIR__ . '/../uploads/profiles/';
+    if (!is_dir($uploadDir)) { @mkdir($uploadDir, 0777, true); }
+    $ext = pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION);
+    $safeExt = preg_replace('/[^a-zA-Z0-9]/', '', $ext);
+    $fileName = $userId . '_' . time() . '.' . strtolower($safeExt ?: 'jpg');
+    $dest = $uploadDir . $fileName;
+    if (!move_uploaded_file($_FILES['profile_picture']['tmp_name'], $dest)) { echo json_encode(['success' => false, 'message' => 'Failed to upload profile picture']); exit; }
+    $profilePictureName = $fileName;
+  }
 
-    // Prepare fields to update
-    $firstName = $_POST['first_name'] ?? $user['first_name'];
-    $lastName = $_POST['last_name'] ?? $user['last_name'];
-    $email = $_POST['email'] ?? $user['email'];
-    $contactNumber = $_POST['contact_number'] ?? $user['contact_number'];
-    $profilePicture = $currentUserData['profile_picture'];
+  $fields = ['first_name' => $firstName, 'middle_name' => $middleName, 'last_name' => $lastName, 'suffix' => $suffix, 'contact_number' => $contactNumber, 'email' => $email];
+  $setParts = [];
+  $params = [];
+  foreach ($fields as $col => $val) { if ($val !== '') { $setParts[] = "$col = ?"; $params[] = $val; } }
+  if ($profilePictureName) { $setParts[] = "profile_picture = ?"; $params[] = $profilePictureName; }
+  $params[] = $userId;
 
-    // Handle profile picture upload
-    if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
-        $uploadDir = '../uploads/profiles/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
+  $sql = "UPDATE users SET " . implode(', ', $setParts) . " WHERE user_id = ?";
+  $stmt = $pdo->prepare($sql);
+  if (!empty($setParts)) { $stmt->execute($params); }
 
-        $fileExtension = pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION);
-        $fileName = 'profile_' . $userId . '_' . time() . '.' . $fileExtension;
-        $targetPath = $uploadDir . $fileName;
+  $getStmt = $pdo->prepare("SELECT user_id, role, first_name, middle_name, last_name, suffix, email, contact_number, profile_picture, status, date_created, last_login, password_changed_at FROM users WHERE user_id = ?");
+  $getStmt->execute([$userId]);
+  $updated = $getStmt->fetch(PDO::FETCH_ASSOC);
+  if ($updated) { $_SESSION['user'] = $updated; }
 
-        if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $targetPath)) {
-            // Delete old picture if it's not the default
-            if (!empty($profilePicture) && $profilePicture !== 'default.png' && file_exists($uploadDir . $profilePicture)) {
-                unlink($uploadDir . $profilePicture);
-            }
-            $profilePicture = $fileName;
-            // Update the session immediately with the new picture
-            $_SESSION['user']['profile_picture'] = $profilePicture;
-        } else {
-            throw new Exception("Failed to upload profile picture.");
-        }
-    }
-
-    // Handle password change
-    $oldPassword = $_POST['old_password'] ?? '';
-    $newPassword = $_POST['new_password'] ?? '';
-    if (!empty($newPassword)) {
-        if (empty($oldPassword) || !password_verify($oldPassword, $currentUserData['password'])) {
-            throw new Exception("Old password is incorrect.");
-        }
-        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-        $passStmt = $pdo->prepare("UPDATE users SET password = ? WHERE user_id = ?");
-        $passStmt->execute([$hashedPassword, $userId]);
-    }
-
-    // Update user information
-    $stmt = $pdo->prepare("UPDATE users SET first_name = ?, last_name = ?, email = ?, contact_number = ?, profile_picture = ? WHERE user_id = ?");
-    $stmt->execute([$firstName, $lastName, $email, $contactNumber, $profilePicture, $userId]);
-
-    // Update session data
-    $_SESSION['user']['first_name'] = $firstName;
-    $_SESSION['user']['last_name'] = $lastName;
-    $_SESSION['user']['email'] = $email;
-    $_SESSION['user']['contact_number'] = $contactNumber;
-    $_SESSION['user']['profile_picture'] = $profilePicture;
-
-    $response['success'] = true;
-    $response['message'] = 'Profile updated successfully!';
-    $response['user'] = $_SESSION['user'];
-
-} catch (Exception $e) {
-    http_response_code(500);
-    $response['message'] = $e->getMessage();
-    error_log("Profile update error: " . $e->getMessage());
+  echo json_encode(['success' => true, 'message' => 'Profile updated successfully', 'user' => $updated]);
+} catch (PDOException $e) {
+  error_log('Update profile error: ' . $e->getMessage());
+  echo json_encode(['success' => false, 'message' => 'Database error']);
 }
-
-echo json_encode($response);
 ?>
