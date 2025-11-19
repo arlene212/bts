@@ -1,5 +1,5 @@
 <?php ?>
-<section class="main-content tab-content" id="enrollments">
+<section class="main-content tab-content <?php echo ($currentTab === 'enrollments' ? 'active' : ''); ?>" id="enrollments">
   <div class="tab-header"><h2>Enrollment Management</h2></div>
   <div class="search-container">
     <div class="input-group">

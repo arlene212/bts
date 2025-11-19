@@ -1,5 +1,7 @@
-<?php ?>
-<section class="main-content tab-content" id="guests">
+<?php
+if (!isset($enrollments) || !is_array($enrollments)) { $enrollments = []; }
+?>
+<section class="main-content tab-content <?php echo ($currentTab === 'guests' ? 'active' : ''); ?>" id="guests">
   <div class="tab-header"><h2>Guest Management</h2></div>
   <div class="search-container">
     <div class="input-group">

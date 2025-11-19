@@ -1,5 +1,8 @@
-<?php ?>
-<section class="main-content tab-content" id="trainees">
+<?php
+if (!isset($enrollments) || !is_array($enrollments)) { $enrollments = []; }
+if (!isset($batchAssignments) || !is_array($batchAssignments)) { $batchAssignments = []; }
+?>
+<section class="main-content tab-content <?php echo ($currentTab === 'trainees' ? 'active' : ''); ?>" id="trainees">
   <div class="tab-header"><h2>Trainee Management</h2><div class="tab-actions"><button class="create-btn" id="createTraineeBtn">+ Create Trainee</button></div></div>
   <div class="search-container">
     <div class="input-group">

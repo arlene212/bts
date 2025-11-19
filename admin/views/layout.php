@@ -1,9 +1,27 @@
-<?php ?>
+<?php
+if (!isset($adminProfile) || !is_array($adminProfile)) {
+  if (session_status() === PHP_SESSION_NONE) { session_start(); }
+  $u = $_SESSION['user'] ?? [];
+  $adminProfile = [
+    'first_name' => isset($u['first_name']) ? (string)$u['first_name'] : 'Admin',
+    'middle_name' => isset($u['middle_name']) ? (string)$u['middle_name'] : '',
+    'last_name' => isset($u['last_name']) ? (string)$u['last_name'] : 'User',
+    'suffix' => isset($u['suffix']) ? (string)$u['suffix'] : '',
+    'email' => isset($u['email']) ? (string)$u['email'] : '',
+    'contact_number' => isset($u['contact_number']) ? (string)$u['contact_number'] : '',
+    'profile_picture' => isset($u['profile_picture']) ? (string)$u['profile_picture'] : '',
+  ];
+}
+$currentTab = isset($currentTab) ? $currentTab : ($_GET['current_tab'] ?? 'home');
+$profilePic = $adminProfile['profile_picture'] ?? '';
+$avatarSrc = (!empty($profilePic) && $profilePic !== 'default.png') ? '../uploads/profiles/' . $profilePic . '?t=' . time() : '../images/school.png';
+if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssignments = []; }
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <meta name="viewport" content="width=device-width, initial=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Benguet Technical School-eLMS</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/v4-shims.min.css">
@@ -40,7 +58,7 @@
       <div class="profile">
         <div class="user-card">
           <div class="user-card-header">
-            <img src="<?php echo (!empty($adminProfile['profile_picture']) && $adminProfile['profile_picture'] !== 'default.png') ? '../uploads/profiles/' . $adminProfile['profile_picture'] . '?t=' . time() : '../images/school.png'; ?>" alt="User Avatar" class="user-avatar" id="userCardAvatar">
+            <img src="<?php echo $avatarSrc; ?>" alt="User Avatar" class="user-avatar" id="userCardAvatar">
             <button class="edit-profile-btn" id="editProfileBtn" title="Edit Profile"><i class="fas fa-edit"></i></button>
           </div>
           <div class="user-info">
@@ -51,12 +69,13 @@
         </div>
       </div>
       <nav class="nav">
-        <a href="#" class="tab-link active" data-tab="home">Home</a>
-        <a href="#" class="tab-link" data-tab="trainers">Trainers</a>
-        <a href="#" class="tab-link" data-tab="trainees">Trainees</a>
-        <a href="#" class="tab-link" data-tab="guests">Guests</a>
-        <a href="#" class="tab-link" data-tab="courses">Courses</a>
-        <a href="#" class="tab-link" data-tab="enrollments">Enrollments</a>
+        <a href="?current_tab=home#home" class="tab-link<?php echo ($currentTab === 'home' ? ' active' : ''); ?>" data-tab="home">Home</a>
+        <a href="?current_tab=trainers#trainers" class="tab-link<?php echo ($currentTab === 'trainers' ? ' active' : ''); ?>" data-tab="trainers">Trainers</a>
+        <a href="?current_tab=trainees#trainees" class="tab-link<?php echo ($currentTab === 'trainees' ? ' active' : ''); ?>" data-tab="trainees">Trainees</a>
+        <a href="?current_tab=guests#guests" class="tab-link<?php echo ($currentTab === 'guests' ? ' active' : ''); ?>" data-tab="guests">Guests</a>
+        <a href="?current_tab=courses#courses" class="tab-link<?php echo ($currentTab === 'courses' ? ' active' : ''); ?>" data-tab="courses">Courses</a>
+        <a href="?current_tab=enrollments#enrollments" class="tab-link<?php echo ($currentTab === 'enrollments' ? ' active' : ''); ?>" data-tab="enrollments">Enrollments</a>
+        <a href="?current_tab=user_logs#user_logs" class="tab-link<?php echo ($currentTab === 'user_logs' ? ' active' : ''); ?>" data-tab="user_logs">User Logs</a>
       </nav>
     </aside>
     <main class="main">
@@ -72,7 +91,7 @@
       </header>
       <div class="sidebar-overlay" id="sidebarOverlay"></div>
       <div class="content">
-        <section class="main-content tab-content active" id="home">
+        <section class="main-content tab-content <?php echo ($currentTab === 'home' ? 'active' : ''); ?>" id="home">
           <div class="home-content-wrapper">
             <div class="home-main-content">
               <div class="dashboard tab-inner active" id="dashboard">
@@ -114,8 +133,9 @@
         <?php include __DIR__ . '/sections/guests.php'; ?>
         <?php include __DIR__ . '/sections/courses.php'; ?>
         <?php include __DIR__ . '/sections/enrollments.php'; ?>
+        <?php include __DIR__ . '/sections/user_logs.php'; ?>
 
-        <section class="main-content tab-content" id="trainers">
+        <section class="main-content tab-content <?php echo ($currentTab === 'trainers' ? 'active' : ''); ?>" id="trainers">
           <div class="tab-header"><h2>Trainer Management</h2><div class="tab-actions"><button class="create-btn" id="createTrainerBtn">+ Create Trainer</button></div></div>
           <div class="search-container">
             <div class="search-input-group">

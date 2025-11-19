@@ -1,4 +1,6 @@
-<?php ?>
+<?php
+if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssignments = []; }
+?>
 <section class="main-content tab-content" id="trainers">
   <div class="tab-header"><h2>Trainer Management</h2><div class="tab-actions"><button class="create-btn" id="createTrainerBtn">+ Create Trainer</button></div></div>
   <div class="search-container">

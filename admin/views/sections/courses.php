@@ -1,5 +1,7 @@
-<?php ?>
-<section class="main-content tab-content" id="courses">
+<?php
+if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; }
+?>
+<section class="main-content tab-content <?php echo ($currentTab === 'courses' ? 'active' : ''); ?>" id="courses">
   <div class="tab-header"><h2>Course Management</h2><div class="tab-actions"><button class="create-btn" id="addCourseBtn">+ Add Course</button><button class="create-btn" id="addBatchBtn">+ Add Course Batch</button></div></div>
   <div class="courses-grid row g-3">
     <?php foreach ($courses as $course): ?>
