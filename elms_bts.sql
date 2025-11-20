@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Nov 19, 2025 at 10:57 PM
+-- Generation Time: Nov 20, 2025 at 10:02 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -129,8 +129,7 @@ CREATE TABLE `course_assignments` (
   `trainer_id` varchar(20) NOT NULL,
   `course_code` varchar(50) NOT NULL,
   `date_assigned` datetime DEFAULT current_timestamp(),
-  `assigned_by` varchar(20) NOT NULL,
-  `batch` text NOT NULL
+  `assigned_by` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

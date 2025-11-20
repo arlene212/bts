@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/v4-shims.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="../css/guest.css">
   <link rel="stylesheet" href="../css/utils.css">
   <link rel="icon" type="image/png" href="../images/school.png">
@@ -37,20 +37,25 @@
           </div>
         </div>
         <aside class="announcements">
-          <h2>Announcements</h2>
-          <ul>
+          <div class="announcements-header">
+            <h2><i class="fas fa-bullhorn"></i> Announcements</h2>
+          </div>
+          <div class="announcements-content">
             <?php if (!empty($announcements)): ?>
               <?php foreach ($announcements as $announcement): ?>
-                <li>
-                  <strong><?php echo htmlspecialchars($announcement['title']); ?></strong><br>
-                  <?php echo htmlspecialchars(substr($announcement['content'], 0, 100)); ?>...<br>
+                <div class="announcement-item">
+                  <h4><?php echo htmlspecialchars($announcement['title']); ?></h4>
+                  <p><?php echo htmlspecialchars(substr($announcement['content'], 0, 100)); ?>...</p>
                   <small><?php echo date('M d, Y', strtotime($announcement['date_posted'])); ?></small>
-                </li>
+                </div>
               <?php endforeach; ?>
             <?php else: ?>
-              <li>No announcements yet. Stay tuned!</li>
+              <div class="no-announcements">
+                <i class="fas fa-bell-slash"></i>
+                <p>No announcements yet. Stay tuned!</p>
+              </div>
             <?php endif; ?>
-          </ul>
+          </div>
         </aside>
       </div>
     </main>
@@ -63,12 +68,12 @@
     window.currentTab = '<?php echo addslashes($currentTab ?? "home"); ?>';
   </script>
   <script src="../js/guest/core.js"></script>
-  <script src="../js/guest/modal_controls.js"></script>
   <script src="../js/guest/navigation.js"></script>
+  <script src="../js/guest/modal_controls.js"></script>
+  <script src="../js/guest/course_details.js"></script>
   <script src="../js/guest/enrollment.js"></script>
   <script src="../js/guest/activity.js"></script>
   <script src="../js/guest/profile.js"></script>
-  <script src="../js/guest/course_details.js"></script>
   <script src="../js/guest/main.js"></script>
 </body>
 </html>
