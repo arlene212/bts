@@ -32,6 +32,8 @@ function setupUserManagement() {
       const form = this;
       const formData = new FormData(form);
       formData.append('user_role', 'trainer');
+      const checkedBatches = Array.from(document.querySelectorAll('#edit_trainer_batches_container input[type="checkbox"]:checked')).map(cb => cb.value);
+      if (checkedBatches.length) { formData.append('trainer_batches', checkedBatches.join(', ')); }
       fetch('../php/update_user.php', { method: 'POST', body: formData })
         .then(response => response.json())
         .then(data => { if (data.success) { alert(data.message); window.location.reload(); } else { alert('Error updating trainer: ' + data.message); } })
@@ -55,6 +57,7 @@ function setupUserManagement() {
     btn.addEventListener('click', function() {
       const userId = this.getAttribute('data-user-id');
       const userDataStr = this.getAttribute('data-user-data');
+      const existingBatchesStr = this.getAttribute('data-trainer-batches') || '';
       try {
         const userData = JSON.parse(userDataStr);
         document.getElementById('editTrainerId').value = userId;
@@ -66,7 +69,20 @@ function setupUserManagement() {
         Array.from(coursesSelect.options).forEach(option => option.selected = false);
         fetch(`../php/get_trainer_courses.php?trainer_id=${userId}`)
           .then(response => response.json())
-          .then(assignedCourses => { assignedCourses.forEach(course => { const option = coursesSelect.querySelector(`option[value="${course.course_code}"]`); if (option) { option.selected = true; } }); })
+          .then(assignedCourses => {
+            assignedCourses.forEach(course => {
+              const option = coursesSelect.querySelector(`option[value="${course.course_code}"]`);
+              if (option) { option.selected = true; }
+            });
+            const batchSet = new Set();
+            assignedCourses.forEach(course => {
+              if (course.batch_name) {
+                String(course.batch_name).split(',').forEach(b => { const t = b.trim(); if (t) batchSet.add(t); });
+              }
+            });
+            window.__trainerExistingBatches = Array.from(batchSet);
+            populateTrainerBatchesFromSelection();
+          })
           .catch(() => {});
         openModal('editTrainerModal');
       } catch (_) {}
@@ -152,3 +168,53 @@ function setupGuestEnrollment() {
     });
   });
 }
+
+function populateTrainerBatchesFromSelection() {
+  const container = document.getElementById('edit_trainer_batches_container');
+  const coursesSelect = document.getElementById('edit_trainer_courses');
+  if (!container || !coursesSelect) return;
+  const selected = Array.from(coursesSelect.selectedOptions).map(o => o.value);
+  const primaryCourseCode = selected[0] || '';
+  container.innerHTML = '';
+  if (!primaryCourseCode) return;
+  fetch('../admin/handlers/get_batches.php?course_code=' + primaryCourseCode)
+    .then(response => response.json())
+    .then(batches => {
+      let count = 0;
+      batches.forEach(batch => {
+        const id = 'trainer_batch_' + batch.batch_name.replace(/\s+/g, '_');
+        const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = batch.batch_name;
+        checkbox.id = id;
+        const prechecked = Array.isArray(window.__trainerExistingBatches) && window.__trainerExistingBatches.includes(batch.batch_name);
+        checkbox.checked = prechecked;
+        checkbox.addEventListener('change', function() {
+          const checked = container.querySelectorAll('input[type="checkbox"]:checked').length;
+          container.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.disabled = checked >= 2 && !cb.checked; });
+        });
+        const text = document.createTextNode(batch.batch_name);
+        label.appendChild(checkbox);
+        label.appendChild(text);
+        container.appendChild(label);
+        count++;
+      });
+      const checkedAfter = container.querySelectorAll('input[type="checkbox"]:checked').length;
+      if (checkedAfter > 2) {
+        let kept = 0;
+        container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          if (cb.checked) {
+            kept++;
+            if (kept > 2) cb.checked = false;
+          }
+        });
+      }
+      const finalChecked = container.querySelectorAll('input[type="checkbox"]:checked').length;
+      container.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.disabled = finalChecked >= 2 && !cb.checked; });
+    });
+}
+
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.id === 'edit_trainer_courses') { populateTrainerBatchesFromSelection(); }
+});

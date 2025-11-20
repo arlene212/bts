@@ -14,11 +14,32 @@
     </div>
   </div>
   <nav class="nav">
-    <a href="#" class="tab-link active" data-tab="home">Home</a>
-    <a href="#" class="tab-link" data-tab="trainers">Trainers</a>
-    <a href="#" class="tab-link" data-tab="trainees">Trainees</a>
-    <a href="#" class="tab-link" data-tab="guests">Guests</a>
-    <a href="#" class="tab-link" data-tab="courses">Courses</a>
-    <a href="#" class="tab-link" data-tab="enrollments">Enrollments</a>
+    <a href="#" class="tab-link active" data-tab="home">
+      <i class="fas fa-home"></i>
+      <span>Home</span>
+    </a>
+    <a href="#" class="tab-link" data-tab="trainers">
+      <i class="fas fa-chalkboard-teacher"></i>
+      <span>Trainers</span>
+    </a>
+    <a href="#" class="tab-link" data-tab="trainees">
+      <i class="fas fa-users"></i>
+      <span>Trainees</span>
+    </a>
+    <a href="#" class="tab-link" data-tab="guests">
+      <i class="fas fa-user-friends"></i>
+      <span>Guests</span>
+    </a>
+    <a href="#" class="tab-link" data-tab="courses">
+      <i class="fas fa-graduation-cap"></i>
+      <span>Courses</span>
+    </a>
+    <a href="#" class="tab-link" data-tab="enrollments">
+      <i class="fas fa-clipboard-list"></i>
+      <span>Enrollments</span>
+      <?php if ($pendingEnrollments > 0): ?>
+        <span class="nav-badge"><?php echo $pendingEnrollments; ?></span>
+      <?php endif; ?>
+    </a>
   </nav>
 </aside>

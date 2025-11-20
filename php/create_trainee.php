@@ -162,11 +162,16 @@ try {
                 
                 // Create batch assignment
                 if (!empty($batchName)) {
+                    $trainerStmt = $pdo->prepare("SELECT trainer_id FROM course_batches WHERE course_code = ? AND batch_name = ? AND trainer_id IS NOT NULL");
+                    $trainerStmt->execute([$courseCode, $batchName]);
+                    $trainer = $trainerStmt->fetch();
+                    $trainerId = $trainer ? $trainer['trainer_id'] : null;
+                    
                     $batchStmt = $pdo->prepare("
-                        INSERT INTO batch_assignments (trainee_id, course_code, batch_name, assigned_by, date_assigned) 
-                        VALUES (?, ?, ?, ?, NOW())
+                        INSERT INTO batch_assignments (trainee_id, trainer_id, course_code, batch_name, assigned_by, date_assigned) 
+                        VALUES (?, ?, ?, ?, ?, NOW())
                     ");
-                    $batchSuccess = $batchStmt->execute([$userId, $courseCode, $batchName, $_SESSION['user']['user_id']]);
+                    $batchSuccess = $batchStmt->execute([$userId, $trainerId, $courseCode, $batchName, $_SESSION['user']['user_id']]);
                     
                     if (!$batchSuccess) {
                         $errorInfo = $batchStmt->errorInfo();

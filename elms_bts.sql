@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Nov 19, 2025 at 03:33 PM
+-- Generation Time: Nov 19, 2025 at 10:57 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -29,7 +29,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `activities` (
   `id` int(11) NOT NULL,
-  `user_id` varchar(20) NOT NULL,
+  `trainer_id` varchar(20) NOT NULL,
   `action` varchar(100) NOT NULL,
   `description` text DEFAULT NULL,
   `timestamp` datetime DEFAULT current_timestamp()
@@ -44,7 +44,7 @@ CREATE TABLE `activities` (
 CREATE TABLE `activity_submissions` (
   `id` int(11) NOT NULL,
   `activity_id` int(11) DEFAULT NULL,
-  `trainee_id` varchar(50) DEFAULT NULL,
+  `guest_id` varchar(50) DEFAULT NULL,
   `submission_text` text DEFAULT NULL,
   `file_path` varchar(500) DEFAULT NULL,
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -77,8 +77,9 @@ CREATE TABLE `announcements` (
 CREATE TABLE `batch_assignments` (
   `id` int(11) NOT NULL,
   `trainee_id` varchar(20) NOT NULL,
+  `trainer_id` varchar(50) NOT NULL,
   `course_code` varchar(50) NOT NULL,
-  `batch_name` varchar(100) NOT NULL,
+  `batch_name` text NOT NULL,
   `date_assigned` datetime DEFAULT current_timestamp(),
   `assigned_by` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -128,7 +129,8 @@ CREATE TABLE `course_assignments` (
   `trainer_id` varchar(20) NOT NULL,
   `course_code` varchar(50) NOT NULL,
   `date_assigned` datetime DEFAULT current_timestamp(),
-  `assigned_by` varchar(20) NOT NULL
+  `assigned_by` varchar(20) NOT NULL,
+  `batch` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -143,7 +145,8 @@ CREATE TABLE `course_batches` (
   `batch_name` varchar(100) NOT NULL,
   `description` text DEFAULT NULL,
   `created_by` varchar(20) NOT NULL,
-  `created_at` datetime DEFAULT current_timestamp()
+  `created_at` datetime DEFAULT current_timestamp(),
+  `trainer_id` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -291,7 +294,7 @@ CREATE TABLE `users` (
 --
 ALTER TABLE `activities`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`);
+  ADD KEY `user_id` (`trainer_id`);
 
 --
 -- Indexes for table `activity_submissions`
@@ -299,7 +302,7 @@ ALTER TABLE `activities`
 ALTER TABLE `activity_submissions`
   ADD PRIMARY KEY (`id`),
   ADD KEY `activity_id` (`activity_id`),
-  ADD KEY `trainee_id` (`trainee_id`);
+  ADD KEY `trainee_id` (`guest_id`);
 
 --
 -- Indexes for table `announcements`
@@ -315,7 +318,9 @@ ALTER TABLE `batch_assignments`
   ADD PRIMARY KEY (`id`),
   ADD KEY `trainee_id` (`trainee_id`),
   ADD KEY `course_code` (`course_code`),
-  ADD KEY `assigned_by` (`assigned_by`);
+  ADD KEY `assigned_by` (`assigned_by`),
+  ADD KEY `batch_id` (`batch_name`(768)),
+  ADD KEY `trainer_id` (`trainer_id`);
 
 --
 -- Indexes for table `competencies`
@@ -346,7 +351,8 @@ ALTER TABLE `course_assignments`
 ALTER TABLE `course_batches`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `unique_batch` (`course_code`,`batch_name`),
-  ADD KEY `created_by` (`created_by`);
+  ADD KEY `created_by` (`created_by`),
+  ADD KEY `trainer_id` (`trainer_id`);
 
 --
 -- Indexes for table `course_materials`
@@ -507,14 +513,14 @@ ALTER TABLE `users`
 -- Constraints for table `activities`
 --
 ALTER TABLE `activities`
-  ADD CONSTRAINT `activities_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+  ADD CONSTRAINT `activities_ibfk_1` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`user_id`);
 
 --
 -- Constraints for table `activity_submissions`
 --
 ALTER TABLE `activity_submissions`
   ADD CONSTRAINT `activity_submissions_ibfk_1` FOREIGN KEY (`activity_id`) REFERENCES `topic_activities` (`id`),
-  ADD CONSTRAINT `activity_submissions_ibfk_2` FOREIGN KEY (`trainee_id`) REFERENCES `users` (`user_id`);
+  ADD CONSTRAINT `activity_submissions_ibfk_2` FOREIGN KEY (`guest_id`) REFERENCES `users` (`user_id`);
 
 --
 -- Constraints for table `announcements`
@@ -528,7 +534,8 @@ ALTER TABLE `announcements`
 ALTER TABLE `batch_assignments`
   ADD CONSTRAINT `batch_assignments_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `users` (`user_id`),
   ADD CONSTRAINT `batch_assignments_ibfk_2` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`),
-  ADD CONSTRAINT `batch_assignments_ibfk_3` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`user_id`);
+  ADD CONSTRAINT `batch_assignments_ibfk_3` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `batch_assignments_ibfk_5` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `course_assignments`
@@ -543,7 +550,8 @@ ALTER TABLE `course_assignments`
 --
 ALTER TABLE `course_batches`
   ADD CONSTRAINT `course_batches_ibfk_1` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`),
-  ADD CONSTRAINT `course_batches_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`);
+  ADD CONSTRAINT `course_batches_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `course_batches_ibfk_3` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`user_id`);
 
 --
 -- Constraints for table `course_materials`

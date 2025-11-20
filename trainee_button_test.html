@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainee Button Styles Test</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/trainee.css">
+    <style>
+        body {
+            padding: 40px;
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            font-family: 'Inter', sans-serif;
+        }
+        .test-section {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .test-section h2 {
+            margin-bottom: 20px;
+            color: #0f172a;
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-section">
+        <h2>🎨 Primary Buttons</h2>
+        <div class="button-group">
+            <button class="btn btn-primary btn-ripple">
+                <i class="fas fa-plus"></i> Request to Enroll
+            </button>
+            <button class="btn btn-primary btn-sm btn-ripple">
+                <i class="fas fa-save"></i> Save
+            </button>
+            <button class="btn btn-primary btn-lg btn-ripple">
+                <i class="fas fa-rocket"></i> Large Button
+            </button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔄 Secondary & Outline Buttons</h2>
+        <div class="button-group">
+            <button class="btn btn-secondary btn-ripple">
+                <i class="fas fa-user"></i> Profile
+            </button>
+            <button class="btn btn-outline-primary btn-ripple">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="btn btn-outline-secondary btn-ripple">
+                <i class="fas fa-share"></i> Share
+            </button>
+            <button class="btn btn-outline-danger btn-cancel btn-ripple">
+                <i class="fas fa-times"></i> Cancel Request
+            </button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>⚡ Status & Action Buttons</h2>
+        <div class="button-group">
+            <button class="btn btn-success btn-ripple">
+                <i class="fas fa-check"></i> Approved
+            </button>
+            <button class="btn btn-warning btn-ripple">
+                <i class="fas fa-clock"></i> Pending
+            </button>
+            <button class="btn btn-secondary" disabled>
+                <i class="fas fa-lock"></i> Locked
+            </button>
+            <button class="back-btn btn-ripple">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Switch Buttons</h2>
+        <div class="news-switch-wrapper">
+            <div class="switch-oval">
+                <div class="switch-inner" id="testSwitchInner"></div>
+                <button class="switch-btn active" data-tab="enrolled">Enrolled</button>
+                <button class="switch-btn" data-tab="completed">Completed</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🏷️ Status Badges</h2>
+        <div class="button-group">
+            <span class="status-badge approved">
+                <i class="fas fa-check"></i> Approved
+            </span>
+            <span class="status-badge pending">
+                <i class="fas fa-clock"></i> Pending
+            </span>
+            <span class="status-badge rejected">
+                <i class="fas fa-times"></i> Rejected
+            </span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>👥 Button Groups</h2>
+        <div class="btn-group">
+            <button class="btn btn-primary">
+                <i class="fas fa-list"></i> List
+            </button>
+            <button class="btn btn-outline-primary">
+                <i class="fas fa-th"></i> Grid
+            </button>
+            <button class="btn btn-outline-primary">
+                <i class="fas fa-chart-bar"></i> Chart
+            </button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔘 Icon Buttons</h2>
+        <div class="button-group">
+            <button class="btn btn-icon btn-primary btn-ripple">
+                <i class="fas fa-home"></i>
+            </button>
+            <button class="btn btn-icon btn-secondary btn-ripple">
+                <i class="fas fa-user"></i>
+            </button>
+            <button class="btn btn-icon btn-outline-danger btn-ripple">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Add interactive functionality
+        document.querySelectorAll('.switch-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const parent = this.parentElement;
+                const inner = parent.querySelector('.switch-inner');
+                const activeBtn = parent.querySelector('.switch-btn.active');
+                
+                if (activeBtn) activeBtn.classList.remove('active');
+                this.classList.add('active');
+                
+                // Animate the inner switch
+                const btnIndex = Array.from(parent.children).indexOf(this) - 1;
+                const btnWidth = this.offsetWidth;
+                const spacing = 4;
+                inner.style.transform = `translateX(${btnIndex * (btnWidth + spacing)}px)`;
+            });
+        });
+
+        // Ripple effect for buttons
+        document.querySelectorAll('.btn-ripple').forEach(button => {
+            button.addEventListener('click', function(e) {
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                ripple.classList.add('ripple');
+                
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+
+        // Loading state simulation
+        document.querySelectorAll('.btn-primary, .enroll-btn, .btn-cancel').forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (this.classList.contains('btn-loading')) return;
+                
+                const originalText = this.innerHTML;
+                this.classList.add('btn-loading');
+                this.disabled = true;
+                
+                setTimeout(() => {
+                    this.classList.remove('btn-loading');
+                    this.disabled = false;
+                    
+                    // Success state
+                    if (this.classList.contains('enroll-btn') || this.classList.contains('btn-cancel')) {
+                        this.classList.add('btn-success-state');
+                        const successText = this.classList.contains('enroll-btn') ? 
+                            '<i class="fas fa-check"></i> Request Sent!' : 
+                            '<i class="fas fa-check"></i> Cancelled!';
+                        this.innerHTML = successText;
+                        
+                        setTimeout(() => {
+                            this.classList.remove('btn-success-state');
+                            this.innerHTML = originalText;
+                        }, 2000);
+                    }
+                }, 1500);
+            });
+        });
+    </script>
+</body>
+</html>

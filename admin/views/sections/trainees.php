@@ -1,5 +1,5 @@
 <?php
-if (!isset($enrollments) || !is_array($enrollments)) { $enrollments = []; }
+if (!isset($approvedEnrollments) || !is_array($approvedEnrollments)) { $approvedEnrollments = []; }
 if (!isset($batchAssignments) || !is_array($batchAssignments)) { $batchAssignments = []; }
 ?>
 <section class="main-content tab-content <?php echo ($currentTab === 'trainees' ? 'active' : ''); ?>" id="trainees">
@@ -34,7 +34,7 @@ if (!isset($batchAssignments) || !is_array($batchAssignments)) { $batchAssignmen
               <td><?php echo htmlspecialchars($trainee['contact_number']); ?></td>
               <td>
                 <?php
-                $enrolledCourses = array_filter($enrollments, function ($e) use ($trainee) { return $e['trainee_id'] == $trainee['user_id'] && $e['status'] == 'approved'; });
+                $enrolledCourses = array_filter($approvedEnrollments, function ($e) use ($trainee) { return $e['trainee_id'] == $trainee['user_id']; });
                 if (!empty($enrolledCourses)) { echo implode(', ', array_map(function ($e) { return $e['course_code']; }, $enrolledCourses)); } else { echo 'No courses enrolled'; }
                 ?>
               </td>
@@ -86,7 +86,7 @@ if (!isset($batchAssignments) || !is_array($batchAssignments)) { $batchAssignmen
               <td><?php echo htmlspecialchars($trainee['contact_number']); ?></td>
               <td>
                 <?php
-                $enrolledCourses = array_filter($enrollments, function ($e) use ($trainee) { return $e['trainee_id'] == $trainee['user_id'] && $e['status'] == 'approved'; });
+                $enrolledCourses = array_filter($approvedEnrollments, function ($e) use ($trainee) { return $e['trainee_id'] == $trainee['user_id']; });
                 if (!empty($enrolledCourses)) { echo implode(', ', array_map(function ($e) { return $e['course_code']; }, $enrolledCourses)); } else { echo 'No courses enrolled'; }
                 ?>
               </td>

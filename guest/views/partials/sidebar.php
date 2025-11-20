@@ -12,9 +12,27 @@
     </div>
   </div>
   <nav class="nav">
-    <a href="#" class="tab-link <?php echo $currentTab === 'home' ? 'active' : ''; ?>" data-tab="home">Home</a>
-    <a href="#" class="tab-link <?php echo $currentTab === 'courses' ? 'active' : ''; ?>" data-tab="courses">Offered Courses</a>
-    <a href="#" class="tab-link <?php echo $currentTab === 'enrolled' ? 'active' : ''; ?>" data-tab="enrolled">Enrolled Courses</a>
-    <a href="#" class="tab-link <?php echo $currentTab === 'aboutUs' ? 'active' : ''; ?>" data-tab="aboutUs">About US</a>
+    <div class="nav-section">
+      <h4 class="nav-section-title">Main Menu</h4>
+      <a href="#" class="tab-link <?php echo $currentTab === 'home' ? 'active' : ''; ?>" data-tab="home">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+      </a>
+      <a href="#" class="tab-link <?php echo $currentTab === 'courses' ? 'active' : ''; ?>" data-tab="courses">
+        <i class="fas fa-book-open"></i>
+        <span>Offered Courses</span>
+      </a>
+      <a href="#" class="tab-link <?php echo $currentTab === 'enrolled' ? 'active' : ''; ?>" data-tab="enrolled">
+        <i class="fas fa-user-graduate"></i>
+        <span>Enrolled Courses</span>
+      </a>
+    </div>
+    <div class="nav-section">
+      <h4 class="nav-section-title">Information</h4>
+      <a href="#" class="tab-link <?php echo $currentTab === 'aboutUs' ? 'active' : ''; ?>" data-tab="aboutUs">
+        <i class="fas fa-info-circle"></i>
+        <span>About Us</span>
+      </a>
+    </div>
   </nav>
 </aside>

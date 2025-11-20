@@ -1,6 +1,6 @@
 <?php ?>
-<section class="main-content tab-content <?php echo $currentTab === 'aboutUs' ? 'active' : ''; ?>" id="aboutUs">
-  <h2>About Benguet Technical School</h2>
+  <div class="tab-inner active" id="about-content">
+    <h2>About Benguet Technical School</h2>
   <div class="about-content">
     <p>BENGUET TECHNICAL SCHOOL IS AN LGU-RUN TECHNICAL VOCATIONAL INSTITUTION UNDER THE PROVINCIAL GOVERNMENT OF BENGUET.
       IT OFFERS VARIOUS PROGRAMS/SHORT COURSES ACCREDITED BY TESDA.</p>
@@ -14,4 +14,4 @@
       <p><i class="fab fa-facebook"></i> Benguet Technical School</p>
     </div>
   </div>
-</section>
+</div>

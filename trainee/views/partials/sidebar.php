@@ -11,10 +11,37 @@
       <p class="user-id"><?php echo htmlspecialchars($user['user_id']); ?></p>
     </div>
   </div>
+  
   <nav class="nav">
-    <a href="#" class="tab-link <?php echo $currentTab === 'home' ? 'active' : ''; ?>" data-tab="home">Home</a>
-    <a href="#" class="tab-link <?php echo $currentTab === 'mycourses' ? 'active' : ''; ?>" data-tab="mycourses">My Courses</a>
-    <a href="#" class="tab-link <?php echo $currentTab === 'offered-courses' ? 'active' : ''; ?>" data-tab="offered-courses">Offered Courses</a>
-    <a href="#" class="tab-link <?php echo $currentTab === 'enrollment-requests' ? 'active' : ''; ?>" data-tab="enrollment-requests">Enrollment Request</a>
+    <div class="nav-section">
+      <h4 class="nav-title">Dashboard</h4>
+      <a href="#" class="tab-link <?php echo $currentTab === 'home' ? 'active' : ''; ?>" data-tab="home">
+        <i class="fas fa-home"></i>
+        <span>Overview</span>
+      </a>
+    </div>
+    
+    <div class="nav-section">
+      <h4 class="nav-title">Learning</h4>
+      <a href="#" class="tab-link <?php echo $currentTab === 'mycourses' ? 'active' : ''; ?>" data-tab="mycourses">
+        <i class="fas fa-book"></i>
+        <span>My Courses</span>
+      </a>
+      <a href="#" class="tab-link <?php echo $currentTab === 'offered-courses' ? 'active' : ''; ?>" data-tab="offered-courses">
+        <i class="fas fa-graduation-cap"></i>
+        <span>Browse Courses</span>
+      </a>
+    </div>
+    
+    <div class="nav-section">
+      <h4 class="nav-title">Requests</h4>
+      <a href="#" class="tab-link <?php echo $currentTab === 'enrollment-requests' ? 'active' : ''; ?>" data-tab="enrollment-requests">
+        <i class="fas fa-clipboard-list"></i>
+        <span>My Requests</span>
+        <?php if ($pending_requests > 0): ?>
+          <span class="nav-badge"><?php echo $pending_requests; ?></span>
+        <?php endif; ?>
+      </a>
+    </div>
   </nav>
 </aside>

@@ -30,7 +30,7 @@ if (!isset($enrollments) || !is_array($enrollments)) { $enrollments = []; }
             <td><?php echo htmlspecialchars($guest['contact_number']); ?></td>
             <td>
               <?php
-              $guestEnrollments = array_filter($enrollments, function ($e) use ($guest) { return $e['trainee_id'] == $guest['user_id'] && $e['status'] == 'approved'; });
+              $guestEnrollments = array_filter($approvedEnrollments, function ($e) use ($guest) { return $e['trainee_id'] == $guest['user_id']; });
               if (!empty($guestEnrollments)) { echo implode(', ', array_map(function ($e) { return $e['course_code']; }, $guestEnrollments)); } else { echo 'No courses enrolled'; }
               ?>
             </td>

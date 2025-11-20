@@ -23,6 +23,9 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Benguet Technical School-eLMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/v4-shims.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
@@ -155,9 +158,9 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
           <div class="tab-inner active" id="activeTrainers" data-tab-content>
             <h3>Active Trainers (<?php echo $activeTrainersCount; ?>)</h3>
             <div class="table-container">
-              <table class="trainer-table"><thead><tr><th>User ID</th><th>User Name</th><th>Email</th><th>Contact Number</th><th>Assigned Courses</th><th>Date Created</th><th>Actions</th></tr></thead><tbody>
+              <table class="trainer-table"><thead><tr><th>User ID</th><th>User Name</th><th>Email</th><th>Contact Number</th><th>Assigned Courses</th><th>Assigned Batches</th><th>Date Created</th><th>Actions</th></tr></thead><tbody>
                 <?php if (empty($activeTrainers)): ?>
-                  <tr><td colspan="7" class="no-data">No trainers found</td></tr>
+                  <tr><td colspan="8" class="no-data">No trainers found</td></tr>
                 <?php else: ?>
                   <?php foreach ($activeTrainers as $trainer): ?>
                     <tr>
@@ -171,9 +174,33 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
                           if (!empty($assignedCourses)) { echo implode(', ', array_map(function ($ca) { return $ca['course_code']; }, $assignedCourses)); } else { echo 'No courses assigned'; }
                         ?>
                       </td>
+                      <td>
+                        <?php
+                          try {
+                            if (!isset($pdo) || !($pdo instanceof PDO)) { 
+                              require_once __DIR__ . '/../../php/DatabaseConnection.php'; 
+                              $database = new DatabaseConnection(); 
+                              $pdo = $database->getConnection(); 
+                            }
+                            
+                            // Get batches directly from course_batches table using trainer_id
+                            $stmt = $pdo->prepare("SELECT DISTINCT TRIM(batch_name) AS batch_name FROM course_batches WHERE trainer_id = ? AND batch_name IS NOT NULL AND batch_name != '' ORDER BY created_at DESC");
+                            $stmt->execute([$trainer['user_id']]);
+                            $batches = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                            
+                            if (!empty($batches)) {
+                              echo htmlspecialchars(implode(', ', $batches));
+                            } else {
+                              echo 'None';
+                            }
+                          } catch (Exception $e) { 
+                            echo 'None'; 
+                          }
+                        ?>
+                      </td>
                       <td><?php echo date('Y-m-d', strtotime($trainer['date_created'])); ?></td>
                       <td class="table-actions">
-                        <button class="action-btn edit edit-trainer-btn" title="Edit" data-user-id="<?php echo $trainer['user_id']; ?>" data-user-data='<?php echo htmlspecialchars(json_encode($trainer), ENT_QUOTES, 'UTF-8'); ?>'><i class="fas fa-edit"></i><span class="btn-text">Edit</span></button>
+                        <button class="action-btn edit edit-trainer-btn" title="Edit" data-user-id="<?php echo $trainer['user_id']; ?>" data-user-data='<?php echo htmlspecialchars(json_encode($trainer), ENT_QUOTES, 'UTF-8'); ?>' data-trainer-batches="<?php echo htmlspecialchars($trainerAssignedBatchesAttr, ENT_QUOTES, 'UTF-8'); ?>"><i class="fas fa-edit"></i><span class="btn-text">Edit</span></button>
                         <button class="action-btn reset reset-password-btn" title="Reset Password" data-user-id="<?php echo $trainer['user_id']; ?>" data-user-name="<?php echo htmlspecialchars($trainer['first_name'] . ' ' . $trainer['last_name']); ?>"><i class="fas fa-key"></i><span class="btn-text">Reset</span></button>
                         <form method="POST" onsubmit="return false;" class="archive-form"><input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>"><input type="hidden" name="current_tab" value="trainers"><button type="submit" class="action-btn archive" title="Archive"><i class="fas fa-archive"></i><span class="btn-text">Archive</span></button></form>
                       </td>
@@ -201,9 +228,9 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
           <div class="tab-inner" id="archivedTrainers" data-tab-content>
             <h3>Archived Trainers (<?php echo $archivedTrainersCount; ?>)</h3>
             <div class="table-container">
-              <table class="trainer-table"><thead><tr><th>User ID</th><th>User Name</th><th>Email</th><th>Contact Number</th><th>Assigned Courses</th><th>Date Created</th><th>Actions</th></tr></thead><tbody>
+              <table class="trainer-table"><thead><tr><th>User ID</th><th>User Name</th><th>Email</th><th>Contact Number</th><th>Assigned Courses</th><th>Assigned Batches</th><th>Date Created</th><th>Actions</th></tr></thead><tbody>
                 <?php if (empty($archivedTrainers)): ?>
-                  <tr><td colspan="7" class="no-data">No archived trainers found</td></tr>
+                  <tr><td colspan="8" class="no-data">No archived trainers found</td></tr>
                 <?php else: foreach ($archivedTrainers as $trainer): ?>
                   <tr data-status="archived">
                     <td><?php echo htmlspecialchars($trainer['user_id']); ?></td>
@@ -216,9 +243,33 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
                         if (!empty($assignedCourses)) { echo implode(', ', array_map(function ($ca) { return $ca['course_code']; }, $assignedCourses)); } else { echo 'No courses assigned'; }
                       ?>
                     </td>
-                    <td><?php echo date('Y-m-d', strtotime($trainer['date_created'])); ?></td>
-                    <td class="table-actions">
-                      <form method="POST" onsubmit="return true;" class="unarchive-form"><input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>"><input type="hidden" name="current_tab" value="trainers"><button type="submit" name="unarchive_user" class="action-btn unarchive" title="Restore"><i class="fas fa-box-open"></i><span class="btn-text">Restore</span></button></form>
+                      <td>
+                        <?php
+                          try {
+                            if (!isset($pdo) || !($pdo instanceof PDO)) { 
+                              require_once __DIR__ . '/../../php/DatabaseConnection.php'; 
+                              $database = new DatabaseConnection(); 
+                              $pdo = $database->getConnection(); 
+                            }
+                            
+                            // Get batches directly from course_batches table using trainer_id
+                            $stmt = $pdo->prepare("SELECT DISTINCT TRIM(batch_name) AS batch_name FROM course_batches WHERE trainer_id = ? AND batch_name IS NOT NULL AND batch_name != '' ORDER BY created_at DESC");
+                            $stmt->execute([$trainer['user_id']]);
+                            $batches = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                            
+                            if (!empty($batches)) {
+                              echo htmlspecialchars(implode(', ', $batches));
+                            } else {
+                              echo 'None';
+                            }
+                          } catch (Exception $e) { 
+                            echo 'None'; 
+                          }
+                        ?>
+                      </td>
+                      <td><?php echo date('Y-m-d', strtotime($trainer['date_created'])); ?></td>
+                      <td class="table-actions">
+                        <form method="POST" onsubmit="return true;" class="unarchive-form"><input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>"><input type="hidden" name="current_tab" value="trainers"><button type="submit" name="unarchive_user" class="action-btn unarchive" title="Restore"><i class="fas fa-box-open"></i><span class="btn-text">Restore</span></button></form>
                     </td>
                   </tr>
                 <?php endforeach; endif; ?>

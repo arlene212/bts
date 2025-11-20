@@ -65,7 +65,11 @@ try {
     $activity_count = $activity_stmt->fetch(PDO::FETCH_ASSOC);
     $total_activities += (int)$activity_count['count'];
   }
-  $progress = $total_courses > 0 ? round(($total_submissions / ($total_courses * 5)) * 100) : 0;
+  // Calculate progress based on actual completion rate
+  $progress = 0;
+  if ($total_activities > 0) {
+    $progress = round(($total_submissions / $total_activities) * 100);
+  }
   $pending_requests = count(array_filter($enrollment_requests, function ($request) { return $request['status'] == 'pending'; }));
 } catch (PDOException $exception) {
   error_log("Trainee dashboard error: " . $exception->getMessage());

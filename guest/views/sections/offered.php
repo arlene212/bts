@@ -1,5 +1,5 @@
 <?php ?>
-<section class="main-content tab-content <?php echo $currentTab === 'courses' ? 'active' : ''; ?>" id="courses">
+  <div class="tab-inner active" id="offered-courses">
   <div id="courseGrid" class="dashboard-cards">
     <?php if (!empty($offered_courses)): ?>
       <?php foreach ($offered_courses as $course): ?>
@@ -19,11 +19,17 @@
           <div class="sub-text"><?php echo htmlspecialchars($course['course_code']); ?> | <?php echo htmlspecialchars($course['hours']); ?> hours</div>
           <div class="course-description"><?php echo htmlspecialchars(substr($course['description'], 0, 100)); ?>...</div>
           <?php if ($is_enrolled): ?>
-            <button class="unenroll-btn" data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">Unenroll</button>
+            <button class="btn btn-outline-danger unenroll-btn" data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">
+              <i class="fas fa-times"></i> Unenroll
+            </button>
           <?php elseif ($is_pending): ?>
-            <button class="enroll-btn pending" disabled>Request Pending</button>
+            <span class="status-badge status-pending">
+              <i class="fas fa-clock"></i> Request Pending
+            </span>
           <?php else: ?>
-            <button class="enroll-btn" data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">Enroll</button>
+            <button class="btn btn-primary enroll-btn btn-ripple" data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>">
+              <i class="fas fa-plus"></i> Enroll
+            </button>
           <?php endif; ?>
         </div>
       <?php endforeach; ?>
@@ -31,4 +37,4 @@
       <div class="no-courses"><p>No courses available at the moment.</p></div>
     <?php endif; ?>
   </div>
-</section>
+</div>

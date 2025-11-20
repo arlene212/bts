@@ -188,8 +188,32 @@ $guests = $guestStmt->fetchAll();
 $enrollmentSearch = $_GET['enrollment_search'] ?? '';
 $enrollmentPage = max(1, intval($_GET['enrollment_page'] ?? 1));
 $enrollmentOffset = ($enrollmentPage - 1) * $itemsPerPage;
-$enrollmentQuery = "SELECT e.*, u.first_name, u.last_name, c.course_name, u.role as trainee_role FROM enrollments e JOIN users u ON e.trainee_id = u.user_id JOIN courses c ON e.course_code = c.course_code WHERE e.status = 'pending'";
-$enrollmentCountQuery = "SELECT COUNT(*) FROM enrollments e JOIN users u ON e.trainee_id = u.user_id JOIN courses c ON e.course_code = c.course_code WHERE e.status = 'pending'";
+$enrollmentQuery = "SELECT 
+  e.id,
+  e.trainee_id,
+  e.course_code,
+  e.course_name,
+  e.status,
+  e.date_requested,
+  e.processed_date,
+  e.processed_by,
+  e.remarks,
+  COALESCE(e.batch_name, (
+    SELECT ba.batch_name 
+    FROM batch_assignments ba 
+    WHERE ba.trainee_id = e.trainee_id AND ba.course_code = e.course_code 
+    ORDER BY ba.date_assigned DESC 
+    LIMIT 1
+  )) AS batch_name,
+  u.first_name,
+  u.last_name,
+  u.role as trainee_role,
+  c.course_name AS course_name
+FROM enrollments e 
+JOIN users u ON e.trainee_id = u.user_id 
+JOIN courses c ON e.course_code = c.course_code 
+WHERE e.status IN ('pending','approved')";
+$enrollmentCountQuery = "SELECT COUNT(*) FROM enrollments e JOIN users u ON e.trainee_id = u.user_id JOIN courses c ON e.course_code = c.course_code WHERE e.status IN ('pending','approved')";
 if (!empty($enrollmentSearch)) {
   $enrollmentQuery .= " AND (u.first_name LIKE :enrollment_search1 OR u.last_name LIKE :enrollment_search2 OR c.course_name LIKE :enrollment_search3 OR e.trainee_id LIKE :enrollment_search4)";
   $enrollmentCountQuery .= " AND (u.first_name LIKE :enrollment_search1 OR u.last_name LIKE :enrollment_search2 OR c.course_name LIKE :enrollment_search3 OR e.trainee_id LIKE :enrollment_search4)";
@@ -566,7 +590,14 @@ try {
   $guests = $pdo->query("SELECT * FROM users WHERE role = 'guest' ORDER BY date_created DESC")->fetchAll();
   $courses = $pdo->query("SELECT * FROM courses ORDER BY date_created DESC")->fetchAll();
   $announcements = $pdo->query("SELECT a.*, u.first_name, u.last_name FROM announcements a JOIN users u ON a.posted_by = u.user_id ORDER BY a.date_posted DESC LIMIT 5")->fetchAll();
-  $enrollments = $pdo->query("SELECT e.*, u.first_name, u.last_name, c.course_name, u.role as trainee_role FROM enrollments e JOIN users u ON e.trainee_id = u.user_id JOIN courses c ON e.course_code = c.course_code WHERE e.status = 'pending' ORDER BY date_requested DESC")->fetchAll();
+  // NOTE: Enrollments for the Enrollments tab are already loaded above with pagination and search.
+  // Avoid overriding $enrollments here to preserve filtering and include approved statuses.
+  
+  // Get approved enrollments for displaying trainee courses
+  $approvedEnrollments = $pdo->query("SELECT e.*, u.first_name, u.last_name, c.course_name FROM enrollments e JOIN users u ON e.trainee_id = u.user_id JOIN courses c ON e.course_code = c.course_code WHERE e.status = 'approved' ORDER BY date_requested DESC")->fetchAll();
+  
+  // Get batch assignments for displaying trainee batches
+  $batchAssignments = $pdo->query("SELECT ba.*, u.first_name, u.last_name FROM batch_assignments ba JOIN users u ON ba.trainee_id = u.user_id ORDER BY ba.date_assigned DESC")->fetchAll();
   $courseBatches = $pdo->query("SELECT cb.*, c.course_name, COUNT(ba.id) as trainee_count FROM course_batches cb JOIN courses c ON cb.course_code = c.course_code LEFT JOIN batch_assignments ba ON cb.course_code = ba.course_code AND cb.batch_name = ba.batch_name GROUP BY cb.id, cb.course_code, cb.batch_name ORDER BY cb.created_at DESC")->fetchAll();
   try {
     $adminProfileStmt = $pdo->prepare("SELECT * FROM users WHERE user_id = ?");

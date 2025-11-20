@@ -71,6 +71,12 @@ try {
     if ($userRole === 'trainer') {
         // Handle trainer-specific updates
         $courseCodes = $_POST['trainer_courses'] ?? [];
+        $trainerBatchesStr = isset($_POST['trainer_batches']) ? trim($_POST['trainer_batches']) : '';
+        $hasBatchColumn = false;
+        try {
+            $colCheck = $pdo->query("SHOW COLUMNS FROM course_assignments LIKE 'batch_name'");
+            if ($colCheck && $colCheck->rowCount() > 0) { $hasBatchColumn = true; }
+        } catch (Exception $__) {}
 
         // 1. Delete existing course assignments for this trainer
         $deleteStmt = $pdo->prepare("DELETE FROM course_assignments WHERE trainer_id = ?");
@@ -78,10 +84,42 @@ try {
 
         // 2. Insert new assignments
         if (!empty($courseCodes) && is_array($courseCodes)) {
-            $assignStmt = $pdo->prepare("INSERT INTO course_assignments (trainer_id, course_code, assigned_by, date_assigned) VALUES (?, ?, ?, NOW())");
-            foreach ($courseCodes as $courseCode) {
-                if (!empty(trim($courseCode))) {
-                    $assignStmt->execute([$userId, $courseCode, $_SESSION['user']['user_id']]);
+            // Insert course assignments
+            if ($hasBatchColumn) {
+                $assignStmt = $pdo->prepare("INSERT INTO course_assignments (trainer_id, course_code, batch_name, assigned_by, date_assigned) VALUES (?, ?, ?, ?, NOW())");
+                foreach ($courseCodes as $courseCode) {
+                    if (!empty(trim($courseCode))) { $assignStmt->execute([$userId, $courseCode, $trainerBatchesStr, $_SESSION['user']['user_id']]); }
+                }
+            } else {
+                $assignStmt = $pdo->prepare("INSERT INTO course_assignments (trainer_id, course_code, assigned_by, date_assigned) VALUES (?, ?, ?, NOW())");
+                foreach ($courseCodes as $courseCode) {
+                    if (!empty(trim($courseCode))) { $assignStmt->execute([$userId, $courseCode, $_SESSION['user']['user_id']]); }
+                }
+            }
+
+            // Update course_batches.trainer_id for selected batches (primary selected course only)
+            $primaryCourseCode = $courseCodes[0] ?? '';
+            $trainerBatches = array_filter(array_map('trim', explode(',', $trainerBatchesStr)));
+            
+            $hasCBTrainerCol = false;
+            try {
+                $cbColCheck = $pdo->query("SHOW COLUMNS FROM course_batches LIKE 'trainer_id'");
+                if ($cbColCheck && $cbColCheck->rowCount() > 0) { $hasCBTrainerCol = true; }
+            } catch (Exception $___) {}
+            
+            if ($hasCBTrainerCol) {
+                // First, remove this trainer from ALL batches for the primary course
+                $clearStmt = $pdo->prepare("UPDATE course_batches SET trainer_id = NULL WHERE course_code = ? AND trainer_id = ?");
+                $clearStmt->execute([$primaryCourseCode, $userId]);
+                
+                // Then, assign this trainer only to the selected batches
+                if (!empty($primaryCourseCode) && !empty($trainerBatches)) {
+                    $upd = $pdo->prepare("UPDATE course_batches SET trainer_id = ? WHERE course_code = ? AND batch_name = ?");
+                    foreach ($trainerBatches as $bn) { 
+                        if ($bn !== '') { 
+                            $upd->execute([$userId, $primaryCourseCode, $bn]); 
+                        }
+                    }
                 }
             }
         }
@@ -107,14 +145,23 @@ try {
             $course = $courseStmt->fetch();
 
             if ($course) {
-                // Create enrollment
-                $enrollStmt = $pdo->prepare("INSERT INTO enrollments (trainee_id, course_code, course_name, status, batch_name, date_requested) VALUES (?, ?, ?, 'approved', ?, NOW())");
-                $enrollStmt->execute([$userId, $courseCode, $course['course_name'], $batchName]);
+                // Create enrollment (do not store batch in enrollments; use batch_assignments)
+                $enrollStmt = $pdo->prepare("INSERT INTO enrollments (trainee_id, course_code, course_name, status, date_requested) VALUES (?, ?, ?, 'approved', NOW())");
+                $enrollStmt->execute([$userId, $courseCode, $course['course_name']]);
 
                 // Create batch assignment
                 if (!empty($batchName)) {
-                    $batchStmt = $pdo->prepare("INSERT INTO batch_assignments (trainee_id, course_code, batch_name, assigned_by, date_assigned) VALUES (?, ?, ?, ?, NOW())");
-                    $batchStmt->execute([$userId, $courseCode, $batchName, $_SESSION['user']['user_id']]);
+                    // Get the trainer assigned to this batch
+                    $trainerStmt = $pdo->prepare("SELECT trainer_id FROM course_batches WHERE course_code = ? AND batch_name = ? AND trainer_id IS NOT NULL");
+                    $trainerStmt->execute([$courseCode, $batchName]);
+                    $trainer = $trainerStmt->fetch();
+                    $trainerId = $trainer ? $trainer['trainer_id'] : null;
+                    
+                    $batchStmt = $pdo->prepare("
+                        INSERT INTO batch_assignments (trainee_id, trainer_id, course_code, batch_name, assigned_by, date_assigned) 
+                        VALUES (?, ?, ?, ?, ?, NOW())
+                    ");
+                    $batchStmt->execute([$userId, $trainerId, $courseCode, $batchName, $_SESSION['user']['user_id']]);
                 }
             } else {
                 throw new Exception("Selected course not found: $courseCode");

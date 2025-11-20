@@ -1,6 +1,6 @@
 <?php ?>
-<section class="main-content tab-content <?php echo $currentTab === 'enrolled' ? 'active' : ''; ?>" id="enrolled">
-  <button id="backToEnrolledCourses" class="back-btn hidden" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button>
+  <div class="tab-inner active" id="enrolled-courses">
+  <button id="backToEnrolledCourses" class="btn btn-secondary back-btn hidden" aria-label="Back"><i class="fa-solid fa-arrow-left"></i> Back to Courses</button>
   <h2>Enrolled Courses</h2>
   <div id="enrolledCoursesContainer" class="dashboard-cards card" style="width: 18rem; height: 20rem;">
     <?php if (!empty($enrolled_courses)): ?>
@@ -9,7 +9,7 @@
           <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : '../images/course-placeholder.jpg'; ?>" alt="<?php echo htmlspecialchars($course['course_name']); ?>" class="course-img">
           <div class="label-text"><?php echo htmlspecialchars($course['course_name']); ?></div>
           <div class="sub-text"><?php echo htmlspecialchars($course['course_code']); ?> | <?php echo htmlspecialchars($course['hours']); ?> hours</div>
-          <button class="btn btn-primary view-course-btn">View Course</button>
+          <button class="btn btn-primary view-course-btn btn-ripple">View Course</button>
         </div>
       <?php endforeach; ?>
     <?php else: ?>
@@ -17,7 +17,7 @@
     <?php endif; ?>
   </div>
   <div id="courseDetail" class="course-detail hidden">
-    <div class="course-detail-header"><button id="unenrollCourseBtn" class="unenroll-btn" title="Unenroll from this course">Unenroll</button></div>
+    <div class="course-detail-header"><button id="unenrollCourseBtn" class="btn btn-outline-danger unenroll-btn" title="Unenroll from this course"><i class="fas fa-times"></i> Unenroll</button></div>
     <div class="course-content" id="courseDetailContent"></div>
   </div>
-</section>
+</div>

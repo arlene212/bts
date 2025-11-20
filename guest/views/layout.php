@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Benguet Technical School eLMS - Guest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/v4-shims.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
@@ -18,11 +21,20 @@
     <main class="main">
       <?php include __DIR__ . '/partials/header.php'; ?>
       <div class="content">
-        <div class="main-section">
-          <?php include __DIR__ . '/sections/home.php'; ?>
-          <?php include __DIR__ . '/sections/offered.php'; ?>
-          <?php include __DIR__ . '/sections/enrolled.php'; ?>
-          <?php include __DIR__ . '/sections/about.php'; ?>
+        <?php include __DIR__ . '/partials/alert.php'; ?>
+        <div class="main-content">
+          <div class="content-area <?php echo $currentTab === 'home' ? 'active' : ''; ?>" id="content-home">
+            <?php include __DIR__ . '/sections/home.php'; ?>
+          </div>
+          <div class="content-area <?php echo $currentTab === 'courses' ? 'active' : ''; ?>" id="content-courses">
+            <?php include __DIR__ . '/sections/offered.php'; ?>
+          </div>
+          <div class="content-area <?php echo $currentTab === 'enrolled' ? 'active' : ''; ?>" id="content-enrolled">
+            <?php include __DIR__ . '/sections/enrolled.php'; ?>
+          </div>
+          <div class="content-area <?php echo $currentTab === 'aboutUs' ? 'active' : ''; ?>" id="content-aboutUs">
+            <?php include __DIR__ . '/sections/about.php'; ?>
+          </div>
         </div>
         <aside class="announcements">
           <h2>Announcements</h2>

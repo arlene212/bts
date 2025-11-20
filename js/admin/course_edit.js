@@ -21,12 +21,30 @@ function openEditCourseModal(courseData) {
   document.getElementById('edit_course_description').value = courseData.description || '';
   const imagePreview = document.getElementById('current_image_preview');
   if (courseData.image) {
-    imagePreview.innerHTML = `<p><strong>Current Image:</strong></p><img src="../uploads/courses/${courseData.image}" style="max-width: 200px; max-height: 150px; border: 1px solid #ddd; padding: 5px;">`;
+    imagePreview.innerHTML = `<p><strong>Current Image:</strong></p><img src="../uploads/courses/${courseData.image}">`;
   } else {
-    imagePreview.innerHTML = '<p><em>No current image</em></p>';
+    imagePreview.innerHTML = '<p class="field-note"><em>No current image</em></p>';
   }
   populateCompetencies(courseData.competency_types || []);
   openModal('editCourseModal');
+  
+  // Debug: Check if buttons exist
+  setTimeout(() => {
+    const submitBtn = document.querySelector('#editCourseModal .submit-btn');
+    const cancelBtn = document.querySelector('#editCourseModal .cancel-btn');
+    console.log('Submit button:', submitBtn);
+    console.log('Cancel button:', cancelBtn);
+    if (submitBtn) {
+      submitBtn.style.display = 'inline-flex';
+      submitBtn.style.opacity = '1';
+      submitBtn.style.visibility = 'visible';
+    }
+    if (cancelBtn) {
+      cancelBtn.style.display = 'inline-flex';
+      cancelBtn.style.opacity = '1';
+      cancelBtn.style.visibility = 'visible';
+    }
+  }, 500);
 }
 
 function populateCompetencies(competencies) {
@@ -38,7 +56,6 @@ function populateCompetencies(competencies) {
       <div class="competency-edit-group" data-index="${index}">
         <div class="competency-header">
           <h4>${comp.type ? comp.type.charAt(0).toUpperCase() + comp.type.slice(1) : 'Basic'} Competency</h4>
-          <button type="button" class="remove-competency-btn" data-index="${index}"><i class="fas fa-times"></i></button>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -57,6 +74,9 @@ function populateCompetencies(competencies) {
         <div class="form-group">
           <label>Description:</label>
           <textarea name="competencies[${index}][description]" rows="2" placeholder="Enter description (optional)">${comp.description || ''}</textarea>
+        </div>
+        <div class="competency-actions" style="text-align: right;">
+          <button type="button" class="remove-competency-btn" data-index="${index}">Remove</button>
         </div>
         <hr>
       </div>`;

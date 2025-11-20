@@ -1,5 +1,4 @@
 <?php ?>
-<section class="main-content tab-content <?php echo $currentTab === 'home' ? 'active' : ''; ?>" id="home">
   <div class="dashboard tab-inner active" id="dashboard">
     <div class="slogan-box">
       <div class="slogan-text">
@@ -24,4 +23,3 @@
       </div>
     </div>
   </div>
-</section>

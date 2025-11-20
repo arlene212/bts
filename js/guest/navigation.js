@@ -2,10 +2,10 @@ function activateTabFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const tabId = params.get('current_tab') || window.currentTab || 'home';
   const tabLink = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
-  const tabContent = document.getElementById(tabId);
+  const tabContent = document.getElementById(`content-${tabId}`);
   if (tabLink && tabContent) {
     document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.content-area').forEach(c => c.classList.remove('active'));
     tabLink.classList.add('active');
     tabContent.classList.add('active');
   }
@@ -13,7 +13,7 @@ function activateTabFromUrl() {
 
 function setupTabs() {
   const tabLinks = document.querySelectorAll('.tab-link');
-  const tabContents = document.querySelectorAll('.tab-content');
+  const tabContents = document.querySelectorAll('.content-area');
   tabLinks.forEach(link => {
     link.addEventListener('click', function (e) {
       e.preventDefault();
@@ -23,7 +23,7 @@ function setupTabs() {
       tabLinks.forEach(t => t.classList.remove('active'));
       tabContents.forEach(c => c.classList.remove('active'));
       this.classList.add('active');
-      const targetTab = document.getElementById(tab);
+      const targetTab = document.getElementById(`content-${tab}`);
       if (targetTab) targetTab.classList.add('active');
     });
   });

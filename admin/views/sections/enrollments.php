@@ -36,7 +36,9 @@
                   <button class="action-btn reject btn btn-sm btn-outline-danger" title="Reject"><i class="fas fa-times"></i><span class="btn-text">Reject</span></button>
                 </div>
               <?php else: ?>
-                <span class="processed-text">Processed on <?php echo date('Y-m-d', strtotime($enrollment['processed_date'])); ?></span>
+                <span class="processed-text">
+                  Processed <?php echo !empty($enrollment['processed_date']) ? 'on ' . date('Y-m-d', strtotime($enrollment['processed_date'])) : 'recently'; ?>
+                </span>
               <?php endif; ?>
             </td>
           </tr>

@@ -16,10 +16,21 @@
     </div>
   </div>
   <div id="course-detail" class="course-detail hidden">
-    <div class="detail-header"><h2 class="course-title" id="course-detail-title">Course Name</h2><button class="back-btn">← Back to Courses</button></div>
+    <div class="detail-header">
+      <h2 class="course-title" id="course-detail-title">Course Name</h2>
+      <button class="back-btn btn-ripple">
+        <i class="fas fa-arrow-left"></i> Back to Courses
+      </button>
+    </div>
     <div class="detail-body">
       <div class="course-basic-info"><p><strong>Code:</strong> <span id="course-code"></span></p><p><strong>Hours:</strong> <span id="course-hours"></span></p><p><strong>Description:</strong> <span id="course-description"></span></p></div>
-      <div class="news-switch-wrapper course-detail-toggle"><div class="switch-oval"><div class="switch-inner"></div><button class="switch-btn active" data-view="view-material">View Material</button><button class="switch-btn" data-view="submissions">Submissions</button></div></div>
+      <div class="news-switch-wrapper course-detail-toggle">
+        <div class="switch-oval">
+          <div class="switch-inner"></div>
+          <button class="switch-btn active" data-view="view-material">View Material</button>
+          <button class="switch-btn" data-view="submissions">Submissions</button>
+        </div>
+      </div>
       <div id="view-material-view" class="detail-view active"><div class="competencies-section"><div class="section-header"><h3>Course Competencies & Topics</h3></div><div id="competencies-list"></div></div></div>
     </div>
   </div>

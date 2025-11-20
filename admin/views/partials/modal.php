@@ -103,7 +103,89 @@
 </div>
 
 <div class="modal hidden" id="editCourseModal">
-  <div class="modal-content" style="max-width: 800px;"><div class="modal-header"><h2>Edit Course</h2><span class="close">&times;</span></div><form method="POST" enctype="multipart/form-data" id="editCourseForm"><input type="hidden" name="edit_course" value="1"><input type="hidden" id="edit_course_code" name="course_code"><input type="hidden" name="current_tab" value="courses"><div class="modal-body" style="max-height: 70vh; overflow-y: auto;"><div class="form-group"><label for="edit_course_name">Course Name:</label><input type="text" id="edit_course_name" name="course_name" required></div><div class="form-group"><label for="edit_course_code_display">Course Code:</label><input type="text" id="edit_course_code_display" readonly style="background-color: #f5f5f5; color: #666;"><small>Course code cannot be changed</small></div><div class="form-group"><label for="edit_course_hours">Course Hours:</label><input type="number" id="edit_course_hours" name="course_hours" required min="1"></div><div class="form-group"><label for="edit_course_description">Description:</label><textarea id="edit_course_description" name="course_description" rows="4"></textarea></div><div class="form-group"><label for="edit_course_image">Course Image:</label><input type="file" id="edit_course_image" name="course_image" accept="image/*"><small>Leave blank to keep current image</small><div id="current_image_preview" style="margin-top: 10px;"></div></div><div class="competencies-section"><h3>Course Competencies</h3><div id="edit_competencies_container"></div><button type="button" id="add_new_competency_btn" class="add-competency-btn" style="margin-top: 15px;">+ Add New Competency</button></div></div><div class="modal-footer"><button type="button" class="cancel-btn">Cancel</button><button type="submit" name="edit_course" class="submit-btn">Update Course</button></div></form></div>
+  <div class="modal-content modal-content-large">
+    <div class="modal-header">
+      <div class="modal-header-content">
+        <div class="modal-icon"><i class="fas fa-edit"></i></div>
+        <div class="modal-title-section">
+          <h2>Edit Course</h2>
+          <p class="modal-subtitle">Update course details and competencies</p>
+        </div>
+      </div>
+      <span class="close">&times;</span>
+    </div>
+    <form method="POST" enctype="multipart/form-data" id="editCourseForm">
+      <input type="hidden" name="edit_course" value="1">
+      <input type="hidden" id="edit_course_code" name="course_code">
+      <input type="hidden" name="current_tab" value="courses">
+      <div class="modal-body">
+        <div class="form-section">
+          <div class="section-header">
+            <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit_course_name">Course Name <span class="required">*</span></label>
+              <input type="text" id="edit_course_name" name="course_name" required class="form-control">
+              <small class="form-text">Enter the full name of the course</small>
+            </div>
+            <div class="form-group">
+              <label for="edit_course_code_display">Course Code</label>
+              <input type="text" id="edit_course_code_display" readonly class="form-control readonly-input">
+              <small class="form-text text-muted">Course code cannot be changed</small>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit_course_hours">Course Hours <span class="required">*</span></label>
+              <input type="number" id="edit_course_hours" name="course_hours" required min="1" class="form-control">
+              <small class="form-text">Total duration in hours</small>
+            </div>
+            <div class="form-group">
+              <label for="edit_course_image">Course Image</label>
+              <div class="file-input-wrapper">
+                <input type="file" id="edit_course_image" name="course_image" accept="image/*" class="form-control">
+                <label for="edit_course_image" class="file-input-label">
+                  <i class="fas fa-upload"></i> Choose Image
+                </label>
+              </div>
+              <small class="form-text text-muted">Leave blank to keep current image</small>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="edit_course_description">Course Description</label>
+            <textarea id="edit_course_description" name="course_description" rows="4" class="form-control" placeholder="Enter course description..."></textarea>
+            <small class="form-text">Provide a detailed description of the course</small>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-header">
+            <h4><i class="fas fa-tasks"></i> Course Competencies</h4>
+            <button type="button" id="add_new_competency_btn" class="add-competency-btn">
+              <i class="fas fa-plus"></i> Add Competency
+            </button>
+          </div>
+          <div id="edit_competencies_container" class="competencies-grid"></div>
+          <div class="competency-help-text">
+            <small class="text-muted">
+              <i class="fas fa-info-circle"></i> Add competencies that students will achieve upon completing this course
+            </small>
+          </div>
+        </div>
+
+        <div class="image-preview-section" id="current_image_preview"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="cancel-btn">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+        <button type="submit" name="edit_course" class="submit-btn">
+          <i class="fas fa-save"></i> Update Course
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <div class="modal hidden" id="resetPasswordModal">
@@ -111,7 +193,7 @@
 </div>
 
 <div class="modal hidden" id="editTrainerModal">
-  <div class="modal-content"><div class="modal-header"><h2>Edit Trainer Account</h2><span class="close">&times;</span></div><form id="editTrainerForm"><input type="hidden" name="user_id" id="editTrainerId"><input type="hidden" name="current_tab" value="trainers"><div class="modal-body"><div class="form-group"><label for="edit_trainer_first_name">First Name:</label><input type="text" id="edit_trainer_first_name" name="first_name" required></div><div class="form-group"><label for="edit_trainer_last_name">Last Name:</label><input type="text" id="edit_trainer_last_name" name="last_name" required></div><div class="form-group"><label for="edit_trainer_email">Email:</label><input type="email" id="edit_trainer_email" name="email" required readonly style="background-color: #f5f5f5;"><small class="email-preview-note">Email will automatically update based on name changes</small></div><div class="form-group"><label for="edit_trainer_contact">Contact Number:</label><input type="tel" id="edit_trainer_contact" name="contact_number" pattern="^(09\d{9}|\+639\d{9})$" title="Format: 09XXXXXXXXX or +639XXXXXXXXX"></div><div class="form-group"><label for="edit_trainer_courses">Assigned Courses:</label><select id="edit_trainer_courses" name="trainer_courses[]" multiple style="height: 120px;"><?php foreach ($courses as $course): ?><option value="<?php echo $course['course_code']; ?>"><?php echo htmlspecialchars($course['course_name'] . ' (' . $course['course_code'] . ')'); ?></option><?php endforeach; ?></select><small>Hold Ctrl/Cmd to select multiple courses</small></div></div><div class="modal-footer"><button type="button" class="cancel-btn">Cancel</button><button type="submit" name="edit_trainer_courses" class="submit-btn">Update Trainer</button></div></form></div>
+  <div class="modal-content"><div class="modal-header"><h2>Edit Trainer Account</h2><span class="close">&times;</span></div><form id="editTrainerForm"><input type="hidden" name="user_id" id="editTrainerId"><input type="hidden" name="current_tab" value="trainers"><div class="modal-body"><div class="form-group"><label for="edit_trainer_first_name">First Name:</label><input type="text" id="edit_trainer_first_name" name="first_name" required></div><div class="form-group"><label for="edit_trainer_last_name">Last Name:</label><input type="text" id="edit_trainer_last_name" name="last_name" required></div><div class="form-group"><label for="edit_trainer_email">Email:</label><input type="email" id="edit_trainer_email" name="email" required readonly style="background-color: #f5f5f5;"><small class="email-preview-note">Email will automatically update based on name changes</small></div><div class="form-group"><label for="edit_trainer_contact">Contact Number:</label><input type="tel" id="edit_trainer_contact" name="contact_number" pattern="^(09\d{9}|\+639\d{9})$" title="Format: 09XXXXXXXXX or +639XXXXXXXXX"></div><div class="form-group"><label for="edit_trainer_courses">Assigned Courses:</label><select id="edit_trainer_courses" name="trainer_courses[]" multiple style="height: 120px;"><?php foreach ($courses as $course): ?><option value="<?php echo $course['course_code']; ?>"><?php echo htmlspecialchars($course['course_name'] . ' (' . $course['course_code'] . ')'); ?></option><?php endforeach; ?></select><small>Hold Ctrl/Cmd to select multiple courses</small></div><div class="form-group" style="width: max-content;"><label>Assign Batches (max 2):</label><div id="edit_trainer_batches_container" class="batch-checkboxes"></div><small class="field-note">Select up to two batches for the selected course</small></div></div><div class="modal-footer"><button type="button" class="cancel-btn">Cancel</button><button type="submit" name="edit_trainer_courses" class="submit-btn">Update Trainer</button></div></form></div>
 </div>
 
 <div class="modal hidden" id="editTraineeModal">

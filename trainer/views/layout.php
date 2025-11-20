@@ -1,10 +1,14 @@
 <?php ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Benguet Technical School eLMS - Trainer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="../css/trainer.css">
   <link rel="stylesheet" href="../css/utils.css">
@@ -12,6 +16,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/v4-shims.min.css">
 </head>
+
 <body>
   <div class="container">
     <?php include __DIR__ . '/partials/sidebar.php'; ?>
@@ -20,12 +25,43 @@
       <div class="content">
         <?php include __DIR__ . '/partials/alert.php'; ?>
         <div class="main-content">
-          <?php include __DIR__ . '/sections/home.php'; ?>
-          <?php include __DIR__ . '/sections/course.php'; ?>
-          <?php include __DIR__ . '/sections/requests.php'; ?>
-          <?php include __DIR__ . '/sections/trainees.php'; ?>
-          <?php include __DIR__ . '/sections/guest.php'; ?>
+          <div class="content-area <?php echo $currentTab === 'home' ? 'active' : ''; ?>" id="content-home">
+            <?php include __DIR__ . '/sections/home.php'; ?>
+          </div>
+          <div class="content-area <?php echo $currentTab === 'courses' ? 'active' : ''; ?>" id="content-courses">
+            <?php include __DIR__ . '/sections/course.php'; ?>
+          </div>
+          <div class="content-area <?php echo $currentTab === 'requests' ? 'active' : ''; ?>" id="content-requests">
+            <?php include __DIR__ . '/sections/requests.php'; ?>
+          </div>
+          <div class="content-area <?php echo $currentTab === 'trainees' ? 'active' : ''; ?>" id="content-trainees">
+            <?php include __DIR__ . '/sections/trainees.php'; ?>
+          </div>
+          <div class="content-area <?php echo $currentTab === 'guests' ? 'active' : ''; ?>" id="content-guests">
+            <?php include __DIR__ . '/sections/guest.php'; ?>
+          </div>
         </div>
+        <aside class="announcements">
+          <div class="announcements-header">
+            <h2><i class="fas fa-bullhorn"></i> Announcements</h2>
+          </div>
+          <div class="announcements-content">
+            <?php if (!empty($announcements)): ?>
+              <?php foreach ($announcements as $announcement): ?>
+                <div class="announcement-item">
+                  <h4><?php echo htmlspecialchars($announcement['title']); ?></h4>
+                  <p><?php echo htmlspecialchars(substr($announcement['content'], 0, 100)); ?>...</p>
+                  <small><?php echo date('M d, Y', strtotime($announcement['date_posted'])); ?></small>
+                </div>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <div class="no-announcements">
+                <i class="fas fa-bell-slash"></i>
+                <p>No announcements yet. Stay tuned!</p>
+              </div>
+            <?php endif; ?>
+          </div>
+        </aside>
       </div>
     </main>
   </div>
@@ -41,4 +77,5 @@
   <script src="../js/trainer/search.js"></script>
   <script src="../js/trainer/course_details.js"></script>
 </body>
+
 </html>

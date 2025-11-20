@@ -9,8 +9,8 @@
         <td><span class="status-<?php echo htmlspecialchars($request['status']); ?>"><?php echo htmlspecialchars($request['status']); ?></span></td>
         <td><?php echo date('M d, Y', strtotime($request['date_requested'])); ?></td>
         <td class="table-actions">
-          <button class="action-btn approve btn btn-sm btn-success" title="Approve" data-request-id="<?php echo $request['id']; ?>"><i class="fas fa-check"></i><span class="btn-text">Approve</span></button>
-          <button class="action-btn reject btn btn-sm btn-outline-danger" title="Reject" data-request-id="<?php echo $request['id']; ?>"><i class="fas fa-times"></i><span class="btn-text">Reject</span></button>
+          <button class="action-btn approve btn btn-sm btn-success btn-ripple" title="Approve" data-request-id="<?php echo $request['id']; ?>"><i class="fas fa-check"></i><span class="btn-text">Approve</span></button>
+          <button class="action-btn reject btn btn-sm btn-outline-danger btn-ripple" title="Reject" data-request-id="<?php echo $request['id']; ?>"><i class="fas fa-times"></i><span class="btn-text">Reject</span></button>
         </td>
       </tr>
     <?php endforeach; ?>

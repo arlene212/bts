@@ -12,10 +12,39 @@
     </div>
   </div>
   <nav class="nav">
-    <a href="#" class="tab-link <?php echo $currentTab === 'home' ? 'active' : ''; ?>" data-tab="home">Home</a>
-    <a href="#" class="tab-link <?php echo $currentTab === 'mycourses' ? 'active' : ''; ?>" data-tab="mycourses">My Courses</a>
-    <a href="#" class="tab-link <?php echo $currentTab === 'trainees' ? 'active' : ''; ?>" data-tab="trainees">Trainees</a>
-    <a href="#" class="tab-link <?php echo $currentTab === 'guests' ? 'active' : ''; ?>" data-tab="guests">Guests</a>
-    <a href="#" class="tab-link <?php echo $currentTab === 'requests' ? 'active' : ''; ?>" data-tab="requests">Enrollment Request</a>
+    <div class="nav-section">
+      <h4 class="nav-title">Dashboard</h4>
+      <a href="#" class="tab-link <?php echo $currentTab === 'home' ? 'active' : ''; ?>" data-tab="home">
+        <i class="fas fa-home"></i>
+        <span>Overview</span>
+      </a>
+    </div>
+    
+    <div class="nav-section">
+      <h4 class="nav-title">Teaching</h4>
+      <a href="#" class="tab-link <?php echo $currentTab === 'courses' ? 'active' : ''; ?>" data-tab="courses">
+        <i class="fas fa-graduation-cap"></i>
+        <span>My Courses</span>
+      </a>
+      <a href="#" class="tab-link <?php echo $currentTab === 'trainees' ? 'active' : ''; ?>" data-tab="trainees">
+        <i class="fas fa-users"></i>
+        <span>My Trainees</span>
+      </a>
+    </div>
+    
+    <div class="nav-section">
+      <h4 class="nav-title">Management</h4>
+      <a href="#" class="tab-link <?php echo $currentTab === 'requests' ? 'active' : ''; ?>" data-tab="requests">
+        <i class="fas fa-clipboard-list"></i>
+        <span>Enrollment Requests</span>
+        <?php if ($total_requests > 0): ?>
+          <span class="nav-badge"><?php echo $total_requests; ?></span>
+        <?php endif; ?>
+      </a>
+      <a href="#" class="tab-link <?php echo $currentTab === 'guests' ? 'active' : ''; ?>" data-tab="guests">
+        <i class="fas fa-user-friends"></i>
+        <span>Guest Management</span>
+      </a>
+    </div>
   </nav>
 </aside>
