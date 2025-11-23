@@ -27,6 +27,7 @@ try {
         $passingScore = floatval($_POST['quiz_passing_score'] ?? 70);
         $isRandomized = isset($_POST['quiz_randomized']) ? 1 : 0;
         $showCorrectAnswers = isset($_POST['quiz_show_answers']) ? 1 : 0;
+        $dueDateRaw = $_POST['quiz_due_date'] ?? '';
         
         if (empty($title) || empty($courseCode)) {
             echo json_encode(['success' => false, 'message' => 'Title and course are required']);
@@ -50,7 +51,54 @@ try {
                        $isRandomized, $showCorrectAnswers, $user['user_id']]);
         
         $quizId = $pdo->lastInsertId();
+        if (!empty($dueDateRaw)) {
+            $dueDate = str_replace('T', ' ', $dueDateRaw);
+            if (strlen($dueDate) === 16) { $dueDate .= ':00'; }
+            $ins = $pdo->prepare("INSERT INTO quiz_settings (quiz_id, setting_key, setting_value) VALUES (?, 'due_date', ?)");
+            $ins->execute([$quizId, $dueDate]);
+        }
         echo json_encode(['success' => true, 'message' => 'Quiz created successfully', 'quiz_id' => $quizId]);
+        exit;
+    }
+    
+    if (isset($_POST['action']) && $_POST['action'] === 'update_quiz') {
+        $quizId = $_POST['quiz_id'] ?? '';
+        $title = $_POST['quiz_title'] ?? '';
+        $courseCode = $_POST['quiz_course'] ?? '';
+        $description = $_POST['quiz_description'] ?? '';
+        $timeLimit = $_POST['quiz_time_limit'] ? intval($_POST['quiz_time_limit']) : null;
+        $maxAttempts = intval($_POST['quiz_max_attempts'] ?? 1);
+        $passingScore = floatval($_POST['quiz_passing_score'] ?? 70);
+        $isRandomized = isset($_POST['quiz_randomized']) ? 1 : 0;
+        $showCorrectAnswers = isset($_POST['quiz_show_answers']) ? 1 : 0;
+        $dueDateRaw = $_POST['quiz_due_date'] ?? '';
+        if (empty($quizId)) { echo json_encode(['success'=>false,'message'=>'Quiz ID is required']); exit; }
+        if (empty($title) || empty($courseCode)) { echo json_encode(['success'=>false,'message'=>'Title and course are required']); exit; }
+        $checkStmt = $pdo->prepare("SELECT q.id FROM quizzes q JOIN course_assignments ca ON q.course_code = ca.course_code WHERE q.id = ? AND ca.trainer_id = ?");
+        $checkStmt->execute([$quizId, $user['user_id']]);
+        if (!$checkStmt->fetch()) { echo json_encode(['success'=>false,'message'=>'You do not have access to this quiz']); exit; }
+        $courseAccess = $pdo->prepare("SELECT id FROM course_assignments WHERE trainer_id = ? AND course_code = ?");
+        $courseAccess->execute([$user['user_id'], $courseCode]);
+        if (!$courseAccess->fetch()) { echo json_encode(['success'=>false,'message'=>'You do not have access to the selected course']); exit; }
+        $upd = $pdo->prepare("UPDATE quizzes SET course_code = ?, title = ?, description = ?, time_limit = ?, max_attempts = ?, passing_score = ?, is_randomized = ?, show_correct_answers = ?, updated_at = NOW() WHERE id = ?");
+        $upd->execute([$courseCode, $title, $description, $timeLimit, $maxAttempts, $passingScore, $isRandomized, $showCorrectAnswers, $quizId]);
+        if (!empty($dueDateRaw)) {
+            $dueDate = str_replace('T',' ',$dueDateRaw);
+            if (strlen($dueDate) === 16) { $dueDate .= ':00'; }
+            $exists = $pdo->prepare("SELECT id FROM quiz_settings WHERE quiz_id = ? AND setting_key = 'due_date' LIMIT 1");
+            $exists->execute([$quizId]);
+            if ($exists->fetchColumn()) {
+                $qsUpd = $pdo->prepare("UPDATE quiz_settings SET setting_value = ? WHERE quiz_id = ? AND setting_key = 'due_date'");
+                $qsUpd->execute([$dueDate, $quizId]);
+            } else {
+                $qsIns = $pdo->prepare("INSERT INTO quiz_settings (quiz_id, setting_key, setting_value) VALUES (?, 'due_date', ?)");
+                $qsIns->execute([$quizId, $dueDate]);
+            }
+        } else {
+            $del = $pdo->prepare("DELETE FROM quiz_settings WHERE quiz_id = ? AND setting_key = 'due_date'");
+            $del->execute([$quizId]);
+        }
+        echo json_encode(['success'=>true]);
         exit;
     }
     
@@ -207,6 +255,52 @@ try {
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         echo json_encode(['success' => true, 'results' => $results]);
+        exit;
+    }
+
+    if (isset($_POST['action']) && $_POST['action'] === 'publish_quiz') {
+        $quizId = $_POST['quiz_id'] ?? '';
+        if (empty($quizId)) {
+            echo json_encode(['success' => false, 'message' => 'Quiz ID is required']);
+            exit;
+        }
+        $checkStmt = $pdo->prepare(
+            "SELECT q.id, q.status FROM quizzes q 
+             JOIN course_assignments ca ON q.course_code = ca.course_code 
+             WHERE q.id = ? AND ca.trainer_id = ?"
+        );
+        $checkStmt->execute([$quizId, $user['user_id']]);
+        $quizRow = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$quizRow) {
+            echo json_encode(['success' => false, 'message' => 'You do not have access to this quiz']);
+            exit;
+        }
+        if ($quizRow['status'] !== 'draft') {
+            echo json_encode(['success' => false, 'message' => 'Only draft quizzes can be published']);
+            exit;
+        }
+        $qs = $pdo->prepare("SELECT COUNT(*) FROM quiz_questions WHERE quiz_id = ?");
+        $qs->execute([$quizId]);
+        $count = (int)$qs->fetchColumn();
+        if ($count === 0) {
+            echo json_encode(['success' => false, 'message' => 'Add at least one question before publishing']);
+            exit;
+        }
+        $upd = $pdo->prepare("UPDATE quizzes SET status = 'published', updated_at = NOW() WHERE id = ?");
+        $upd->execute([$quizId]);
+        echo json_encode(['success' => true]);
+        exit;
+    }
+    
+    if (isset($_POST['action']) && $_POST['action'] === 'archive_quiz') {
+        $quizId = $_POST['quiz_id'] ?? '';
+        if (empty($quizId)) { echo json_encode(['success'=>false,'message'=>'Quiz ID is required']); exit; }
+        $checkStmt = $pdo->prepare("SELECT q.id FROM quizzes q JOIN course_assignments ca ON q.course_code = ca.course_code WHERE q.id = ? AND ca.trainer_id = ?");
+        $checkStmt->execute([$quizId, $user['user_id']]);
+        if (!$checkStmt->fetch()) { echo json_encode(['success'=>false,'message'=>'You do not have access to this quiz']); exit; }
+        $upd = $pdo->prepare("UPDATE quizzes SET status = 'archived', updated_at = NOW() WHERE id = ?");
+        $upd->execute([$quizId]);
+        echo json_encode(['success'=>true]);
         exit;
     }
     

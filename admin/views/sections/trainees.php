@@ -1,6 +1,15 @@
 <?php
 if (!isset($approvedEnrollments) || !is_array($approvedEnrollments)) { $approvedEnrollments = []; }
 if (!isset($batchAssignments) || !is_array($batchAssignments)) { $batchAssignments = []; }
+if (!isset($pdo) || !($pdo instanceof PDO)) { require_once __DIR__ . '/../../php/DatabaseConnection.php'; $database = new DatabaseConnection(); $pdo = $database->getConnection(); }
+$droppedStmt = $pdo->prepare("SELECT user_id, first_name, last_name, middle_name, email, contact_number, date_created FROM users WHERE role = 'trainee' AND status = 'dropped' ORDER BY last_name, first_name");
+$droppedStmt->execute();
+$droppedTrainees = $droppedStmt->fetchAll(PDO::FETCH_ASSOC);
+$graduatedStmt = $pdo->prepare("SELECT user_id, first_name, last_name, middle_name, email, contact_number, date_created FROM users WHERE role = 'trainee' AND status = 'graduated' ORDER BY last_name, first_name");
+$graduatedStmt->execute();
+$graduatedTrainees = $graduatedStmt->fetchAll(PDO::FETCH_ASSOC);
+$droppedTraineesCount = is_array($droppedTrainees) ? count($droppedTrainees) : 0;
+$graduatedTraineesCount = is_array($graduatedTrainees) ? count($graduatedTrainees) : 0;
 ?>
 <section class="main-content tab-content <?php echo ($currentTab === 'trainees' ? 'active' : ''); ?>" id="trainees">
   <div class="tab-header"><h2>Trainee Management</h2><div class="tab-actions"><button class="create-btn" id="createTraineeBtn">+ Create Trainee</button></div></div>
@@ -18,7 +27,7 @@ if (!isset($batchAssignments) || !is_array($batchAssignments)) { $batchAssignmen
       <?php endif; ?>
     </div>
   </div>
-  <div class="switch-oval" style="margin-bottom: 20px;"><div class="switch-inner" id="traineeSwitchInner"></div><button class="switch-btn active" data-tab="activeTrainees">Active (<?php echo $totalTrainees; ?>)</button><button class="switch-btn" data-tab="archivedTrainees">Archived (<?php echo $totalArchivedTrainees; ?>)</button></div>
+  <div class="switch-oval" style="margin-bottom: 20px;"><div class="switch-inner" id="traineeSwitchInner"></div><button class="switch-btn active" data-tab="activeTrainees">Active (<?php echo $totalTrainees; ?>)</button><button class="switch-btn" data-tab="droppedTrainees">Dropped (<?php echo $droppedTraineesCount; ?>)</button><button class="switch-btn" data-tab="graduatedTrainees">Graduated (<?php echo $graduatedTraineesCount; ?>)</button><button class="switch-btn" data-tab="archivedTrainees">Archived (<?php echo $totalArchivedTrainees; ?>)</button></div>
   <div class="tab-inner active" id="activeTrainees" data-tab-content>
     <h3>Active Trainees (<?php echo $totalTrainees; ?>)</h3>
     <div class="table-container">
@@ -120,5 +129,71 @@ if (!isset($batchAssignments) || !is_array($batchAssignments)) { $batchAssignmen
         <?php endif; ?>
       </div>
     <?php endif; ?>
+  </div>
+
+  <div class="tab-inner" id="droppedTrainees" data-tab-content>
+    <h3>Dropped Trainees (<?php echo $droppedTraineesCount; ?>)</h3>
+    <div class="table-container">
+      <table class="table table-striped table-hover trainee-table"><thead><tr><th>User ID</th><th>User Name</th><th>Email</th><th>Contact Number</th><th>Enrolled Courses</th><th>Batch</th><th>Date Created</th></tr></thead><tbody>
+        <?php if (empty($droppedTrainees)): ?>
+          <tr><td colspan="7" class="no-data">No dropped trainees found</td></tr>
+        <?php else: ?>
+          <?php foreach ($droppedTrainees as $trainee): ?>
+            <tr data-status="dropped">
+              <td><?php echo htmlspecialchars($trainee['user_id']); ?></td>
+              <td><?php echo htmlspecialchars($trainee['last_name'] . ', ' . $trainee['first_name'] . ($trainee['middle_name'] ? ' ' . $trainee['middle_name'] . '.' : '')); ?></td>
+              <td><?php echo htmlspecialchars($trainee['email']); ?></td>
+              <td><?php echo htmlspecialchars($trainee['contact_number']); ?></td>
+              <td>
+                <?php
+                $enrolledCourses = array_filter($approvedEnrollments, function ($e) use ($trainee) { return $e['trainee_id'] == $trainee['user_id']; });
+                if (!empty($enrolledCourses)) { echo implode(', ', array_map(function ($e) { return $e['course_code']; }, $enrolledCourses)); } else { echo 'No courses enrolled'; }
+                ?>
+              </td>
+              <td>
+                <?php
+                $traineeBatches = array_filter($batchAssignments, function ($ba) use ($trainee) { return $ba['trainee_id'] == $trainee['user_id']; });
+                if (!empty($traineeBatches)) { echo implode(', ', array_map(function ($ba) { return $ba['batch_name']; }, $traineeBatches)); } else { echo 'No batch assigned'; }
+                ?>
+              </td>
+              <td><?php echo date('Y-m-d', strtotime($trainee['date_created'])); ?></td>
+            </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </tbody></table>
+    </div>
+  </div>
+
+  <div class="tab-inner" id="graduatedTrainees" data-tab-content>
+    <h3>Graduated Trainees (<?php echo $graduatedTraineesCount; ?>)</h3>
+    <div class="table-container">
+      <table class="table table-striped table-hover trainee-table"><thead><tr><th>User ID</th><th>User Name</th><th>Email</th><th>Contact Number</th><th>Enrolled Courses</th><th>Batch</th><th>Date Created</th></tr></thead><tbody>
+        <?php if (empty($graduatedTrainees)): ?>
+          <tr><td colspan="7" class="no-data">No graduated trainees found</td></tr>
+        <?php else: ?>
+          <?php foreach ($graduatedTrainees as $trainee): ?>
+            <tr data-status="graduated">
+              <td><?php echo htmlspecialchars($trainee['user_id']); ?></td>
+              <td><?php echo htmlspecialchars($trainee['last_name'] . ', ' . $trainee['first_name'] . ($trainee['middle_name'] ? ' ' . $trainee['middle_name'] . '.' : '')); ?></td>
+              <td><?php echo htmlspecialchars($trainee['email']); ?></td>
+              <td><?php echo htmlspecialchars($trainee['contact_number']); ?></td>
+              <td>
+                <?php
+                $enrolledCourses = array_filter($approvedEnrollments, function ($e) use ($trainee) { return $e['trainee_id'] == $trainee['user_id']; });
+                if (!empty($enrolledCourses)) { echo implode(', ', array_map(function ($e) { return $e['course_code']; }, $enrolledCourses)); } else { echo 'No courses enrolled'; }
+                ?>
+              </td>
+              <td>
+                <?php
+                $traineeBatches = array_filter($batchAssignments, function ($ba) use ($trainee) { return $ba['trainee_id'] == $trainee['user_id']; });
+                if (!empty($traineeBatches)) { echo implode(', ', array_map(function ($ba) { return $ba['batch_name']; }, $traineeBatches)); } else { echo 'No batch assigned'; }
+                ?>
+              </td>
+              <td><?php echo date('Y-m-d', strtotime($trainee['date_created'])); ?></td>
+            </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </tbody></table>
+    </div>
   </div>
 </section>

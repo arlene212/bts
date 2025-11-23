@@ -56,6 +56,17 @@ function startQuiz($pdo, $user) {
         throw new Exception('Quiz not found or you are not enrolled in this course');
     }
 
+    $ds = $pdo->prepare("SELECT setting_value FROM quiz_settings WHERE quiz_id = ? AND setting_key = 'due_date' LIMIT 1");
+    $ds->execute([$quiz_id]);
+    $due = $ds->fetchColumn();
+    if (!empty($due)) {
+        $now = new DateTime('now');
+        $dueDt = new DateTime($due);
+        if ($now > $dueDt) {
+            throw new Exception('This quiz is past its due date and can no longer be attempted');
+        }
+    }
+
     // Check attempt count
     $stmt = $pdo->prepare("SELECT COUNT(*) as attempt_count FROM quiz_attempts WHERE quiz_id = ? AND trainee_id = ?");
     $stmt->execute([$quiz_id, $user['user_id']]);

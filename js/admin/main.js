@@ -1,6 +1,7 @@
 function safeInitialize() {
   const fns = [
     typeof initializeModalButtons !== 'undefined' ? initializeModalButtons : null,
+    typeof initializeCreateFormHandlers !== 'undefined' ? initializeCreateFormHandlers : null,
     typeof setupGlobalEventListeners !== 'undefined' ? setupGlobalEventListeners : null,
     typeof initializeCompetencyHandlers !== 'undefined' ? initializeCompetencyHandlers : null,
     typeof initializeEditCompetencyHandlers !== 'undefined' ? initializeEditCompetencyHandlers : null,

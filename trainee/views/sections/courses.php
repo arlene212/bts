@@ -239,18 +239,22 @@ document.addEventListener('DOMContentLoaded', function() {
       </button>
       <h2 id="course-detail-title">Course Title</h2>
     </div>
-    <div class="course-meta">
-      <span id="course-detail-code"></span> | <span id="course-detail-hours"></span>
+    <div class="course-card">
+      <div class="course-meta">
+        <span id="course-detail-code"></span> | <span id="course-detail-hours"></span>
+      </div>
+      <p id="course-detail-description"></p>
     </div>
-    <p id="course-detail-description"></p>
+    <div id="competencies-card" class="competencies-card"></div>
     <div class="news-switch-wrapper course-switch">
       <div class="switch-oval">
-        <button class="switch-btn active" data-tab="modules">Modules</button>
-        <button class="switch-btn" data-tab="activities">Activities</button>
+        <div class="switch-inner"></div>
+        <button class="switch-btn active" data-tab="modules-view">Modules</button>
+        <button class="switch-btn" data-tab="activities-view">Activities</button>
       </div>
     </div>
     <div id="modules-view" class="tab-inner active">
-      <div id="competencies-list"></div>
+      <div id="modules-list"></div>
     </div>
     <div id="activities-view" class="tab-inner"></div>
   </div>

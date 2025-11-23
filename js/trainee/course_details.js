@@ -57,29 +57,34 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function loadCourseDetails(courseCode) {
-    const competenciesList = document.getElementById('competencies-list');
+    const competenciesCard = document.getElementById('competencies-card');
+    const modulesList = document.getElementById('modules-list');
     const activitiesContainer = document.getElementById('activities-view');
-    if (!competenciesList || !activitiesContainer) return;
-    competenciesList.innerHTML = '<div>Loading course content...</div>';
+    if (!competenciesCard || !modulesList || !activitiesContainer) return;
+    competenciesCard.innerHTML = '<div>Loading competencies...</div>';
+    modulesList.innerHTML = '<div>Loading modules...</div>';
     activitiesContainer.innerHTML = '<div>Loading activities...</div>';
 
     fetch(`../php/get_course_details_trainee.php?course_code=${encodeURIComponent(courseCode)}`)
       .then(r => r.json())
       .then(data => {
         if (data.error) {
-          competenciesList.innerHTML = `<div class="error-message">${data.error}</div>`;
+          competenciesCard.innerHTML = `<div class="error-message">${data.error}</div>`;
+          modulesList.innerHTML = `<div class="error-message">${data.error}</div>`;
           activitiesContainer.innerHTML = `<div class="error-message">${data.error}</div>`;
           return;
         }
-        renderCompetencies(data.competencies || [], competenciesList);
-        renderActivitiesTable(data.activities || [], activitiesContainer, data.submissions || {});
+        renderCompetenciesSummary(data.competencies || [], competenciesCard);
+        renderModulesFromCompetencies(data.competencies || [], modulesList);
+        renderActivitiesInteractive(data.activities || [], activitiesContainer);
       })
       .catch(() => {
-        competenciesList.innerHTML = '<div class="error-message">Failed to load course content.</div>';
+        competenciesCard.innerHTML = '<div class="error-message">Failed to load competencies.</div>';
+        modulesList.innerHTML = '<div class="error-message">Failed to load modules.</div>';
       });
   }
 
-  function renderCompetencies(competencies, container) {
+  function renderCompetenciesSummary(competencies, container) {
     container.innerHTML = '';
     if (!competencies || competencies.length === 0) {
       container.innerHTML = '<p>No competencies found for this course.</p>';
@@ -89,10 +94,14 @@ document.addEventListener('DOMContentLoaded', () => {
     types.forEach(type => {
       const group = competencies.filter(c => c.type === type);
       if (group.length) {
+        const section = document.createElement('div');
+        section.className = 'competency-section';
         const header = document.createElement('h3');
         header.className = 'competency-type-header';
         header.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)} Competencies`;
-        container.appendChild(header);
+        section.appendChild(header);
+        const list = document.createElement('div');
+        list.className = 'competency-list';
         group.forEach(comp => {
           const el = document.createElement('div');
           el.className = 'competency-item';
@@ -101,24 +110,26 @@ document.addEventListener('DOMContentLoaded', () => {
               <h4>${comp.name}</h4>
               <p>${comp.description || ''}</p>
             </div>
-            <div class="topics-list">${renderTopics(comp.topics || [])}</div>
           `;
-          container.appendChild(el);
+          list.appendChild(el);
         });
+        section.appendChild(list);
+        container.appendChild(section);
       }
     });
   }
 
-  function renderTopics(topics) {
-    if (!topics || topics.length === 0) return '<p class="no-materials">No topics for this competency.</p>';
-    return topics.map(t => `
+  function renderModulesFromCompetencies(competencies, container) {
+    container.innerHTML = '';
+    const topics = (competencies || []).flatMap(c => c.topics || []);
+    if (!topics.length) { container.innerHTML = '<p class="no-materials">No modules found for this course.</p>'; return; }
+    container.innerHTML = topics.map(t => `
       <div class="topic-container">
         <h4 class="topic-title">${t.topic_name || t.name || 'Unnamed Topic'}</h4>
         <div class="topic-content-section">
           <h6 class="content-divider">Materials</h6>
           ${renderMaterials(t.materials || [])}
         </div>
-        ${renderActivitiesForTopic(t.activities || [])}
       </div>
     `).join('');
   }
@@ -145,29 +156,31 @@ document.addEventListener('DOMContentLoaded', () => {
     return html;
   }
 
-  function renderActivitiesForTopic(activities) {
-    if (!activities || activities.length === 0) return '';
-    let html = '<div class="topic-content-section">';
-    html += '<h6 class="content-divider">Activities</h6>';
-    html += '<div class="activities-list">';
+  function renderActivitiesInteractive(activities, container) {
+    if (!activities || activities.length === 0) { container.innerHTML = '<p>No activities found for this course.</p>'; return; }
+    let html = '<div class="activities-list">';
     activities.forEach(a => {
       html += `
         <div class="topic-activity-item" data-activity-id="${a.id}">
           <div class="activity-header">
             <div class="activity-info-cleaned">
-              <strong>${a.title || 'Unnamed Activity'}</strong>
+              <strong>${a.activity_title || a.title || 'Unnamed Activity'}</strong>
+              <p>Date Given: ${formatDisplayDate(a.start_date)}</p>
               <p>Due: ${formatDisplayDate(a.due_date)}</p>
+            </div>
+            <div class="activity-actions">
+              <a href="../trainee/activity_view.php?activity_id=${a.id}" target="_blank" class="btn btn-outline-primary view-activity-btn">View Activity</a>
             </div>
           </div>
           <div class="activity-content hidden">
-            <div class="activity-instructions"><h4><i class="fas fa-info-circle"></i> Instructions</h4><p>${a.description || 'No instructions provided.'}</p></div>
+            <div class="activity-instructions"><h4><i class="fas fa-info-circle"></i> Instructions</h4><p>${a.activity_description || a.description || 'No instructions provided.'}</p></div>
             ${a.submission ? renderSubmissionHistory(a) : renderSubmissionForm(a)}
           </div>
         </div>
       `;
     });
     html += '</div>';
-    return html + '</div>';
+    container.innerHTML = html;
   }
 
   function renderSubmissionHistory(activity) {
@@ -217,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
     container.innerHTML = html;
   }
 
-  document.getElementById('modules-view')?.addEventListener('click', function(e) {
+  document.getElementById('activities-view')?.addEventListener('click', function(e) {
     const header = e.target.closest('.activity-header');
     if (header) {
       const content = header.nextElementSibling;
@@ -267,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('modules-view')?.addEventListener('change', function(e) {
+  document.getElementById('activities-view')?.addEventListener('change', function(e) {
     if (e.target.classList.contains('activity-file-input')) {
       const file = e.target.files[0];
       const item = e.target.closest('.topic-activity-item');
@@ -291,4 +304,58 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isNaN(d.getTime())) return 'Invalid Date';
     return d.toLocaleString('en-US', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' });
   }
+
+  // Tab switching functionality for course detail
+  function initializeTabSwitching() {
+    const switchContainer = courseDetail?.querySelector('.course-switch');
+    if (!switchContainer) return;
+
+    const switchButtons = switchContainer.querySelectorAll('.switch-btn');
+    const switchInner = courseDetail?.querySelector('#courseDetailSwitchInner');
+
+    switchButtons.forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const targetTab = this.getAttribute('data-tab');
+        
+        // Update button states
+        switchButtons.forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
+
+        // Update switch inner position
+        const buttonIndex = Array.from(switchButtons).indexOf(this);
+        const buttonWidth = 100 / switchButtons.length;
+        if (switchInner) {
+          switchInner.style.transform = `translateX(${buttonIndex * 100}%)`;
+          switchInner.style.width = `${buttonWidth}%`;
+        }
+
+        // Show/hide tab content
+        if (targetTab === 'modules-view') {
+          if (modulesView) {
+            modulesView.classList.add('active');
+            modulesView.style.display = 'block';
+          }
+          if (activitiesView) {
+            activitiesView.classList.remove('active');
+            activitiesView.style.display = 'none';
+          }
+        } else if (targetTab === 'activities-view') {
+          if (modulesView) {
+            modulesView.classList.remove('active');
+            modulesView.style.display = 'none';
+          }
+          if (activitiesView) {
+            activitiesView.classList.add('active');
+            activitiesView.style.display = 'block';
+          }
+        }
+      });
+    });
+  }
+
+  // Initialize tab switching when DOM is ready
+  initializeTabSwitching();
 });

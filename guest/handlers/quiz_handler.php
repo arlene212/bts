@@ -64,6 +64,17 @@ function startQuiz($pdo, $user) {
         echo json_encode(['success' => false, 'message' => 'Quiz not found or you are not enrolled in this course']);
         return;
     }
+    $ds = $pdo->prepare("SELECT setting_value FROM quiz_settings WHERE quiz_id = ? AND setting_key = 'due_date' LIMIT 1");
+    $ds->execute([$quiz_id]);
+    $due = $ds->fetchColumn();
+    if (!empty($due)) {
+        $now = new DateTime('now');
+        $dueDt = new DateTime($due);
+        if ($now > $dueDt) {
+            echo json_encode(['success' => false, 'message' => 'This quiz is past its due date and can no longer be attempted']);
+            return;
+        }
+    }
     
     // Check attempt limit
     $stmt = $pdo->prepare("SELECT COUNT(*) as attempt_count FROM quiz_attempts WHERE quiz_id = ? AND trainee_id = ?");

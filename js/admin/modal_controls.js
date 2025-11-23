@@ -1,3 +1,23 @@
+function initializeCreateFormHandlers() {
+  // Add submit event listeners for trainer and trainee creation forms
+  const trainerForm = document.getElementById('createTrainerForm');
+  const traineeForm = document.getElementById('createTraineeForm');
+  
+  if (trainerForm) {
+    trainerForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      showAccountConfirmation('trainer', this);
+    });
+  }
+  
+  if (traineeForm) {
+    traineeForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      showAccountConfirmation('trainee', this);
+    });
+  }
+}
+
 function initializeModalButtons() {
   const modalButtons = { 'createTrainerBtn': 'createTrainerModal', 'createTraineeBtn': 'createTraineeModal', 'addCourseBtn': 'addCourseModal', 'addBatchBtn': 'addBatchModal', 'addAnnouncementBtn': 'addAnnouncementModal', 'editProfileBtn': 'editProfileModal' };
   Object.keys(modalButtons).forEach(buttonId => {
@@ -40,34 +60,60 @@ function updateConfirmationWithCredentials(type, credentials) {
 }
 
 function showAccountConfirmation(type, form) {
+  console.log(`Showing account confirmation for ${type}`);
   const formData = new FormData(form);
   let firstName, middleName, lastName, suffix, contactNumber, courseInfo, batchInfo;
-  if (type === 'trainer') {
-    firstName = formData.get('trainer_first_name'); middleName = formData.get('trainer_middle_name') || ''; lastName = formData.get('trainer_last_name'); suffix = formData.get('trainer_suffix') || ''; contactNumber = formData.get('trainer_number');
-    const courseSelect = form.querySelector('#trainer_courses');
-    const selectedCourses = Array.from(courseSelect.selectedOptions).map(opt => opt.textContent.split(' (')[0]);
-    courseInfo = selectedCourses.length > 0 ? selectedCourses.join(', ') : 'None'; batchInfo = 'N/A';
-  } else if (type === 'trainee') {
-    firstName = formData.get('trainee_first_name'); middleName = formData.get('trainee_middle_name') || ''; lastName = formData.get('trainee_last_name'); suffix = formData.get('trainee_suffix') || ''; contactNumber = formData.get('trainee_number');
-    const courseCode = formData.get('trainee_course'); const batchName = formData.get('trainee_batch');
-    const courseSelect = form.querySelector('#trainee_course'); const selectedCourse = courseSelect.selectedOptions[0];
-    courseInfo = selectedCourse ? selectedCourse.textContent.split(' (')[0] : 'Not assigned'; batchInfo = batchName || 'Not assigned';
+  
+  try {
+    if (type === 'trainer') {
+      firstName = formData.get('trainer_first_name'); 
+      middleName = formData.get('trainer_middle_name') || ''; 
+      lastName = formData.get('trainer_last_name'); 
+      suffix = formData.get('trainer_suffix') || ''; 
+      contactNumber = formData.get('trainer_number');
+      const courseSelect = form.querySelector('#trainer_courses');
+      const selectedCourses = Array.from(courseSelect.selectedOptions).map(opt => opt.textContent.split(' (')[0]);
+      courseInfo = selectedCourses.length > 0 ? selectedCourses.join(', ') : 'None'; 
+      batchInfo = 'N/A';
+    } else if (type === 'trainee') {
+      firstName = formData.get('trainee_first_name'); 
+      middleName = formData.get('trainee_middle_name') || ''; 
+      lastName = formData.get('trainee_last_name'); 
+      suffix = formData.get('trainee_suffix') || ''; 
+      contactNumber = formData.get('trainee_number');
+      const courseCode = formData.get('trainee_course'); 
+      const batchName = formData.get('trainee_batch');
+      const courseSelect = form.querySelector('#trainee_course'); 
+      const selectedCourse = courseSelect.selectedOptions[0];
+      courseInfo = selectedCourse ? selectedCourse.textContent.split(' (')[0] : 'Not assigned'; 
+      batchInfo = batchName || 'Not assigned';
+    }
+    
+    // Validate required fields
+    if (!firstName || !lastName || !contactNumber) {
+      alert('Please fill in all required fields (First Name, Last Name, Contact Number)');
+      return;
+    }
+    
+    const expectedInfo = generateExpectedAccountInfo(type, firstName, lastName);
+    const content = document.getElementById('accountConfirmationContent');
+    content.innerHTML = `
+      <div class="confirmation-details"><h3>Please review the ${type} details:</h3>
+        <div class="confirmation-section"><h4>Personal Information</h4><div class="confirmation-item"><strong>Full Name:</strong> ${firstName} ${middleName} ${lastName} ${suffix}</div><div class="confirmation-item"><strong>Contact Number:</strong> ${contactNumber}</div></div>
+        <div class="confirmation-section"><h4>Account Information</h4><div class="confirmation-item"><strong>Expected User ID:</strong> ${expectedInfo.userId}</div><div class="confirmation-item"><strong>Expected Email:</strong> ${expectedInfo.email}</div></div>
+        <div class="confirmation-section"><h4>${type === 'trainer' ? 'Course Assignment' : 'Enrollment Information'}</h4><div class="confirmation-item"><strong>${type === 'trainer' ? 'Assigned Courses' : 'Course'}:</strong> ${courseInfo}</div>${type === 'trainee' ? `<div class="confirmation-item"><strong>Batch:</strong> ${batchInfo}</div>` : ''}</div>
+        <div class="confirmation-note"><p><em>Click "Confirm Creation" to generate the account with auto-generated credentials.</em></p></div>
+        <div id="accountCredentialsSection" style="display: none; margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #28a745;"></div>
+      </div>`;
+    document.getElementById('accountConfirmationTitle').textContent = `Confirm ${type.charAt(0).toUpperCase() + type.slice(1)} Creation`;
+    const confirmBtn = document.getElementById('confirmAccountBtn');
+    confirmBtn.textContent = 'Confirm Creation';
+    confirmBtn.onclick = function() { submitAccountForm(type, form); };
+    openModal('accountConfirmationModal');
+  } catch (error) {
+    console.error('Error in showAccountConfirmation:', error);
+    alert('Error preparing account confirmation. Please try again.');
   }
-  const expectedInfo = generateExpectedAccountInfo(type, firstName, lastName);
-  const content = document.getElementById('accountConfirmationContent');
-  content.innerHTML = `
-    <div class="confirmation-details"><h3>Please review the ${type} details:</h3>
-      <div class="confirmation-section"><h4>Personal Information</h4><div class="confirmation-item"><strong>Full Name:</strong> ${firstName} ${middleName} ${lastName} ${suffix}</div><div class="confirmation-item"><strong>Contact Number:</strong> ${contactNumber}</div></div>
-      <div class="confirmation-section"><h4>Account Information</h4><div class="confirmation-item"><strong>Expected User ID:</strong> ${expectedInfo.userId}</div><div class="confirmation-item"><strong>Expected Email:</strong> ${expectedInfo.email}</div></div>
-      <div class="confirmation-section"><h4>${type === 'trainer' ? 'Course Assignment' : 'Enrollment Information'}</h4><div class="confirmation-item"><strong>${type === 'trainer' ? 'Assigned Courses' : 'Course'}:</strong> ${courseInfo}</div>${type === 'trainee' ? `<div class="confirmation-item"><strong>Batch:</strong> ${batchInfo}</div>` : ''}</div>
-      <div class="confirmation-note"><p><em>Click "Confirm Creation" to generate the account with auto-generated credentials.</em></p></div>
-      <div id="accountCredentialsSection" style="display: none; margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #28a745;"></div>
-    </div>`;
-  document.getElementById('accountConfirmationTitle').textContent = `Confirm ${type.charAt(0).toUpperCase() + type.slice(1)} Creation`;
-  const confirmBtn = document.getElementById('confirmAccountBtn');
-  confirmBtn.textContent = 'Confirm Creation';
-  confirmBtn.onclick = function() { submitAccountForm(type, form); };
-  openModal('accountConfirmationModal');
 }
 
 function generateExpectedAccountInfo(type, firstName, lastName) {
@@ -88,17 +134,43 @@ function generateExpectedAccountInfo(type, firstName, lastName) {
 }
 
 function submitAccountForm(type, form) {
+  console.log(`Submitting ${type} account form`);
   const formData = new FormData(form);
   const url = type === 'trainer' ? '../php/create_trainer.php' : '../php/create_trainee.php';
   const confirmBtn = document.getElementById('confirmAccountBtn');
   const originalText = confirmBtn.textContent;
   confirmBtn.textContent = 'Creating...';
   confirmBtn.disabled = true;
+  
+  // Log form data for debugging
+  console.log('Form data being submitted:');
+  for (let [key, value] of formData.entries()) {
+    console.log(`${key}: ${value}`);
+  }
+  
   fetch(url, { method: 'POST', body: formData })
-    .then(response => response.json())
-    .then(data => { if (data.success) { showAccountCreationSuccess(type, data.credentials); } else { alert(`Error creating ${type}: ` + data.message); closeModal('accountConfirmationModal'); } })
-    .catch(() => { alert(`Error creating ${type}. Please try again.`); closeModal('accountConfirmationModal'); })
-    .finally(() => { confirmBtn.textContent = originalText; confirmBtn.disabled = false; });
+    .then(response => {
+      console.log('Response received:', response.status);
+      return response.json();
+    })
+    .then(data => { 
+      console.log('Response data:', data);
+      if (data.success) { 
+        showAccountCreationSuccess(type, data.credentials); 
+      } else { 
+        alert(`Error creating ${type}: ` + (data.message || 'Unknown error')); 
+        closeModal('accountConfirmationModal'); 
+      } 
+    })
+    .catch((error) => { 
+      console.error('Submission error:', error);
+      alert(`Error creating ${type}. Please try again.`); 
+      closeModal('accountConfirmationModal'); 
+    })
+    .finally(() => { 
+      confirmBtn.textContent = originalText; 
+      confirmBtn.disabled = false; 
+    });
 }
 
 function showAccountCreationSuccess(type, credentials) {

@@ -129,6 +129,11 @@ try {
         // Handle trainee-specific updates
         $courseCode = $_POST['course_code'] ?? '';
         $batchName = $_POST['batch_name'] ?? '';
+        $enrollmentStatus = $_POST['enrollment_status'] ?? 'active';
+
+        // Write the selected status directly to users.status
+        $updStatusStmt = $pdo->prepare("UPDATE users SET status = ? WHERE user_id = ?");
+        $updStatusStmt->execute([$enrollmentStatus, $userId]);
 
         // 1. Delete existing enrollment and batch assignment
         $deleteEnrollmentStmt = $pdo->prepare("DELETE FROM enrollments WHERE trainee_id = ?");
@@ -148,6 +153,19 @@ try {
                 // Create enrollment (do not store batch in enrollments; use batch_assignments)
                 $enrollStmt = $pdo->prepare("INSERT INTO enrollments (trainee_id, course_code, course_name, status, date_requested) VALUES (?, ?, ?, 'approved', NOW())");
                 $enrollStmt->execute([$userId, $courseCode, $course['course_name']]);
+
+                // Apply enrollment status
+                if ($enrollmentStatus === 'dropped') {
+                    $upd = $pdo->prepare("UPDATE enrollments SET drop_date = NOW(), dropped_by = ? WHERE trainee_id = ? AND course_code = ?");
+                    $upd->execute([$_SESSION['user']['user_id'], $userId, $courseCode]);
+                } elseif ($enrollmentStatus === 'graduated') {
+                    $upd = $pdo->prepare("UPDATE enrollments SET completion_date = NOW() WHERE trainee_id = ? AND course_code = ?");
+                    $upd->execute([$userId, $courseCode]);
+                } else {
+                    // active: clear drop/graduation markers
+                    $upd = $pdo->prepare("UPDATE enrollments SET drop_date = NULL, dropped_by = NULL, completion_date = NULL WHERE trainee_id = ? AND course_code = ?");
+                    $upd->execute([$userId, $courseCode]);
+                }
 
                 // Create batch assignment
                 if (!empty($batchName)) {

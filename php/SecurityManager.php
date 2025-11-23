@@ -1,5 +1,6 @@
 <?php
 require_once 'SessionManager.php';
+require_once 'ErrorHandler.php';
 
 /**
  * Security Manager for BTS eLMS

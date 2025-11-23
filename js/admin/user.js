@@ -123,6 +123,8 @@ function setupUserManagement() {
             const event = new Event('change');
             courseSelect.dispatchEvent(event);
             setTimeout(() => { batchSelect.value = enrollment.batch_name || ''; }, 300);
+            const statusSelect = document.getElementById('edit_trainee_enrollment_status');
+            if (statusSelect) { statusSelect.value = enrollment.enrollment_status || 'active'; }
           })
           .catch(() => {});
         openModal('editTraineeModal');

@@ -42,6 +42,15 @@ try {
     ");
     $quizzesStmt->execute([$user['user_id']]);
     $quizzes = $quizzesStmt->fetchAll();
+    foreach ($quizzes as $idx => $q) {
+        try {
+            $ds = $pdo->prepare("SELECT setting_value FROM quiz_settings WHERE quiz_id = ? AND setting_key = 'due_date' LIMIT 1");
+            $ds->execute([$q['id']]);
+            $quizzes[$idx]['due_date'] = $ds->fetchColumn();
+        } catch (Exception $_) {}
+    }
+    $activeQuizzes = array_filter($quizzes, function($q){ return ($q['status'] ?? 'draft') !== 'archived'; });
+    $archivedQuizzes = array_filter($quizzes, function($q){ return ($q['status'] ?? 'draft') === 'archived'; });
 } catch (PDOException $e) {
     error_log("Error loading quiz data: " . $e->getMessage());
     $trainerCourses = [];
@@ -68,7 +77,7 @@ $currentTab = $_GET['current_tab'] ?? 'quizzes';
     </div>
 
     <div class="quizzes-grid">
-        <?php if (empty($quizzes)): ?>
+        <?php if (empty($activeQuizzes)): ?>
             <div class="empty-state">
                 <div class="empty-icon">
                     <i class="fas fa-question-circle"></i>
@@ -85,7 +94,7 @@ $currentTab = $_GET['current_tab'] ?? 'quizzes';
                 </div>
             </div>
         <?php else: ?>
-            <?php foreach ($quizzes as $index => $quiz): ?>
+            <?php foreach ($activeQuizzes as $index => $quiz): ?>
                 <?php 
                 $statusClass = $quiz['status'];
                 $statusIcon = '';
@@ -139,6 +148,12 @@ $currentTab = $_GET['current_tab'] ?? 'quizzes';
                                 <i class="fas fa-percentage"></i>
                                 <span>Pass: <?php echo $quiz['passing_score']; ?>%</span>
                             </div>
+                            <?php if (!empty($quiz['due_date'])): ?>
+                            <div class="stat">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Due: <?php echo date('M j, Y g:i A', strtotime($quiz['due_date'])); ?></span>
+                            </div>
+                            <?php endif; ?>
                         </div>
 
                         <div class="quiz-meta">
@@ -170,6 +185,20 @@ $currentTab = $_GET['current_tab'] ?? 'quizzes';
                             title="Manage questions">
                             <i class="fas fa-list"></i> Questions
                         </button>
+                        <?php if ($quiz['status'] === 'draft'): ?>
+                        <button class="btn btn-success publish-quiz-btn"
+                            data-quiz-id="<?php echo $quiz['id']; ?>"
+                            title="Publish this quiz">
+                            <i class="fas fa-globe"></i> Publish
+                        </button>
+                        <?php endif; ?>
+                        <?php if ($quiz['status'] !== 'archived'): ?>
+                        <button class="btn btn-outline-secondary archive-quiz-btn"
+                            data-quiz-id="<?php echo $quiz['id']; ?>"
+                            title="Archive this quiz">
+                            <i class="fas fa-archive"></i> Archive
+                        </button>
+                        <?php endif; ?>
                         <button class="btn btn-success view-results-btn"
                             data-quiz-id="<?php echo $quiz['id']; ?>"
                             title="View student results">
@@ -185,6 +214,105 @@ $currentTab = $_GET['current_tab'] ?? 'quizzes';
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
+
+    <div class="archived-section">
+        <div class="tab-header" style="margin-top: 24px;">
+            <div class="header-content">
+                <h3><i class="fas fa-archive"></i> Archived Quizzes</h3>
+                <p class="header-subtitle">Quizzes that are no longer available to trainees</p>
+            </div>
+        </div>
+        <div class="quizzes-grid">
+            <?php if (empty($archivedQuizzes)): ?>
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-archive"></i>
+                    </div>
+                    <h3>No Archived Quizzes</h3>
+                    <p>Archived quizzes will appear here for reference.</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($archivedQuizzes as $index => $quiz): ?>
+                    <?php 
+                    $statusClass = $quiz['status'];
+                    $statusIcon = 'fa-archive';
+                    ?>
+                    <div class="quiz-card card archived" style="animation-delay: <?php echo ($index * 0.1); ?>s;">
+                        <div class="quiz-header">
+                            <div class="quiz-title-wrapper">
+                                <h3><?php echo htmlspecialchars($quiz['title']); ?></h3>
+                                <div class="quiz-status <?php echo $statusClass; ?>">
+                                    <i class="fas <?php echo $statusIcon; ?>"></i>
+                                    Archived
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="quiz-info">
+                            <div class="quiz-course">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span><?php echo htmlspecialchars($quiz['course_name']); ?></span>
+                            </div>
+
+                            <?php if (!empty($quiz['description'])): ?>
+                                <p class="quiz-description"><?php echo htmlspecialchars($quiz['description']); ?></p>
+                            <?php endif; ?>
+
+                            <div class="quiz-stats">
+                                <div class="stat">
+                                    <i class="fas fa-question-circle"></i>
+                                    <span><?php echo $quiz['question_count']; ?> Questions</span>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-clock"></i>
+                                    <span><?php echo $quiz['time_limit'] ? $quiz['time_limit'] . ' min' : 'No limit'; ?></span>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-users"></i>
+                                    <span><?php echo $quiz['attempt_count']; ?> Attempts</span>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-percentage"></i>
+                                    <span>Pass: <?php echo $quiz['passing_score']; ?>%</span>
+                                </div>
+                                <?php if (!empty($quiz['due_date'])): ?>
+                                <div class="stat">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>Due: <?php echo date('M j, Y g:i A', strtotime($quiz['due_date'])); ?></span>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <div class="quiz-actions">
+                            <button class="btn btn-outline-primary edit-quiz-btn"
+                                data-quiz-id="<?php echo $quiz['id']; ?>"
+                                data-quiz-data='<?php echo htmlspecialchars(json_encode($quiz), ENT_QUOTES, "UTF-8"); ?>'
+                                title="Edit quiz settings">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-primary view-questions-btn"
+                                data-quiz-id="<?php echo $quiz['id']; ?>"
+                                data-quiz-title="<?php echo htmlspecialchars($quiz['title']); ?>"
+                                title="Manage questions">
+                                <i class="fas fa-list"></i> Questions
+                            </button>
+                            <button class="btn btn-info duplicate-quiz-btn"
+                                data-quiz-id="<?php echo $quiz['id']; ?>"
+                                title="Duplicate this quiz">
+                                <i class="fas fa-copy"></i> Duplicate
+                            </button>
+                            <button class="btn btn-success view-results-btn"
+                                data-quiz-id="<?php echo $quiz['id']; ?>"
+                                title="View student results">
+                                <i class="fas fa-chart-bar"></i> Results
+                            </button>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
 </section>
 
 <script>
@@ -195,6 +323,140 @@ document.addEventListener('DOMContentLoaded', function() {
             const quizId = this.getAttribute('data-quiz-id');
             duplicateQuiz(quizId);
         });
+    });
+
+    document.querySelectorAll('.publish-quiz-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const quizId = this.getAttribute('data-quiz-id');
+            publishQuiz(quizId, this);
+        });
+    });
+
+    document.querySelectorAll('.archive-quiz-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const quizId = this.getAttribute('data-quiz-id');
+            archiveQuiz(quizId, this);
+        });
+    });
+
+    document.querySelectorAll('.edit-quiz-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const data = this.getAttribute('data-quiz-data');
+            const quiz = JSON.parse(data);
+            const form = document.getElementById('addQuizForm');
+            if (!form) return;
+            form.reset();
+            form.querySelector('#quiz_title').value = quiz.title || '';
+            const courseSelect = form.querySelector('#quiz_course');
+            if (courseSelect) courseSelect.value = quiz.course_code || '';
+            form.querySelector('#quiz_description').value = quiz.description || '';
+            form.querySelector('#quiz_time_limit').value = quiz.time_limit || '';
+            form.querySelector('#quiz_max_attempts').value = quiz.max_attempts || 1;
+            form.querySelector('#quiz_passing_score').value = quiz.passing_score || 70;
+            form.querySelector('#quiz_randomized').checked = !!quiz.is_randomized;
+            form.querySelector('#quiz_show_answers').checked = !!quiz.show_correct_answers;
+            const dueInput = form.querySelector('#quiz_due_date');
+            if (dueInput && quiz.due_date) {
+                const dt = new Date(quiz.due_date.replace(' ', 'T'));
+                const pad = n => String(n).padStart(2,'0');
+                const v = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+                dueInput.value = v;
+            }
+            let idInput = form.querySelector('input[name="quiz_id"]');
+            if (!idInput) {
+                idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'quiz_id';
+                form.appendChild(idInput);
+            }
+            idInput.value = quiz.id;
+            const submitBtn = form.querySelector('.submit-btn');
+            if (submitBtn) submitBtn.textContent = 'Save Changes';
+            const modal = document.getElementById('addQuizModal');
+            if (modal) { modal.classList.remove('hidden'); modal.style.display='flex'; }
+            form.dataset.mode = 'edit';
+        });
+    });
+
+    const addQuizForm = document.getElementById('addQuizForm');
+    if (addQuizForm) {
+        addQuizForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const fd = new FormData(addQuizForm);
+            const isEdit = addQuizForm.dataset.mode === 'edit' && fd.get('quiz_id');
+            fd.append('action', isEdit ? 'update_quiz' : 'create_quiz');
+            fetch('../trainer/handlers/quiz_handler.php', { method:'POST', body: fd })
+              .then(r=>r.json())
+              .then(data=>{ if (data.success) { alert(isEdit?'Quiz updated successfully':'Quiz created successfully'); location.reload(); } else { alert(data.message||'Error'); } })
+              .catch(()=>alert('Request failed'));
+        });
+    }
+
+    document.querySelectorAll('.view-questions-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const quizId = this.getAttribute('data-quiz-id');
+            const modal = document.getElementById('viewQuestionsModal');
+            const body = document.getElementById('viewQuestionsBody');
+            if (!modal || !body) return;
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            body.innerHTML = '<div style="padding:16px"><i class="fas fa-spinner fa-spin"></i> Loading questions...</div>';
+            const fd = new URLSearchParams();
+            fd.append('action','get_questions');
+            fd.append('quiz_id', quizId);
+            fetch('../trainer/handlers/quiz_handler.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: fd.toString() })
+              .then(r=>r.json())
+              .then(data=>{
+                if (data.success) {
+                  const q = data.questions || [];
+                  let html = '<div class="questions-list" style="padding:16px">';
+                  if (q.length===0) html += '<p>No questions found.</p>';
+                  q.forEach((qq,i)=>{ html += `<div class="question-item" style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:10px"><strong>Q${i+1}.</strong> ${qq.question_text}</div>`; });
+                  html += '</div>';
+                  body.innerHTML = html;
+                } else { body.innerHTML = '<div style="padding:16px;color:#b00">'+(data.message||'Failed to load')+'</div>'; }
+              })
+              .catch(()=>{ body.innerHTML = '<div style="padding:16px;color:#b00">Request failed</div>'; });
+        });
+    });
+
+    document.querySelectorAll('.view-results-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const quizId = this.getAttribute('data-quiz-id');
+            const modal = document.getElementById('viewResultsModal');
+            const body = document.getElementById('viewResultsBody');
+            if (!modal || !body) return;
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            body.innerHTML = '<div style="padding:16px"><i class="fas fa-spinner fa-spin"></i> Loading results...</div>';
+            const fd = new URLSearchParams();
+            fd.append('action','get_results');
+            fd.append('quiz_id', quizId);
+            fetch('../trainer/handlers/quiz_handler.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: fd.toString() })
+              .then(r=>r.json())
+              .then(data=>{
+                if (data.success) {
+                  const res = data.results || [];
+                  let html = '<div class="results-list" style="padding:16px">';
+                  if (res.length===0) html += '<p>No results found.</p>';
+                  res.forEach(rw=>{ html += `<div class="result-item" style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:10px"><strong>${rw.last_name}, ${rw.first_name}</strong> — ${rw.score}%</div>`; });
+                  html += '</div>';
+                  body.innerHTML = html;
+                } else { body.innerHTML = '<div style="padding:16px;color:#b00">'+(data.message||'Failed to load')+'</div>'; }
+              })
+              .catch(()=>{ body.innerHTML = '<div style="padding:16px;color:#b00">Request failed</div>'; });
+        });
+    });
+
+    ['addQuizModal','viewQuestionsModal','viewResultsModal'].forEach(id=>{
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        const x = modal.querySelector('.close');
+        const footerClose = modal.querySelector('.modal-footer .btn.btn-outline-secondary');
+        const closeFn = ()=>{ modal.style.display='none'; modal.classList.add('hidden'); };
+        if (x) x.addEventListener('click', closeFn);
+        if (footerClose) footerClose.addEventListener('click', closeFn);
+        modal.addEventListener('click', function(e){ if (e.target === modal) closeFn(); });
     });
 });
 
@@ -238,6 +500,54 @@ function duplicateQuiz(quizId) {
     });
 }
 
+function publishQuiz(quizId, buttonEl) {
+    const confirmed = confirm('Publish this quiz? It will become available to trainees.');
+    if (!confirmed) return;
+    const original = buttonEl.innerHTML;
+    buttonEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+    buttonEl.disabled = true;
+    fetch('../trainer/handlers/quiz_handler.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=publish_quiz&quiz_id=' + encodeURIComponent(quizId)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('Quiz published successfully.');
+            location.reload();
+        } else {
+            alert('Error publishing quiz: ' + data.message);
+            buttonEl.innerHTML = original;
+            buttonEl.disabled = false;
+        }
+    })
+    .catch(() => {
+        alert('Error publishing quiz. Please try again.');
+        buttonEl.innerHTML = original;
+        buttonEl.disabled = false;
+    });
+}
+
+function archiveQuiz(quizId, buttonEl) {
+    const confirmed = confirm('Archive this quiz? Trainees will not be able to attempt it.');
+    if (!confirmed) return;
+    const original = buttonEl.innerHTML;
+    buttonEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Archiving...';
+    buttonEl.disabled = true;
+    fetch('../trainer/handlers/quiz_handler.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=archive_quiz&quiz_id=' + encodeURIComponent(quizId)
+    })
+    .then(r=>r.json())
+    .then(data=>{
+        if (data.success) { alert('Quiz archived.'); location.reload(); }
+        else { alert('Error archiving quiz: ' + data.message); buttonEl.innerHTML = original; buttonEl.disabled = false; }
+    })
+    .catch(()=>{ alert('Error archiving quiz.'); buttonEl.innerHTML = original; buttonEl.disabled = false; });
+}
+
 function showHelp() {
     alert('Quiz Management Help:\n\n' +
           '• Create Quiz: Build a new assessment for your course\n' +
@@ -255,8 +565,8 @@ function showHelp() {
 
 <!-- Add Quiz Modal -->
 
-<div class="modal hidden" id="addQuizModal">
-    <div class="modal-content modal-content-large">
+<div class="modal hidden" id="addQuizModal" style="position:fixed;inset:0;z-index:1000;display:none;align-items:flex-start;justify-content:center;overflow:auto;background:rgba(0,0,0,0.3)">
+    <div class="modal-content modal-content-large" style="max-height:85vh;overflow:auto;margin:40px auto;width:95%;max-width:900px">
         <div class="modal-header">
             <h2>Create New Quiz</h2>
             <span class="close">&times;</span>
@@ -285,6 +595,10 @@ function showHelp() {
                     <div class="form-group">
                         <label for="quiz_description">Description</label>
                         <textarea id="quiz_description" name="quiz_description" rows="3" class="form-control" placeholder="Describe the purpose and content of this quiz..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="quiz_due_date">Due Date</label>
+                        <input type="datetime-local" id="quiz_due_date" name="quiz_due_date" class="form-control">
                     </div>
                 </div>
 
@@ -460,8 +774,8 @@ function showHelp() {
 </div>
 
 <!-- View Questions Modal -->
-<div class="modal hidden" id="viewQuestionsModal">
-    <div class="modal-content modal-content-extra-large">
+<div class="modal hidden" id="viewQuestionsModal" style="position:fixed;inset:0;z-index:1000;display:none;align-items:flex-start;justify-content:center;overflow:auto;background:rgba(0,0,0,0.3)">
+    <div class="modal-content modal-content-extra-large" style="max-height:85vh;overflow:auto;margin:40px auto;width:95%;max-width:1100px">
         <div class="modal-header">
             <h2 id="viewQuestionsTitle">Quiz Questions</h2>
             <span class="close">&times;</span>
@@ -476,8 +790,8 @@ function showHelp() {
 </div>
 
 <!-- View Results Modal -->
-<div class="modal hidden" id="viewResultsModal">
-    <div class="modal-content modal-content-large">
+<div class="modal hidden" id="viewResultsModal" style="position:fixed;inset:0;z-index:1000;display:none;align-items:flex-start;justify-content:center;overflow:auto;background:rgba(0,0,0,0.3)">
+    <div class="modal-content modal-content-large" style="max-height:85vh;overflow:auto;margin:40px auto;width:95%;max-width:900px">
         <div class="modal-header">
             <h2>Quiz Results</h2>
             <span class="close">&times;</span>

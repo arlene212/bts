@@ -3,330 +3,109 @@ require_once __DIR__ . '/../../php/SessionManager.php';
 require_once __DIR__ . '/../../php/DatabaseConnection.php';
 
 SessionManager::startSession();
-
-if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'trainer') {
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-    exit;
-}
+SessionManager::requireRole('trainer');
 
 header('Content-Type: application/json');
 
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
-$trainer_id = $_SESSION['user']['user_id'];
+$database = new DatabaseConnection();
+$pdo = $database->getConnection();
+$user = SessionManager::getCurrentUser();
+
+$action = $_GET['action'] ?? ($_POST['action'] ?? '');
+
+function letterGrade($pct) {
+    if ($pct >= 90) return 'A';
+    if ($pct >= 80) return 'B';
+    if ($pct >= 70) return 'C';
+    if ($pct >= 60) return 'D';
+    return 'F';
+}
 
 try {
-    $database = new DatabaseConnection();
-    $pdo = $database->getConnection();
-    
-    switch ($action) {
-        case 'get_grades':
-            getGrades($pdo, $trainer_id);
-            break;
-            
-        case 'update_grade':
-            updateGrade($pdo, $trainer_id);
-            break;
-            
-        case 'export':
-            exportGrades($pdo, $trainer_id);
-            break;
-            
-        case 'bulk_import':
-            bulkImportGrades($pdo, $trainer_id);
-            break;
-            
-        default:
-            echo json_encode(['success' => false, 'message' => 'Invalid action']);
-    }
-    
-} catch (PDOException $e) {
-    error_log("Grade handler error: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Database error occurred']);
-}
-
-function getGrades($pdo, $trainer_id) {
-    $course_code = $_GET['course_code'] ?? '';
-    $grade_type = $_GET['grade_type'] ?? '';
-    
-    $query = "
-        SELECT 
-            g.id,
-            g.student_id,
-            CONCAT(u.first_name, ' ', u.last_name) as student_name,
-            u.student_id as student_id_number,
-            g.course_code,
-            c.course_name,
-            g.activity_name,
-            g.activity_type,
-            g.score,
-            g.max_score,
-            g.percentage,
-            g.grade,
-            g.status,
-            g.feedback,
-            g.submitted_date,
-            g.time_taken,
-            g.attempts,
-            g.submission_details
-        FROM grades g
-        JOIN users u ON g.student_id = u.user_id
-        JOIN courses c ON g.course_code = c.course_code
-        JOIN course_assignments ca ON c.course_code = ca.course_code
-        WHERE ca.trainer_id = :trainer_id
-    ";
-    
-    $params = [':trainer_id' => $trainer_id];
-    
-    if ($course_code) {
-        $query .= " AND g.course_code = :course_code";
-        $params[':course_code'] = $course_code;
-    }
-    
-    if ($grade_type) {
-        $query .= " AND g.activity_type = :activity_type";
-        $params[':activity_type'] = $grade_type;
-    }
-    
-    $query .= " ORDER BY g.submitted_date DESC";
-    
-    $stmt = $pdo->prepare($query);
-    $stmt->execute($params);
-    $grades = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    echo json_encode([
-        'success' => true,
-        'grades' => $grades
-    ]);
-}
-
-function updateGrade($pdo, $trainer_id) {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        echo json_encode(['success' => false, 'message' => 'Invalid request method']);
-        return;
-    }
-    
-    $grade_id = $_POST['grade_id'] ?? '';
-    $score = $_POST['score'] ?? '';
-    $feedback = $_POST['feedback'] ?? '';
-    
-    if (!$grade_id || $score === '') {
-        echo json_encode(['success' => false, 'message' => 'Missing required fields']);
-        return;
-    }
-    
-    // Verify trainer has access to this grade
-    $stmt = $pdo->prepare("
-        SELECT g.max_score 
-        FROM grades g
-        JOIN course_assignments ca ON g.course_code = ca.course_code
-        WHERE g.id = :grade_id AND ca.trainer_id = :trainer_id
-    ");
-    $stmt->execute([':grade_id' => $grade_id, ':trainer_id' => $trainer_id]);
-    $grade_info = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if (!$grade_info) {
-        echo json_encode(['success' => false, 'message' => 'Grade not found or access denied']);
-        return;
-    }
-    
-    $max_score = $grade_info['max_score'];
-    $percentage = ($score / $max_score) * 100;
-    $letter_grade = calculateLetterGrade($percentage);
-    
-    $stmt = $pdo->prepare("
-        UPDATE grades 
-        SET score = :score, 
-            percentage = :percentage, 
-            grade = :grade, 
-            feedback = :feedback,
-            graded_by = :trainer_id,
-            graded_date = NOW()
-        WHERE id = :grade_id
-    ");
-    
-    $stmt->execute([
-        ':score' => $score,
-        ':percentage' => $percentage,
-        ':grade' => $letter_grade,
-        ':feedback' => $feedback,
-        ':trainer_id' => $trainer_id,
-        ':grade_id' => $grade_id
-    ]);
-    
-    echo json_encode([
-        'success' => true,
-        'message' => 'Grade updated successfully',
-        'grade' => $letter_grade,
-        'percentage' => $percentage
-    ]);
-}
-
-function exportGrades($pdo, $trainer_id) {
-    $course_code = $_GET['course_code'] ?? '';
-    $grade_type = $_GET['grade_type'] ?? '';
-    
-    $query = "
-        SELECT 
-            u.student_id as 'Student ID',
-            CONCAT(u.first_name, ' ', u.last_name) as 'Student Name',
-            c.course_name as 'Course',
-            g.activity_name as 'Activity',
-            g.activity_type as 'Type',
-            g.score as 'Score',
-            g.max_score as 'Max Score',
-            g.percentage as 'Percentage',
-            g.grade as 'Letter Grade',
-            g.status as 'Status',
-            g.submitted_date as 'Submission Date',
-            g.feedback as 'Feedback'
-        FROM grades g
-        JOIN users u ON g.student_id = u.user_id
-        JOIN courses c ON g.course_code = c.course_code
-        JOIN course_assignments ca ON c.course_code = ca.course_code
-        WHERE ca.trainer_id = :trainer_id
-    ";
-    
-    $params = [':trainer_id' => $trainer_id];
-    
-    if ($course_code) {
-        $query .= " AND g.course_code = :course_code";
-        $params[':course_code'] = $course_code;
-    }
-    
-    if ($grade_type) {
-        $query .= " AND g.activity_type = :activity_type";
-        $params[':activity_type'] = $grade_type;
-    }
-    
-    $query .= " ORDER BY u.last_name, u.first_name, g.submitted_date DESC";
-    
-    $stmt = $pdo->prepare($query);
-    $stmt->execute($params);
-    $grades = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Generate CSV
-    header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="grades_export_' . date('Y-m-d') . '.csv"');
-    
-    $output = fopen('php://output', 'w');
-    
-    // Add headers
-    if (!empty($grades)) {
-        fputcsv($output, array_keys($grades[0]));
-        
-        // Add data
-        foreach ($grades as $grade) {
-            fputcsv($output, $grade);
+    if ($action === 'get_grades') {
+        $stmt = $pdo->prepare(
+            "SELECT qa.id, qa.quiz_id, qa.trainee_id, qa.score, qa.max_score, qa.completed_at, qa.time_spent, qa.attempt_number,
+                    u.first_name, u.last_name, u.user_id, q.title AS quiz_title, q.course_code, c.course_name
+             FROM quiz_attempts qa
+             JOIN users u ON qa.trainee_id = u.user_id
+             JOIN quizzes q ON qa.quiz_id = q.id
+             JOIN courses c ON q.course_code = c.course_code
+             WHERE q.course_code IN (SELECT course_code FROM course_assignments WHERE trainer_id = ?)
+             ORDER BY qa.completed_at DESC"
+        );
+        $stmt->execute([$user['user_id']]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $grades = [];
+        foreach ($rows as $r) {
+            $pct = (float)$r['score'];
+            $max = (int)$r['max_score'];
+            $points = $max > 0 ? round(($pct / 100) * $max) : 0;
+            $grades[] = [
+                'id' => (string)$r['id'],
+                'student_name' => trim(($r['last_name'] ?? '') . ', ' . ($r['first_name'] ?? '')),
+                'student_id' => (string)$r['user_id'],
+                'course_code' => (string)$r['course_code'],
+                'course_name' => (string)$r['course_name'],
+                'activity_name' => (string)$r['quiz_title'],
+                'activity_type' => 'quiz',
+                'score' => $points,
+                'max_score' => $max,
+                'percentage' => round($pct, 1),
+                'grade' => letterGrade($pct),
+                'status' => 'completed',
+                'submitted_date' => $r['completed_at'],
+                'feedback' => '',
+                'time_taken' => ($r['time_spent'] !== null ? ($r['time_spent'] . 's') : 'N/A'),
+                'attempts' => (int)$r['attempt_number'],
+                'submission_details' => true,
+            ];
         }
+        echo json_encode(['success' => true, 'grades' => $grades]);
+        exit;
     }
-    
-    fclose($output);
-    exit;
-}
 
-function bulkImportGrades($pdo, $trainer_id) {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        echo json_encode(['success' => false, 'message' => 'Invalid request method']);
-        return;
-    }
-    
-    if (!isset($_FILES['grade_file'])) {
-        echo json_encode(['success' => false, 'message' => 'No file uploaded']);
-        return;
-    }
-    
-    $file = $_FILES['grade_file'];
-    $file_type = pathinfo($file['name'], PATHINFO_EXTENSION);
-    
-    if (!in_array($file_type, ['csv', 'xlsx'])) {
-        echo json_encode(['success' => false, 'message' => 'Invalid file type. Please upload CSV or XLSX file']);
-        return;
-    }
-    
-    // Process file (simplified - would need proper CSV/XLSX parsing)
-    $grades_data = [];
-    
-    if ($file_type === 'csv') {
-        if (($handle = fopen($file['tmp_name'], 'r')) !== FALSE) {
-            $headers = fgetcsv($handle);
-            while (($data = fgetcsv($handle)) !== FALSE) {
-                $grades_data[] = array_combine($headers, $data);
-            }
-            fclose($handle);
-        }
-    }
-    
-    $imported = 0;
-    $errors = [];
-    
-    foreach ($grades_data as $row) {
-        try {
-            // Validate and import each grade
-            $student_id = $row['Student ID'] ?? '';
-            $activity_name = $row['Activity Name'] ?? '';
-            $score = $row['Score'] ?? '';
-            $max_score = $row['Max Score'] ?? 100;
-            $feedback = $row['Comments'] ?? '';
-            
-            if (!$student_id || !$activity_name || $score === '') {
-                $errors[] = "Missing required fields for student {$student_id}";
-                continue;
-            }
-            
-            // Get student user_id
-            $stmt = $pdo->prepare("SELECT user_id FROM users WHERE student_id = ?");
-            $stmt->execute([$student_id]);
-            $student = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if (!$student) {
-                $errors[] = "Student not found: {$student_id}";
-                continue;
-            }
-            
-            $percentage = ($score / $max_score) * 100;
-            $letter_grade = calculateLetterGrade($percentage);
-            
-            // Update or insert grade
-            $stmt = $pdo->prepare("
-                INSERT INTO grades (student_id, course_code, activity_name, activity_type, score, max_score, percentage, grade, status, feedback, graded_by, graded_date, submitted_date)
-                VALUES (:student_id, :course_code, :activity_name, 'assignment', :score, :max_score, :percentage, :grade, 'completed', :feedback, :trainer_id, NOW(), NOW())
-                ON DUPLICATE KEY UPDATE
-                score = :score, percentage = :percentage, grade = :grade, feedback = :feedback, graded_by = :trainer_id, graded_date = NOW()
-            ");
-            
-            $stmt->execute([
-                ':student_id' => $student['user_id'],
-                ':course_code' => $row['Course Code'] ?? '',
-                ':activity_name' => $activity_name,
-                ':score' => $score,
-                ':max_score' => $max_score,
-                ':percentage' => $percentage,
-                ':grade' => $letter_grade,
-                ':feedback' => $feedback,
-                ':trainer_id' => $trainer_id
+    if ($action === 'export') {
+        $courseCode = $_GET['course_code'] ?? '';
+        $stmtSql = "SELECT qa.id, qa.quiz_id, qa.trainee_id, qa.score, qa.max_score, qa.completed_at, qa.time_spent, qa.attempt_number,
+                           u.first_name, u.last_name, u.user_id, q.title AS quiz_title, q.course_code, c.course_name
+                    FROM quiz_attempts qa
+                    JOIN users u ON qa.trainee_id = u.user_id
+                    JOIN quizzes q ON qa.quiz_id = q.id
+                    JOIN courses c ON q.course_code = c.course_code
+                    WHERE q.course_code IN (SELECT course_code FROM course_assignments WHERE trainer_id = ?)";
+        $params = [$user['user_id']];
+        if (!empty($courseCode)) { $stmtSql .= " AND q.course_code = ?"; $params[] = $courseCode; }
+        $stmtSql .= " ORDER BY qa.completed_at DESC";
+        $stmt = $pdo->prepare($stmtSql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="quiz_grades.csv"');
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['Student ID', 'Student Name', 'Course', 'Quiz Title', 'Points', 'Max Points', 'Percentage', 'Grade', 'Attempt', 'Completed At']);
+        foreach ($rows as $r) {
+            $pct = (float)$r['score'];
+            $max = (int)$r['max_score'];
+            $points = $max > 0 ? round(($pct / 100) * $max) : 0;
+            fputcsv($out, [
+                $r['user_id'],
+                trim(($r['last_name'] ?? '') . ', ' . ($r['first_name'] ?? '')),
+                $r['course_name'],
+                $r['quiz_title'],
+                $points,
+                $max,
+                round($pct, 1),
+                letterGrade($pct),
+                $r['attempt_number'],
+                $r['completed_at'],
             ]);
-            
-            $imported++;
-            
-        } catch (Exception $e) {
-            $errors[] = "Error importing grade for student {$student_id}: " . $e->getMessage();
         }
+        fclose($out);
+        exit;
     }
-    
-    echo json_encode([
-        'success' => true,
-        'message' => "Imported {$imported} grades successfully",
-        'imported' => $imported,
-        'errors' => $errors
-    ]);
-}
 
-function calculateLetterGrade($percentage) {
-    if ($percentage >= 90) return 'A';
-    if ($percentage >= 80) return 'B';
-    if ($percentage >= 70) return 'C';
-    if ($percentage >= 60) return 'D';
-    return 'F';
+    echo json_encode(['success' => false, 'message' => 'Invalid action']);
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }
 ?>

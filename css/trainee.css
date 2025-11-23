@@ -6,6 +6,165 @@
 /* Import Inter Font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* Course Detail Card Styles */
+.course-detail .course-card {
+  background: var(--gradient-card);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--secondary-200);
+}
+
+.course-detail .course-card .detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.course-detail .course-card .back-btn {
+  background: var(--primary-600);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.course-detail .course-card .back-btn:hover {
+  background: var(--primary-700);
+  transform: translateY(-1px);
+}
+
+.course-detail .course-card h2 {
+  margin: 0;
+  color: var(--primary-800);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.course-detail .course-card .course-meta {
+  font-size: 14px;
+  color: var(--secondary-600);
+  margin-bottom: 12px;
+}
+
+.course-detail .course-card #course-detail-description {
+  color: var(--secondary-700);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Competencies Card Styles */
+.course-detail .competencies-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--secondary-200);
+}
+
+.course-detail .competencies-card h3 {
+  margin: 0 0 20px 0;
+  color: var(--primary-800);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.course-detail .competency-section {
+  margin-bottom: 24px;
+}
+
+.course-detail .competency-section:last-child {
+  margin-bottom: 0;
+}
+
+.course-detail .competency-type-header {
+  color: var(--primary-700);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--primary-200);
+}
+
+.course-detail .competency-list {
+  display: grid;
+  gap: 12px;
+}
+
+.course-detail .competency-item {
+  background: var(--secondary-50);
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid var(--primary-500);
+}
+
+.course-detail .competency-header h4 {
+  margin: 0 0 8px 0;
+  color: var(--primary-800);
+  font-size: 16px;
+  font-weight: 600;
+}.course-detail .competency-header p {
+  margin: 0;
+  color: var(--secondary-600);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Course Detail Tab Switcher */
+.course-detail .course-switch {
+  margin: 24px 0;
+}
+
+.course-detail .course-switch .switch-oval {
+  background: var(--secondary-100);
+  border-radius: 12px;
+  padding: 4px;
+  position: relative;
+  display: flex;
+  gap: 4px;
+}
+
+.course-detail .course-switch .switch-inner {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  height: calc(100% - 8px);
+  background: var(--primary-600);
+  border-radius: 8px;
+  transition: transform 0.3s ease, width 0.3s ease;
+  z-index: 1;
+}
+
+.course-detail .course-switch .switch-btn {
+  position: relative;
+  z-index: 2;
+  background: transparent;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  color: var(--secondary-600);
+  cursor: pointer;
+  transition: color 0.3s ease;
+  flex: 1;
+  text-align: center;
+}
+
+.course-detail .course-switch .switch-btn.active {
+  color: white;
+}
+
+.course-detail .course-switch .switch-btn:hover:not(.active) {
+  color: var(--primary-700);
+}
+
 /* ===========================
    CSS Variables & Design Tokens
 =========================== */
