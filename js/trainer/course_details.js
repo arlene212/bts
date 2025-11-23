@@ -15,6 +15,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  const toggleWrapper = document.querySelector('.course-detail-toggle');
+  const initialSubView = document.getElementById('submissions-view');
+  initialSubView && initialSubView.classList.add('hidden');
+  if (toggleWrapper) {
+    toggleWrapper.addEventListener('click', (e) => {
+      const btn = e.target.closest('.switch-btn');
+      if (!btn) return;
+      const view = btn.dataset.view;
+      const switchOval = toggleWrapper.querySelector('.switch-oval');
+      toggleWrapper.querySelectorAll('.switch-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const matView = document.getElementById('view-material-view');
+      const subView = document.getElementById('submissions-view');
+      if (view === 'view-material') {
+        matView && matView.classList.remove('hidden');
+        subView && subView.classList.add('hidden');
+        switchOval && switchOval.classList.remove('news-active');
+      } else if (view === 'submissions') {
+        matView && matView.classList.add('hidden');
+        subView && subView.classList.remove('hidden');
+        switchOval && switchOval.classList.add('news-active');
+      }
+    });
+  }
+
   courseBackBtn && courseBackBtn.addEventListener('click', () => {
     courseDetail && courseDetail.classList.add('hidden');
     enrolledTab && enrolledTab.classList.remove('hidden');
@@ -189,6 +214,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const addActivityBtn = e.target.closest('.add-activity-btn');
     if (addActivityBtn) openAddActivityModal(addActivityBtn.dataset.topicId);
   });
+
+  function openAddTopicModal(courseCode, courseName, competencyId, competencyName) {
+    const modal = document.getElementById('addTopicModal');
+    const codeEl = document.getElementById('topic_course_code');
+    const compIdEl = document.getElementById('topic_competency_id');
+    const compNameEl = document.getElementById('topic_competency_name');
+    const courseNameEl = document.getElementById('topic_course_name');
+    if (codeEl) codeEl.value = courseCode || '';
+    if (compIdEl) compIdEl.value = competencyId || '';
+    if (compNameEl) compNameEl.textContent = competencyName || '';
+    if (courseNameEl) courseNameEl.textContent = courseName || '';
+    modal && modal.classList.remove('hidden');
+  }
 
   document.getElementById('submissions-list')?.addEventListener('click', function(e) {
     const gradeBtn = e.target.closest('.grade-btn');

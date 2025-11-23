@@ -250,6 +250,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $courseCode = $_POST['course_code'];
     $courseHours = $_POST['course_hours'];
     $courseDescription = $_POST['course_description'] ?? '';
+    $learningOutcomes = $_POST['course_learning_outcomes'] ?? '';
+    $courseStatus = $_POST['course_status'] ?? 'published';
+    $allowPreview = $_POST['allow_preview'] ?? 0;
+    $previewContent = $_POST['course_preview_content'] ?? '';
+    $requireVerification = $_POST['require_verification'] ?? 0;
+    $verificationType = $_POST['verification_type'] ?? 'email';
+    
     $competencies = [];
     if (!empty($_POST['basic_competency'])) {
       foreach ($_POST['basic_competency'] as $index => $basicComp) {
@@ -293,8 +300,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $courseImage = $fileName;
       }
     }
-    $stmt = $pdo->prepare("INSERT INTO courses (course_name, course_code, hours, description, image, competency_types) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$courseName, $courseCode, $courseHours, $courseDescription, $courseImage, json_encode($competencies)]);
+    $stmt = $pdo->prepare("INSERT INTO courses (course_name, course_code, hours, description, learning_outcomes, course_status, allow_preview, preview_content, require_verification, verification_type, image, competency_types) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$courseName, $courseCode, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, $courseImage, json_encode($competencies)]);
     $_SESSION['success_message'] = "Course added successfully with " . count($competencies) . " competencies!";
     header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses#courses");
     exit;
@@ -453,10 +460,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $courseName = $_POST['course_name'];
     $courseHours = $_POST['course_hours'];
     $courseDescription = $_POST['course_description'] ?? '';
+    $learningOutcomes = $_POST['course_learning_outcomes'] ?? '';
+    $courseStatus = $_POST['course_status'] ?? 'published';
+    $allowPreview = $_POST['allow_preview'] ?? 0;
+    $previewContent = $_POST['course_preview_content'] ?? '';
+    $requireVerification = $_POST['require_verification'] ?? 0;
+    $verificationType = $_POST['verification_type'] ?? 'email';
     $competencies = $_POST['competencies'] ?? [];
     try {
-      $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, competency_types = ? WHERE course_code = ?");
-      $stmt->execute([$courseName, $courseHours, $courseDescription, json_encode(array_values($competencies)), $courseCode]);
+      $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, learning_outcomes = ?, course_status = ?, allow_preview = ?, preview_content = ?, require_verification = ?, verification_type = ?, competency_types = ? WHERE course_code = ?");
+      $stmt->execute([$courseName, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, json_encode(array_values($competencies)), $courseCode]);
       $_SESSION['success_message'] = "Course '$courseName' updated successfully!";
     } catch (PDOException $e) {
       $_SESSION['error_message'] = "Error updating course: " . $e->getMessage();

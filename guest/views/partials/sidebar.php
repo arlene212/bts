@@ -39,6 +39,10 @@
         <i class="fas fa-info-circle"></i>
         <span>About Us</span>
       </a>
+      <a href="#" class="tab-link <?php echo $currentTab === 'quizzes' ? 'active' : ''; ?>" data-tab="quizzes">
+        <i class="fas fa-question-circle"></i>
+        <span>Quizzes</span>
+      </a>
     </div>
   </nav>
 </aside>

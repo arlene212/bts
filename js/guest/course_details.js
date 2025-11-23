@@ -1,7 +1,7 @@
 function setupCourseDetailView() {
   document.addEventListener('click', function(e) {
     if (e.target.classList.contains('view-course-btn')) {
-      const courseCard = e.target.closest('.course-card');
+      const courseCard = e.target.closest('.enrolled-course');
       if (courseCard) {
         const courseCode = courseCard.getAttribute('data-course');
         const courseName = courseCard.getAttribute('data-title');

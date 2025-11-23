@@ -3,13 +3,105 @@ function openEnrollModal(courseCode, courseName) {
   const enrollCourseName = document.getElementById('enrollCourseName');
   const confirmEnroll = document.getElementById('confirmEnroll');
   const cancelEnroll = document.getElementById('cancelEnroll');
+  const verificationSection = document.getElementById('verificationSection');
+  
   if (!enrollModal || !enrollCourseName || !confirmEnroll || !cancelEnroll) return;
+  
   enrollCourseName.textContent = courseName;
+  
+  // Check if verification is required for this course
+  checkCourseVerification(courseCode).then(verificationData => {
+    if (verificationData.require_verification) {
+      verificationSection.classList.remove('hidden');
+      setupVerificationFields(verificationData.verification_type);
+    } else {
+      verificationSection.classList.add('hidden');
+    }
+  });
+  
   const newConfirmBtn = confirmEnroll.cloneNode(true);
   confirmEnroll.parentNode.replaceChild(newConfirmBtn, confirmEnroll);
-  newConfirmBtn.onclick = function() { enrollInCourse(courseCode, courseName); closeModal(enrollModal); };
+  newConfirmBtn.onclick = function() { 
+    if (validateEnrollment()) {
+      enrollInCourse(courseCode, courseName); 
+      closeModal(enrollModal); 
+    }
+  };
   cancelEnroll.onclick = function() { closeModal(enrollModal); };
   openModal(enrollModal);
+}
+
+function checkCourseVerification(courseCode) {
+  return fetch('../php/check_course_verification.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `course_code=${encodeURIComponent(courseCode)}`
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      return data;
+    } else {
+      return { require_verification: false };
+    }
+  })
+  .catch(() => {
+    return { require_verification: false };
+  });
+}
+
+function setupVerificationFields(verificationType) {
+  const studentIdVerification = document.getElementById('studentIdVerification');
+  const emailVerification = document.getElementById('emailVerification');
+  const verificationMessage = document.getElementById('verificationMessage');
+  
+  // Hide all verification fields first
+  studentIdVerification.classList.add('hidden');
+  emailVerification.classList.add('hidden');
+  
+  if (verificationType === 'student_id') {
+    studentIdVerification.classList.remove('hidden');
+    verificationMessage.textContent = 'This course requires Student ID verification. Please enter your Student ID to continue.';
+  } else if (verificationType === 'email') {
+    emailVerification.classList.remove('hidden');
+    verificationMessage.textContent = 'This course requires email verification. Please enter your verified email address.';
+  }
+}
+
+function validateEnrollment() {
+  const verificationSection = document.getElementById('verificationSection');
+  if (verificationSection.classList.contains('hidden')) {
+    return true;
+  }
+  
+  const studentIdVerification = document.getElementById('studentIdVerification');
+  const emailVerification = document.getElementById('emailVerification');
+  
+  if (!studentIdVerification.classList.contains('hidden')) {
+    const studentIdInput = document.getElementById('studentIdInput');
+    const studentIdError = document.getElementById('studentIdError');
+    
+    if (!studentIdInput.value.trim()) {
+      studentIdError.classList.remove('hidden');
+      studentIdInput.focus();
+      return false;
+    }
+    studentIdError.classList.add('hidden');
+  }
+  
+  if (!emailVerification.classList.contains('hidden')) {
+    const emailVerificationInput = document.getElementById('emailVerificationInput');
+    const emailVerificationError = document.getElementById('emailVerificationError');
+    
+    if (!emailVerificationInput.value.trim()) {
+      emailVerificationError.classList.remove('hidden');
+      emailVerificationInput.focus();
+      return false;
+    }
+    emailVerificationError.classList.add('hidden');
+  }
+  
+  return true;
 }
 
 function openUnenrollModal(courseCode, courseName) {
@@ -20,29 +112,65 @@ function openUnenrollModal(courseCode, courseName) {
 }
 
 function enrollInCourse(courseCode, courseName) {
-  const enrollBtn = document.querySelector(`.enroll-btn[data-course-code="${courseCode}"]`) || document.querySelector(`.course-card[data-course="${courseCode}"] .enroll-btn`);
+  const enrollBtn = document.querySelector(`.enroll-btn[data-course-code="${courseCode}"]`) || document.querySelector(`.course-card[data-course="${courseCode}"] .enroll-btn`) || document.querySelector(`.batch-card[data-course-code="${courseCode}"] .enroll-btn`);
   if (enrollBtn) { enrollBtn.disabled = true; enrollBtn.textContent = 'Enrolling...'; }
+  
   const formData = new FormData();
   formData.append('course_code', courseCode);
   formData.append('action', 'enroll');
-  fetch('../guest/handlers/ajax_handlers.php', { method: 'POST', body: formData })
+  
+  // Add verification data if required
+  const verificationSection = document.getElementById('verificationSection');
+  if (verificationSection && !verificationSection.classList.contains('hidden')) {
+    const studentIdInput = document.getElementById('studentIdInput');
+    const emailVerificationInput = document.getElementById('emailVerificationInput');
+    
+    if (studentIdInput && !document.getElementById('studentIdVerification').classList.contains('hidden')) {
+      formData.append('student_id', studentIdInput.value.trim());
+    }
+    
+    if (emailVerificationInput && !document.getElementById('emailVerification').classList.contains('hidden')) {
+      formData.append('email_verification', emailVerificationInput.value.trim());
+    }
+  }
+  
+  fetch('../php/enhanced_enrollment.php', { method: 'POST', body: formData })
     .then(response => { if (!response.ok) throw new Error('Network response was not ok'); return response.json(); })
     .then(data => {
       if (data.success) {
         showNotification(data.message, 'success');
-        const courseCard = document.querySelector(`.course-card[data-course="${courseCode}"]`);
+        const courseCard = document.querySelector(`.course-card[data-course="${courseCode}"]`) || document.querySelector(`.batch-card[data-course-code="${courseCode}"]`);
         if (courseCard) {
           const oldBtn = courseCard.querySelector('.enroll-btn');
-          if (oldBtn) { const newBtn = document.createElement('button'); newBtn.className = 'unenroll-btn'; newBtn.setAttribute('data-course-code', courseCode); newBtn.setAttribute('data-course-name', courseName); newBtn.textContent = 'Unenroll'; oldBtn.parentNode.replaceChild(newBtn, oldBtn); }
-          const pendingEl = courseCard.querySelector('.enrollment-status.pending'); if (pendingEl) pendingEl.remove();
+          if (oldBtn) { 
+            const newBtn = document.createElement('button'); 
+            newBtn.className = 'unenroll-btn'; 
+            newBtn.setAttribute('data-course-code', courseCode); 
+            newBtn.setAttribute('data-course-name', courseName); 
+            newBtn.textContent = 'Unenroll'; 
+            oldBtn.parentNode.replaceChild(newBtn, oldBtn); 
+          }
+          const pendingEl = courseCard.querySelector('.enrollment-status.pending'); 
+          if (pendingEl) pendingEl.remove();
         }
         setTimeout(() => { window.location.href = `${window.location.pathname}?current_tab=enrolled`; }, 1200);
       } else {
         showNotification(data.message || 'Enrollment failed. Please try again.', 'error');
-        if (enrollBtn) { enrollBtn.disabled = false; enrollBtn.textContent = 'Enroll'; enrollBtn.classList.remove('pending'); }
+        if (enrollBtn) { 
+          enrollBtn.disabled = false; 
+          enrollBtn.textContent = 'Enroll'; 
+          enrollBtn.classList.remove('pending'); 
+        }
       }
     })
-    .catch(() => { showNotification('An error occurred during enrollment. Please try again.', 'error'); if (enrollBtn) { enrollBtn.disabled = false; enrollBtn.textContent = 'Enroll'; enrollBtn.classList.remove('pending'); } });
+    .catch(() => { 
+      showNotification('An error occurred during enrollment. Please try again.', 'error'); 
+      if (enrollBtn) { 
+        enrollBtn.disabled = false; 
+        enrollBtn.textContent = 'Enroll'; 
+        enrollBtn.classList.remove('pending'); 
+      } 
+    });
 }
 
 function unenrollFromCourse(courseCode, button) {
@@ -55,16 +183,28 @@ function unenrollFromCourse(courseCode, button) {
 function setupEnrollmentButtons() {
   document.addEventListener('click', function(e) {
     if (e.target.classList.contains('enroll-btn') && !e.target.disabled) {
-      const courseCard = e.target.closest('.course-card');
-      const courseCode = courseCard.getAttribute('data-course');
-      const courseName = courseCard.getAttribute('data-title');
-      openEnrollModal(courseCode, courseName);
+      const courseCard = e.target.closest('.course-card') || e.target.closest('.batch-card');
+      if (courseCard) {
+        const courseCode = courseCard.getAttribute('data-course') || courseCard.getAttribute('data-course-code');
+        const courseName = courseCard.getAttribute('data-title') || courseCard.getAttribute('data-course-name');
+        if (courseCode && courseName) {
+          openEnrollModal(courseCode, courseName);
+        }
+      }
     }
     if (e.target.classList.contains('unenroll-btn') && !e.target.disabled) {
       let courseCode = e.target.getAttribute('data-course-code');
       let courseName = e.target.getAttribute('data-course-name');
-      if (!courseCode) { const courseCard = e.target.closest('.course-card'); courseCode = courseCard.getAttribute('data-course'); courseName = courseCard.getAttribute('data-title'); }
-      openUnenrollModal(courseCode, courseName);
+      if (!courseCode) { 
+        const courseCard = e.target.closest('.course-card') || e.target.closest('.batch-card'); 
+        if (courseCard) {
+          courseCode = courseCard.getAttribute('data-course') || courseCard.getAttribute('data-course-code'); 
+          courseName = courseCard.getAttribute('data-title') || courseCard.getAttribute('data-course-name'); 
+        }
+      }
+      if (courseCode) {
+        openUnenrollModal(courseCode, courseName);
+      }
     }
   });
 }

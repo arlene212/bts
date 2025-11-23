@@ -36,7 +36,7 @@ try {
         die("Activity not found or you do not have access.");
     }
 
-    $subStmt = $pdo->prepare("\n        SELECT * FROM activity_submissions \n        WHERE activity_id = ? AND trainee_id = ? \n        ORDER BY submitted_at DESC\n    ");
+    $subStmt = $pdo->prepare("\n        SELECT * FROM activity_submissions \n        WHERE activity_id = ? AND guest_id = ? \n        ORDER BY submitted_at DESC\n    ");
     $subStmt->execute([$activity_id, $user['user_id']]);
     $submission = $subStmt->fetch(PDO::FETCH_ASSOC);
 

@@ -35,6 +35,9 @@
           <div class="content-area <?php echo $currentTab === 'enrollment-requests' ? 'active' : ''; ?>" id="content-enrollment-requests">
             <?php include __DIR__ . '/sections/request.php'; ?>
           </div>
+          <div class="content-area <?php echo $currentTab === 'quizzes' ? 'active' : ''; ?>" id="content-quizzes">
+            <?php include __DIR__ . '/sections/quizzes.php'; ?>
+          </div>
         </div>
         <aside class="announcements">
           <div class="announcements-header">

@@ -13,7 +13,7 @@ try {
     "SELECT tm.uploaded_by AS user_id, u.last_name, u.first_name, u.middle_name, 'Module Upload' AS action, tm.uploaded_at AS timestamp FROM topic_materials tm LEFT JOIN users u ON tm.uploaded_by = u.user_id",
     "SELECT s.trainee_id AS user_id, u.last_name, u.first_name, u.middle_name, 'Trainee Submission' AS action, s.submitted_at AS timestamp FROM submissions s LEFT JOIN users u ON s.trainee_id = u.user_id",
     "SELECT s.graded_by AS user_id, u.last_name, u.first_name, u.middle_name, 'Grading' AS action, s.graded_at AS timestamp FROM submissions s LEFT JOIN users u ON s.graded_by = u.user_id WHERE s.graded_at IS NOT NULL",
-    "SELECT asub.trainee_id AS user_id, u.last_name, u.first_name, u.middle_name, 'Guest Submission' AS action, asub.submitted_at AS timestamp FROM activity_submissions asub LEFT JOIN users u ON asub.trainee_id = u.user_id",
+    "SELECT asub.guest_id AS user_id, u.last_name, u.first_name, u.middle_name, 'Guest Submission' AS action, asub.submitted_at AS timestamp FROM activity_submissions asub LEFT JOIN users u ON asub.guest_id = u.user_id",
     "SELECT asub.graded_by AS user_id, u.last_name, u.first_name, u.middle_name, 'Grading' AS action, asub.graded_at AS timestamp FROM activity_submissions asub LEFT JOIN users u ON asub.graded_by = u.user_id WHERE asub.graded_at IS NOT NULL",
     "SELECT ca.assigned_by AS user_id, u.last_name, u.first_name, u.middle_name, 'Assign Trainer' AS action, ca.date_assigned AS timestamp FROM course_assignments ca LEFT JOIN users u ON ca.assigned_by = u.user_id",
     "SELECT ba.assigned_by AS user_id, u.last_name, u.first_name, u.middle_name, 'Assign Batch' AS action, ba.date_assigned AS timestamp FROM batch_assignments ba LEFT JOIN users u ON ba.assigned_by = u.user_id",

@@ -26,6 +26,8 @@ $database = new DatabaseConnection();
 $db = $database->getConnection();
 
 $enrolled_courses = [];
+$active_courses = [];
+$completed_courses = [];
 $offered_courses = [];
 $enrollment_requests = [];
 $announcements = [];
@@ -37,9 +39,43 @@ $progress = 0;
 $pending_requests = 0;
 
 try {
+  // Fetch all approved enrollments
   $stmt = $db->prepare("SELECT e.*, c.course_name, c.course_code, c.hours, c.description, c.image FROM enrollments e JOIN courses c ON e.course_code = c.course_code WHERE e.trainee_id = ? AND e.status = 'approved'");
   $stmt->execute([$user['user_id']]);
   $enrolled_courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  
+  // Separate active and completed courses based on progress
+  $active_courses = [];
+  $completed_courses = [];
+  
+  foreach ($enrolled_courses as $course) {
+    // Calculate completion progress for this course
+    $activity_stmt = $db->prepare("SELECT COUNT(ta.id) as total_activities FROM topic_activities ta JOIN course_topics ct ON ta.topic_id = ct.id WHERE ct.course_code = ?");
+    $activity_stmt->execute([$course['course_code']]);
+    $total_activities = (int)$activity_stmt->fetch(PDO::FETCH_ASSOC)['total_activities'];
+    
+    $submission_stmt = $db->prepare("SELECT COUNT(*) as completed_activities FROM submissions WHERE trainee_id = ? AND material_id IN (SELECT id FROM course_materials WHERE course_code = ?)");
+    $submission_stmt->execute([$user['user_id'], $course['course_code']]);
+    $completed_activities = (int)$submission_stmt->fetch(PDO::FETCH_ASSOC)['completed_activities'];
+    
+    // Calculate progress percentage
+    $course_progress = 0;
+    if ($total_activities > 0) {
+      $course_progress = round(($completed_activities / $total_activities) * 100);
+    }
+    
+    // Add progress data to course
+    $course['progress'] = $course_progress;
+    $course['completed_activities'] = $completed_activities;
+    $course['total_activities'] = $total_activities;
+    
+    // Separate into active vs completed (consider 80%+ as completed)
+    if ($course_progress >= 80) {
+      $completed_courses[] = $course;
+    } else {
+      $active_courses[] = $course;
+    }
+  }
 
   $stmt = $db->prepare("SELECT * FROM courses WHERE status = 'active'");
   $stmt->execute();

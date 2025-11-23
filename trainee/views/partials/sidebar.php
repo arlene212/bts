@@ -42,6 +42,10 @@
           <span class="nav-badge"><?php echo $pending_requests; ?></span>
         <?php endif; ?>
       </a>
+      <a href="#" class="tab-link <?php echo $currentTab === 'quizzes' ? 'active' : ''; ?>" data-tab="quizzes">
+        <i class="fas fa-question-circle"></i>
+        <span>Quizzes</span>
+      </a>
     </div>
   </nav>
 </aside>

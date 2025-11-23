@@ -11,6 +11,32 @@ function setupCourseEditing() {
   if (editCourseForm) {
     editCourseForm.addEventListener('submit', function(e) { e.preventDefault(); submitEditCourseForm(this); });
   }
+  
+  // Handle preview toggle for edit form
+  const allowPreviewSelect = document.getElementById('edit_allow_preview');
+  if (allowPreviewSelect) {
+    allowPreviewSelect.addEventListener('change', function() {
+      const previewContentGroup = document.getElementById('edit_preview_content_group');
+      if (this.value == '1') {
+        previewContentGroup.style.display = 'block';
+      } else {
+        previewContentGroup.style.display = 'none';
+      }
+    });
+  }
+  
+  // Handle preview toggle for add form
+  const addAllowPreviewSelect = document.getElementById('allow_preview');
+  if (addAllowPreviewSelect) {
+    addAllowPreviewSelect.addEventListener('change', function() {
+      const previewContentGroup = document.getElementById('preview_content_group');
+      if (this.value == '1') {
+        previewContentGroup.style.display = 'block';
+      } else {
+        previewContentGroup.style.display = 'none';
+      }
+    });
+  }
 }
 
 function openEditCourseModal(courseData) {
@@ -19,6 +45,21 @@ function openEditCourseModal(courseData) {
   document.getElementById('edit_course_name').value = courseData.course_name || '';
   document.getElementById('edit_course_hours').value = courseData.hours || '';
   document.getElementById('edit_course_description').value = courseData.description || '';
+  document.getElementById('edit_course_learning_outcomes').value = courseData.learning_outcomes || '';
+  document.getElementById('edit_course_status').value = courseData.course_status || 'published';
+  document.getElementById('edit_allow_preview').value = courseData.allow_preview || 0;
+  document.getElementById('edit_course_preview_content').value = courseData.preview_content || '';
+  document.getElementById('edit_require_verification').value = courseData.require_verification || 0;
+  document.getElementById('edit_verification_type').value = courseData.verification_type || 'email';
+  
+  // Show/hide preview content based on allow_preview setting
+  const previewContentGroup = document.getElementById('edit_preview_content_group');
+  if (courseData.allow_preview == 1) {
+    previewContentGroup.style.display = 'block';
+  } else {
+    previewContentGroup.style.display = 'none';
+  }
+  
   const imagePreview = document.getElementById('current_image_preview');
   if (courseData.image) {
     imagePreview.innerHTML = `<p><strong>Current Image:</strong></p><img src="../uploads/courses/${courseData.image}">`;

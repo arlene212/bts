@@ -1747,3 +1747,13 @@ body::after {
     border-width: 3px;
   }
 }
+
+.about-stats{
+    display: flex;
+    gap: 20px;
+    color: black;
+}
+
+.stat-number, .stat-label{
+    color: var(--primary-300);
+}

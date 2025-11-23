@@ -77,7 +77,7 @@ try {
     }
 
     // Check if already submitted
-    $checkStmt = $pdo->prepare("SELECT id FROM activity_submissions WHERE activity_id = ? AND trainee_id = ?");
+    $checkStmt = $pdo->prepare("SELECT id FROM activity_submissions WHERE activity_id = ? AND guest_id = ?");
     $checkStmt->execute([$activityId, $traineeId]);
     if ($checkStmt->fetch()) {
         // Correctly throw an exception to be caught and sent as JSON
@@ -88,7 +88,7 @@ try {
     if (move_uploaded_file($file['tmp_name'], $targetPath)) {
         // Insert submission record into the database
         $stmt = $pdo->prepare("
-            INSERT INTO activity_submissions (activity_id, trainee_id, file_path, submission_text, submitted_at)
+            INSERT INTO activity_submissions (activity_id, guest_id, file_path, submission_text, submitted_at)
             VALUES (?, ?, ?, ?, NOW())
         ");
         

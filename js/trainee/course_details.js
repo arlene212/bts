@@ -19,12 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
       courseDetail.classList.remove('hidden');
       courseDetail.classList.add('active');
     }
+    const courseBox = document.querySelector('#mycourses .course-box');
+    if (courseBox) courseBox.classList.add('hidden');
 
     loadCourseDetails(courseCode, courseName, courseHours, courseDescription);
   }
 
   document.addEventListener('click', function(e) {
-    const card = e.target.closest('.course-card.view-course-content-btn');
+    const card = e.target.closest('.batch-card.view-course-content-btn') || e.target.closest('.course-card.view-course-content-btn');
     if (card) {
       openCourseDetail(card);
     }

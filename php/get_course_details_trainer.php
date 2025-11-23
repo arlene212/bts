@@ -62,7 +62,7 @@ try {
         LEFT JOIN topic_materials tm ON ct.id = tm.topic_id
         LEFT JOIN topic_activities ta ON ct.id = ta.topic_id
         LEFT JOIN activity_submissions asub ON ta.id = asub.activity_id
-        LEFT JOIN users sub_user ON asub.trainee_id = sub_user.user_id
+        LEFT JOIN users sub_user ON asub.guest_id = sub_user.user_id
         WHERE course_code = ? 
         ORDER BY 
             ct.created_at ASC, 

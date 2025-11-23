@@ -84,7 +84,7 @@ try {
                 $submissionStmt = $pdo->prepare("
                     SELECT s.*, u.first_name, u.last_name
                     FROM activity_submissions s
-                    JOIN users u ON s.trainee_id = u.user_id 
+                    JOIN users u ON s.guest_id = u.user_id 
                     WHERE s.activity_id = ? 
                     ORDER BY s.submitted_at DESC
                 ");

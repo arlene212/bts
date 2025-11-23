@@ -85,6 +85,48 @@
           <div class="form-group"><label for="course_hours">Course Hours:</label><input type="number" id="course_hours" name="course_hours" required min="1"></div>
           <div class="form-group"><label for="course_image">Course Image:</label><input type="file" id="course_image" name="course_image" accept="image/*"></div>
           <div class="form-group form-group-full"><label for="course_description">Description:</label><textarea id="course_description" name="course_description" rows="3"></textarea></div>
+          <div class="form-group form-group-full"><label for="course_learning_outcomes">Learning Outcomes:</label><textarea id="course_learning_outcomes" name="course_learning_outcomes" rows="4" placeholder="Enter learning outcomes for this course (what students will be able to do after completing this course)"></textarea></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="course_status">Course Status:</label>
+              <select id="course_status" name="course_status" class="form-control">
+                <option value="draft">Draft</option>
+                <option value="published" selected>Published</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="allow_preview">Allow Preview:</label>
+              <select id="allow_preview" name="allow_preview" class="form-control">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group form-group-full" id="preview_content_group" style="display:none;">
+            <label for="course_preview_content">Preview Content:</label>
+            <textarea id="course_preview_content" name="course_preview_content" rows="3" placeholder="Content to show in course preview"></textarea>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="require_verification">Require Verification:</label>
+              <select id="require_verification" name="require_verification" class="form-control">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+              </select>
+              <small class="form-text">Require student ID or email verification for enrollment</small>
+            </div>
+            <div class="form-group">
+              <label for="verification_type">Verification Type:</label>
+              <select id="verification_type" name="verification_type" class="form-control">
+                <option value="email">Email Verification</option>
+                <option value="student_id">Student ID</option>
+                <option value="phone">Phone Verification</option>
+              </select>
+              <small class="form-text">Type of verification required for enrollment</small>
+            </div>
+          </div>
         </div>
         <div class="competencies-section">
           <h3>Course Competencies</h3>
@@ -156,6 +198,55 @@
             <label for="edit_course_description">Course Description</label>
             <textarea id="edit_course_description" name="course_description" rows="4" class="form-control" placeholder="Enter course description..."></textarea>
             <small class="form-text">Provide a detailed description of the course</small>
+          </div>
+          <div class="form-group">
+            <label for="edit_course_learning_outcomes">Learning Outcomes</label>
+            <textarea id="edit_course_learning_outcomes" name="course_learning_outcomes" rows="4" class="form-control" placeholder="What students will be able to do after completing this course..."></textarea>
+            <small class="form-text">List the learning outcomes students will achieve</small>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit_course_status">Course Status</label>
+              <select id="edit_course_status" name="course_status" class="form-control">
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
+              <small class="form-text">Control course visibility and availability</small>
+            </div>
+            <div class="form-group">
+              <label for="edit_allow_preview">Allow Preview</label>
+              <select id="edit_allow_preview" name="allow_preview" class="form-control">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+              </select>
+              <small class="form-text">Allow users to preview course content</small>
+            </div>
+          </div>
+          <div class="form-group" id="edit_preview_content_group" style="display:none;">
+            <label for="edit_course_preview_content">Preview Content</label>
+            <textarea id="edit_course_preview_content" name="course_preview_content" rows="3" class="form-control" placeholder="Content to show in course preview"></textarea>
+            <small class="form-text">Content shown when preview is enabled</small>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit_require_verification">Require Verification:</label>
+              <select id="edit_require_verification" name="require_verification" class="form-control">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+              </select>
+              <small class="form-text">Require student ID or email verification for enrollment</small>
+            </div>
+            <div class="form-group">
+              <label for="edit_verification_type">Verification Type:</label>
+              <select id="edit_verification_type" name="verification_type" class="form-control">
+                <option value="email">Email Verification</option>
+                <option value="student_id">Student ID</option>
+                <option value="phone">Phone Verification</option>
+              </select>
+              <small class="form-text">Type of verification required for enrollment</small>
+            </div>
           </div>
         </div>
 

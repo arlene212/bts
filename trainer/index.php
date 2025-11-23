@@ -27,6 +27,7 @@ $guests = [];
 $itemsPerPage = 10;
 $trainees = [];
 $totalTraineePages = 0;
+$announcements = [];
 
 $traineeSearch = $_GET['trainee_search'] ?? '';
 $traineePage = max(1, intval($_GET['trainee_page'] ?? 1));
@@ -79,6 +80,10 @@ try {
   $stmt = $db->prepare("SELECT DISTINCT u.* FROM users u JOIN enrollments e ON u.user_id = e.trainee_id JOIN course_assignments ca ON e.course_code = ca.course_code WHERE u.role = 'guest' AND u.status = 'active' AND e.status = 'approved' AND ca.trainer_id = ?");
   $stmt->execute([$trainer_id]);
   $guests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+  $stmt = $db->prepare("SELECT * FROM announcements ORDER BY date_posted DESC LIMIT 5");
+  $stmt->execute();
+  $announcements = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $exception) {
   error_log("Trainer dashboard error: " . $exception->getMessage());
 }

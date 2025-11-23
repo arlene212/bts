@@ -35,6 +35,9 @@
           <div class="content-area <?php echo $currentTab === 'aboutUs' ? 'active' : ''; ?>" id="content-aboutUs">
             <?php include __DIR__ . '/sections/about.php'; ?>
           </div>
+          <div class="content-area <?php echo $currentTab === 'quizzes' ? 'active' : ''; ?>" id="content-quizzes">
+            <?php include __DIR__ . '/sections/quizzes.php'; ?>
+          </div>
         </div>
         <aside class="announcements">
           <div class="announcements-header">
@@ -74,6 +77,7 @@
   <script src="../js/guest/enrollment.js"></script>
   <script src="../js/guest/activity.js"></script>
   <script src="../js/guest/profile.js"></script>
+  <script src="../js/verification.js"></script>
   <script src="../js/guest/main.js"></script>
 </body>
 </html>

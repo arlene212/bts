@@ -25,6 +25,10 @@ try {
     $courseName = $_POST['course_name'];
     $courseHours = $_POST['course_hours'];
     $courseDescription = $_POST['course_description'] ?? '';
+    $learningOutcomes = $_POST['course_learning_outcomes'] ?? '';
+    $courseStatus = $_POST['course_status'] ?? 'published';
+    $allowPreview = $_POST['allow_preview'] ?? 0;
+    $previewContent = $_POST['course_preview_content'] ?? '';
     
     // Process competencies
     $competencies = [];
@@ -72,11 +76,11 @@ try {
     
     // Build update query
     if ($courseImage) {
-        $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, image = ?, competency_types = ? WHERE course_code = ?");
-        $stmt->execute([$courseName, $courseHours, $courseDescription, $courseImage, json_encode($competencies), $courseCode]);
+        $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, learning_outcomes = ?, course_status = ?, allow_preview = ?, preview_content = ?, image = ?, competency_types = ? WHERE course_code = ?");
+        $stmt->execute([$courseName, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $courseImage, json_encode($competencies), $courseCode]);
     } else {
-        $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, competency_types = ? WHERE course_code = ?");
-        $stmt->execute([$courseName, $courseHours, $courseDescription, json_encode($competencies), $courseCode]);
+        $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, learning_outcomes = ?, course_status = ?, allow_preview = ?, preview_content = ?, competency_types = ? WHERE course_code = ?");
+        $stmt->execute([$courseName, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, json_encode($competencies), $courseCode]);
     }
     
     if ($stmt->rowCount() > 0) {

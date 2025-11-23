@@ -1,5 +1,6 @@
-function openModal(modal) { if (modal) { modal.classList.remove('hidden'); modal.style.display = 'flex'; document.body.style.overflow = 'hidden'; } }
-function closeModal(modal) { if (modal) { modal.style.display = 'none'; modal.classList.add('hidden'); document.body.style.overflow = ''; } }
+function __resolveModal(m) { return typeof m === 'string' ? document.getElementById(m) : m; }
+function openModal(modalArg) { const modal = __resolveModal(modalArg); if (modal) { modal.classList.remove('hidden'); modal.style.display = 'flex'; document.body.classList.add('modal-open'); document.documentElement.style.overflow = 'hidden'; document.body.style.overflow = 'hidden'; } }
+function closeModal(modalArg) { const modal = __resolveModal(modalArg); if (modal) { modal.style.display = 'none'; modal.classList.add('hidden'); document.body.classList.remove('modal-open'); document.documentElement.style.overflow = ''; document.body.style.overflow = ''; } }
 
 document.addEventListener('DOMContentLoaded', function() {
   const editProfileBtn = document.getElementById('editProfileBtn');

@@ -35,6 +35,11 @@ try {
     $courseStmt = $pdo->prepare("SELECT * FROM courses WHERE course_code = ?");
     $courseStmt->execute([$courseCode]);
     $course = $courseStmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$course) {
+        echo json_encode(['error' => 'Course not found']);
+        exit;
+    }
 
     // Get topics, materials, and activities
     $stmt = $pdo->prepare("
@@ -46,23 +51,38 @@ try {
         FROM course_topics ct
         LEFT JOIN topic_materials tm ON ct.id = tm.topic_id
         LEFT JOIN topic_activities ta ON ct.id = ta.topic_id
-        LEFT JOIN activity_submissions asub ON ta.id = asub.activity_id AND asub.trainee_id = ?
+        LEFT JOIN activity_submissions asub ON ta.id = asub.activity_id AND asub.guest_id = ?
         WHERE ct.course_code = ?
         ORDER BY ct.created_at ASC, tm.uploaded_at ASC, ta.created_at ASC
     ");
-    $stmt->execute([$traineeId, $courseCode]);
-    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    try {
+        $stmt->execute([$traineeId, $courseCode]);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Query execution failed: " . $e->getMessage());
+        error_log("Parameters: traineeId=$traineeId, courseCode=$courseCode");
+        throw $e;
+    }
 
     // Process the flat results into a structured array
     $competenciesData = json_decode($course['competency_types'] ?? '[]', true);
     $competencies = [];
+    
+    // Handle case where competency_types is null or invalid JSON
+    if (!is_array($competenciesData)) {
+        $competenciesData = [];
+    }
+    
     foreach ($competenciesData as $comp) {
-        $competencies[$comp['name']] = [
-            'type' => $comp['type'],
-            'name' => $comp['name'],
-            'description' => $comp['description'],
-            'topics' => []
-        ];
+        if (isset($comp['name']) && isset($comp['type'])) {
+            $competencies[$comp['name']] = [
+                'type' => $comp['type'],
+                'name' => $comp['name'],
+                'description' => $comp['description'] ?? '',
+                'topics' => []
+            ];
+        }
     }
 
     $topics = [];
@@ -123,6 +143,9 @@ try {
             $topic['materials'] = array_values($topic['materials']);
             $topic['activities'] = array_values($topic['activities']);
             $competencies[$topic['competency_id']]['topics'][] = $topic;
+        } else {
+            // Handle case where competency_id doesn't exist in competencies array
+            error_log("Competency ID '{$topic['competency_id']}' not found in competencies for topic '{$topic['name']}'");
         }
     }
 
@@ -134,6 +157,7 @@ try {
 
 } catch (PDOException $e) {
     error_log("Database error in get_course_details_trainee: " . $e->getMessage());
-    echo json_encode(['error' => 'Database error occurred']);
+    error_log("Stack trace: " . $e->getTraceAsString());
+    echo json_encode(['error' => 'Database error occurred', 'details' => $e->getMessage()]);
 }
 ?>

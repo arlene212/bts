@@ -14,6 +14,57 @@
       <div><label>Last Name</label><input type="text" id="lastName" name="last_name" value="<?php echo htmlspecialchars($user['last_name']); ?>"></div>
       <div><label>Email</label><input type="email" id="email" name="email" value="<?php echo htmlspecialchars($user['email']); ?>"><div class="validation-error hidden" id="emailError">Please enter a valid email address</div></div>
       <div><label>Contact Number</label><input type="text" id="contactNumber" name="contact_number" value="<?php echo htmlspecialchars($user['contact_number'] ?? ''); ?>"><div class="validation-error hidden" id="contactError">Please enter a valid contact number</div></div>
+      
+      <div class="verification-section">
+        <h3>Account Verification</h3>
+        <div class="verification-item">
+          <div class="verification-status">
+            <i class="fas fa-envelope"></i>
+            <span>Email Verification</span>
+            <span class="status-badge <?php echo ($user['email_verified'] ?? 0) ? 'verified' : 'unverified'; ?>">
+              <?php echo ($user['email_verified'] ?? 0) ? 'Verified' : 'Unverified'; ?>
+            </span>
+          </div>
+          <?php if (!($user['email_verified'] ?? 0)): ?>
+            <button type="button" class="verify-btn" id="verifyEmailBtn">Verify Email</button>
+          <?php endif; ?>
+        </div>
+        
+        <div class="verification-item">
+          <div class="verification-status">
+            <i class="fas fa-id-card"></i>
+            <span>Student ID</span>
+            <span class="status-badge <?php echo !empty($user['student_id']) ? 'verified' : 'unverified'; ?>">
+              <?php echo !empty($user['student_id']) ? 'Set' : 'Not Set'; ?>
+            </span>
+          </div>
+          <div class="student-id-input" style="display: <?php echo empty($user['student_id']) ? 'block' : 'none'; ?>;">
+            <input type="text" id="studentIdInput" placeholder="Enter your Student ID">
+            <button type="button" class="verify-btn" id="setStudentIdBtn">Set Student ID</button>
+          </div>
+          <?php if (!empty($user['student_id'])): ?>
+            <div class="student-id-display">
+              <small>Current ID: <?php echo htmlspecialchars($user['student_id']); ?></small>
+            </div>
+          <?php endif; ?>
+        </div>
+        
+        <div class="verification-item">
+          <div class="verification-status">
+            <i class="fas fa-phone"></i>
+            <span>Phone Verification</span>
+            <span class="status-badge <?php echo ($user['phone_verified'] ?? 0) ? 'verified' : 'unverified'; ?>">
+              <?php echo ($user['phone_verified'] ?? 0) ? 'Verified' : 'Unverified'; ?>
+            </span>
+          </div>
+          <?php if (!($user['phone_verified'] ?? 0) && !empty($user['contact_number'])): ?>
+            <button type="button" class="verify-btn" id="verifyPhoneBtn">Verify Phone</button>
+          <?php elseif (empty($user['contact_number'])): ?>
+            <small class="text-muted">Add contact number first</small>
+          <?php endif; ?>
+        </div>
+      </div>
+      
       <div class="password-change-section"><h3>Change Password</h3><div><label>Old Password</label><input type="password" id="oldPassword" name="old_password"></div><div><label>New Password</label><input type="password" id="newPassword" name="new_password"></div><div><label>Confirm New Password</label><input type="password" id="confirmPassword" name="confirm_password"><div class="validation-error hidden" id="passwordError">Passwords do not match</div></div></div>
     </form>
     <div class="modal-buttons"><button type="button" class="delete-account-btn" id="openDeleteModal">Delete Account</button><div><button type="button" class="cancel-btn" id="cancelProfileChanges">Cancel</button><button type="button" class="primary-btn" id="saveProfileChanges">Save Changes</button></div></div>
@@ -22,7 +73,45 @@
 
 <div class="modal hidden" id="deleteAccountModal"><div class="modal-content small-modal"><span class="close-btn" id="closeDeleteModal">&times;</span><h2>⚠️ Delete Account</h2><p>Are you sure you want to permanently delete your account? <br>This action cannot be undone.</p><div class="modal-buttons"><button class="cancel-btn" id="cancelDeleteBtn">Cancel</button><button type="button" class="delete-btn" id="confirmDeleteBtn">Delete</button></div></div></div>
 
-<div id="enrollModal" class="modal hidden"><div class="modal-content"><span class="close-btn" id="closeEnrollModal">&times;</span><h3>⚠️ Confirmation</h3><p>Are you sure you want to enroll in <strong id="enrollCourseName"></strong>?</p><div class="modal-actions"><button id="confirmEnroll" class="confirm-btn">Yes, Enroll</button><button id="cancelEnroll" class="cancel-btn">Cancel</button></div></div></div>
+<div id="enrollModal" class="modal hidden">
+  <div class="modal-content">
+    <span class="close-btn" id="closeEnrollModal">&times;</span>
+    <h3>⚠️ Enrollment Confirmation</h3>
+    <p>Are you sure you want to enroll in <strong id="enrollCourseName"></strong>?</p>
+    
+    <div id="verificationSection" class="verification-section hidden">
+      <h4>Verification Required</h4>
+      <p id="verificationMessage"></p>
+      
+      <div id="studentIdVerification" class="verification-field hidden">
+        <label for="studentIdInput">Student ID:</label>
+        <input type="text" id="studentIdInput" class="form-control" placeholder="Enter your Student ID">
+        <div class="validation-error hidden" id="studentIdError">Please enter a valid Student ID</div>
+      </div>
+      
+      <div id="emailVerification" class="verification-field hidden">
+        <label for="emailVerificationInput">Email Address:</label>
+        <input type="email" id="emailVerificationInput" class="form-control" placeholder="Enter your email address">
+        <div class="validation-error hidden" id="emailVerificationError">Please verify your email address first</div>
+      </div>
+    </div>
+    
+    <div class="enrollment-info" id="enrollmentInfo">
+      <p><strong>Important:</strong> By enrolling in this course, you agree to:</p>
+      <ul>
+        <li>Complete all required assignments and activities</li>
+        <li>Follow the course schedule and deadlines</li>
+        <li>Respect the learning environment and other participants</li>
+        <li>Maintain academic integrity in all submissions</li>
+      </ul>
+    </div>
+    
+    <div class="modal-actions">
+      <button id="cancelEnroll" class="cancel-btn">Cancel</button>
+      <button id="confirmEnroll" class="confirm-btn">Yes, Enroll</button>
+    </div>
+  </div>
+</div>
 
 <div id="unenrollConfirmModal" class="modal hidden"><div class="modal-content small-modal"><span class="close-btn" id="closeUnenrollConfirmModal">&times;</span><h3>⚠️ Unenroll Confirmation</h3><p>Are you sure you want to unenroll from <strong id="unenrollConfirmCourseName"></strong>? Your progress in this course will be lost.</p><div class="modal-actions"><button id="cancelUnenrollConfirm" class="cancel-btn">Cancel</button><form id="unenrollForm" method="POST" action="../php/guest_unenroll.php" style="display:inline;"><input type="hidden" name="course_code" id="unenrollCourseCodeInput"><button id="confirmUnenroll" type="button" class="delete-btn">Yes, Unenroll</button></form></div></div></div>
 

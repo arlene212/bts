@@ -40,6 +40,12 @@
           <div class="content-area <?php echo $currentTab === 'guests' ? 'active' : ''; ?>" id="content-guests">
             <?php include __DIR__ . '/sections/guest.php'; ?>
           </div>
+          <div class="content-area <?php echo $currentTab === 'quizzes' ? 'active' : ''; ?>" id="content-quizzes">
+            <?php include __DIR__ . '/sections/quizzes.php'; ?>
+          </div>
+          <div class="content-area <?php echo $currentTab === 'grades' ? 'active' : ''; ?>" id="content-grades">
+            <?php include __DIR__ . '/sections/grades.php'; ?>
+          </div>
         </div>
         <aside class="announcements">
           <div class="announcements-header">
@@ -76,6 +82,7 @@
   <script src="../js/trainer/modals.js"></script>
   <script src="../js/trainer/search.js"></script>
   <script src="../js/trainer/course_details.js"></script>
+  <script src="../js/trainer/quizzes.js"></script>
 </body>
 
 </html>

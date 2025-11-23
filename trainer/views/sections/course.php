@@ -1,5 +1,5 @@
 <?php ?>
-<section class="tab-content <?php echo $currentTab === 'mycourses' ? 'active' : ''; ?>" id="mycourses">
+<section class="tab-content <?php echo $currentTab === 'courses' ? 'active' : ''; ?>" id="courses">
   <div id="enrolled" class="tab-inner active">
     <h2 class="section-header">My Assigned Courses</h2>
     <div class="batch-list">
