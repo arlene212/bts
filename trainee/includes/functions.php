@@ -10,8 +10,12 @@ function requestEnroll($db, $userId, $courseCode)
   if ($existing && $existing['status'] === 'pending') {
     return ['success' => false, 'message' => 'Request already pending'];
   }
-  $stmt = $db->prepare("INSERT INTO enrollments (trainee_id, course_code, status, date_requested) VALUES (?, ?, 'pending', NOW())");
-  $stmt->execute([$userId, $courseCode]);
+  $cstmt = $db->prepare("SELECT course_name FROM courses WHERE course_code = ?");
+  $cstmt->execute([$courseCode]);
+  $c = $cstmt->fetch(PDO::FETCH_ASSOC);
+  if (!$c) { return ['success' => false, 'message' => 'Course not found']; }
+  $stmt = $db->prepare("INSERT INTO enrollments (trainee_id, course_code, course_name, status, date_requested) VALUES (?, ?, ?, 'pending', NOW())");
+  $stmt->execute([$userId, $courseCode, $c['course_name']]);
   return ['success' => true, 'message' => 'Enrollment request sent'];
 }
 

@@ -16,13 +16,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
   $action = $_POST['action'];
   try {
     switch ($action) {
-      case 'approve_enrollment':
+      case 'view_enrollment_details':
         $id = $_POST['request_id'] ?? '';
-        echo json_encode(approveEnrollment($db, $id, $user['user_id']));
+        echo json_encode(getEnrollmentDetails($db, $id, $user['user_id']));
         break;
-      case 'reject_enrollment':
+      case 'get_enrollment_status':
         $id = $_POST['request_id'] ?? '';
-        echo json_encode(rejectEnrollment($db, $id, $user['user_id']));
+        echo json_encode(getEnrollmentStatus($db, $id, $user['user_id']));
         break;
       case 'update_profile':
         $res = updateTrainerProfile($db, $user['user_id'], $_POST);

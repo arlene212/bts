@@ -30,10 +30,23 @@ $totalTraineePages = 0;
 $announcements = [];
 
 $traineeSearch = $_GET['trainee_search'] ?? '';
+$traineeStatus = $_GET['trainee_status'] ?? 'active'; // Default to active trainees
 $traineePage = max(1, intval($_GET['trainee_page'] ?? 1));
 $traineeOffset = ($traineePage - 1) * $itemsPerPage;
 
-$trainees_base_query = "FROM users u JOIN enrollments e ON u.user_id = e.trainee_id JOIN course_assignments ca ON e.course_code = ca.course_code WHERE u.role = 'trainee' AND u.status = 'active' AND e.status = 'approved' AND ca.trainer_id = :trainer_id";
+// Build status filter condition
+$statusCondition = '';
+if ($traineeStatus === 'active') {
+    $statusCondition = "AND u.status = 'active' AND e.status IN ('approved', 'pending')";
+} elseif ($traineeStatus === 'dropped') {
+    $statusCondition = "AND u.status = 'dropped' AND e.status IN ('approved', 'dropped')";
+} elseif ($traineeStatus === 'graduated') {
+    $statusCondition = "AND u.status = 'graduated' AND e.status = 'approved'";
+} elseif ($traineeStatus === 'all') {
+    $statusCondition = "AND u.status IN ('active', 'dropped', 'graduated')";
+}
+
+$trainees_base_query = "FROM users u JOIN enrollments e ON u.user_id = e.trainee_id JOIN course_assignments ca ON e.course_code = ca.course_code WHERE u.role = 'trainee' " . $statusCondition . " AND ca.trainer_id = :trainer_id";
 
 try {
   $stmt = $db->prepare("SELECT c.* FROM courses c INNER JOIN course_assignments ca ON c.course_code = ca.course_code WHERE ca.trainer_id = ? AND c.status = 'active'");
@@ -58,7 +71,7 @@ try {
   $total_activities = (int)$stmt->fetch(PDO::FETCH_ASSOC)['count'];
 
   $trainees_count_query = "SELECT COUNT(DISTINCT u.user_id) " . $trainees_base_query;
-  $trainees_data_query = "SELECT DISTINCT u.*, e.course_name, e.batch_name " . $trainees_base_query;
+  $trainees_data_query = "SELECT DISTINCT u.*, e.course_name, e.batch_name, e.status as enrollment_status " . $trainees_base_query;
   if (!empty($traineeSearch)) {
     $search_condition = " AND (u.first_name LIKE :search OR u.last_name LIKE :search OR u.email LIKE :search OR u.user_id LIKE :search OR e.course_name LIKE :search)";
     $trainees_count_query .= $search_condition;

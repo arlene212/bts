@@ -21,7 +21,7 @@ $enrollment_requests = [];
 $announcements = [];
 
 try {
-  $stmt = $db->prepare("SELECT * FROM courses WHERE status = 'active'");
+  $stmt = $db->prepare("SELECT * FROM courses WHERE course_status = 'published'");
   $stmt->execute();
   $offered_courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Nov 23, 2025 at 06:01 AM
+-- Generation Time: Nov 24, 2025 at 02:44 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -498,7 +498,7 @@ CREATE TABLE `users` (
   `password` varchar(255) NOT NULL,
   `profile_picture` varchar(255) DEFAULT NULL,
   `force_password_change` tinyint(1) DEFAULT 1,
-  `status` enum('active','archived') DEFAULT 'active',
+  `status` text DEFAULT 'active',
   `date_created` datetime DEFAULT current_timestamp(),
   `last_login` datetime DEFAULT NULL,
   `password_changed_at` datetime DEFAULT NULL

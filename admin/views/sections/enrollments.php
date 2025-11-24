@@ -1,6 +1,11 @@
 <?php ?>
 <section class="main-content tab-content <?php echo ($currentTab === 'enrollments' ? 'active' : ''); ?>" id="enrollments">
-  <div class="tab-header"><h2>Enrollment Management</h2></div>
+  <div class="tab-header">
+    <h2>Enrollment Management</h2>
+    <p class="admin-note" style="color: #6c757d; font-size: 0.9em; margin-top: 5px;">
+      <i class="fas fa-shield-alt"></i> <strong>Admin Authority:</strong> You can approve or reject enrollment requests. Trainers can only view requests for their assigned courses.
+    </p>
+  </div>
   <div class="search-container">
     <div class="input-group">
       <span class="input-group-text"><i class="fas fa-search"></i></span>

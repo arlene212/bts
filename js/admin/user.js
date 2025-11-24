@@ -47,10 +47,21 @@ function setupUserManagement() {
       const form = this;
       const formData = new FormData(form);
       formData.append('user_role', 'trainee');
-      fetch('../php/update_user.php', { method: 'POST', body: formData })
-        .then(response => response.json())
-        .then(data => { if (data.success) { alert(data.message); window.location.reload(); } else { alert('Error updating trainee: ' + data.message); } })
-        .catch(() => {});
+      if (typeof showConfirm === 'function') {
+        showConfirm('Confirm Update', 'Save changes to this trainee?', () => {
+          fetch('../php/update_user.php', { method: 'POST', body: formData })
+            .then(response => response.json())
+            .then(data => { if (data.success) { window.location.reload(); } else { alert('Error updating trainee: ' + (data.message || 'Unknown error')); } })
+            .catch(() => { alert('Network error while updating trainee'); });
+        });
+      } else {
+        if (!window.confirm || window.confirm('Save changes to this trainee?')) {
+          fetch('../php/update_user.php', { method: 'POST', body: formData })
+            .then(response => response.json())
+            .then(data => { if (data.success) { window.location.reload(); } else { alert('Error updating trainee: ' + (data.message || 'Unknown error')); } })
+            .catch(() => { alert('Network error while updating trainee'); });
+        }
+      }
     });
   }
   document.querySelectorAll('.edit-trainer-btn').forEach(btn => {
@@ -129,6 +140,45 @@ function setupUserManagement() {
           .catch(() => {});
         openModal('editTraineeModal');
       } catch (_) {}
+    });
+  });
+
+  document.querySelectorAll('.reenroll-trainee-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const userId = this.getAttribute('data-user-id');
+      const form = document.getElementById('editTraineeForm');
+      if (!form) return;
+      document.getElementById('editTraineeId').value = userId;
+      // Reset fields for fresh reenrollment
+      const courseSelect = document.getElementById('edit_trainee_course');
+      const batchSelect = document.getElementById('edit_trainee_batch');
+      const statusSelect = document.getElementById('edit_trainee_enrollment_status');
+      if (courseSelect) courseSelect.value = '';
+      if (batchSelect) batchSelect.innerHTML = '<option value="">Select Batch</option>';
+      if (statusSelect) statusSelect.value = 'active';
+      openModal('editTraineeModal');
+    });
+  });
+
+  document.querySelectorAll('.undrop-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const fd = new FormData(this);
+      if (typeof showConfirm === 'function') {
+        showConfirm('Confirm Undrop', 'Undrop this trainee and set status to Active?', () => {
+          fetch('../php/update_user.php', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => { if (d.success) { window.location.reload(); } else { alert(d.message || 'Failed to undrop trainee'); } })
+            .catch(() => { alert('Network error while undropping trainee'); });
+        });
+      } else {
+        if (!window.confirm || window.confirm('Undrop this trainee and set status to Active?')) {
+          fetch('../php/update_user.php', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => { if (d.success) { window.location.reload(); } else { alert(d.message || 'Failed to undrop trainee'); } })
+            .catch(() => { alert('Network error while undropping trainee'); });
+        }
+      }
     });
   });
   if (editTraineeLastName && editTraineeEmail && editTraineeIdInput) {

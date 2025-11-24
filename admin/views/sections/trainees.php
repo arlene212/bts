@@ -134,7 +134,7 @@ $graduatedTraineesCount = is_array($graduatedTrainees) ? count($graduatedTrainee
   <div class="tab-inner" id="droppedTrainees" data-tab-content>
     <h3>Dropped Trainees (<?php echo $droppedTraineesCount; ?>)</h3>
     <div class="table-container">
-      <table class="table table-striped table-hover trainee-table"><thead><tr><th>User ID</th><th>User Name</th><th>Email</th><th>Contact Number</th><th>Enrolled Courses</th><th>Batch</th><th>Date Created</th></tr></thead><tbody>
+      <table class="table table-striped table-hover trainee-table"><thead><tr><th>User ID</th><th>User Name</th><th>Email</th><th>Contact Number</th><th>Enrolled Courses</th><th>Batch</th><th>Date Created</th><th>Actions</th></tr></thead><tbody>
         <?php if (empty($droppedTrainees)): ?>
           <tr><td colspan="7" class="no-data">No dropped trainees found</td></tr>
         <?php else: ?>
@@ -157,6 +157,17 @@ $graduatedTraineesCount = is_array($graduatedTrainees) ? count($graduatedTrainee
                 ?>
               </td>
               <td><?php echo date('Y-m-d', strtotime($trainee['date_created'])); ?></td>
+              <td class="table-actions">
+                <form method="POST" onsubmit="return confirm('Undrop this trainee and set status to Active?');" class="undrop-form">
+                  <input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>">
+                  <input type="hidden" name="user_role" value="trainee">
+                  <input type="hidden" name="enrollment_status" value="active">
+                  <input type="hidden" name="current_tab" value="trainees">
+                  <button type="submit" formaction="../php/update_user.php" class="action-btn btn btn-sm btn-success" title="Undrop">
+                    <i class="fas fa-user-check"></i><span class="btn-text">Undrop</span>
+                  </button>
+                </form>
+              </td>
             </tr>
           <?php endforeach; ?>
         <?php endif; ?>
@@ -167,7 +178,7 @@ $graduatedTraineesCount = is_array($graduatedTrainees) ? count($graduatedTrainee
   <div class="tab-inner" id="graduatedTrainees" data-tab-content>
     <h3>Graduated Trainees (<?php echo $graduatedTraineesCount; ?>)</h3>
     <div class="table-container">
-      <table class="table table-striped table-hover trainee-table"><thead><tr><th>User ID</th><th>User Name</th><th>Email</th><th>Contact Number</th><th>Enrolled Courses</th><th>Batch</th><th>Date Created</th></tr></thead><tbody>
+      <table class="table table-striped table-hover trainee-table"><thead><tr><th>User ID</th><th>User Name</th><th>Email</th><th>Contact Number</th><th>Enrolled Courses</th><th>Batch</th><th>Date Created</th><th>Actions</th></tr></thead><tbody>
         <?php if (empty($graduatedTrainees)): ?>
           <tr><td colspan="7" class="no-data">No graduated trainees found</td></tr>
         <?php else: ?>
@@ -190,6 +201,11 @@ $graduatedTraineesCount = is_array($graduatedTrainees) ? count($graduatedTrainee
                 ?>
               </td>
               <td><?php echo date('Y-m-d', strtotime($trainee['date_created'])); ?></td>
+              <td class="table-actions">
+                <button class="action-btn btn btn-sm btn-primary reenroll-trainee-btn" title="Re-enroll" data-user-id="<?php echo $trainee['user_id']; ?>">
+                  <i class="fas fa-user-plus"></i><span class="btn-text">Re-enroll</span>
+                </button>
+              </td>
             </tr>
           <?php endforeach; ?>
         <?php endif; ?>

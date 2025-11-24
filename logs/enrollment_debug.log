@@ -1,0 +1,107 @@
+[2025-11-24 15:42:18] Enhanced enrollment request received
+[2025-11-24 15:42:18] POST data: Array
+(
+    [course_code] => NC2
+)
+
+[2025-11-24 15:42:18] Session data: Array
+(
+    [user] => Array
+        (
+            [user_id] => 31107421
+            [role] => trainee
+            [first_name] => Erick
+            [last_name] => Gaceta
+            [email] => erick.gaceta@example.com
+        )
+
+)
+
+[2025-11-24 15:49:06] Enhanced enrollment request received
+[2025-11-24 15:49:06] POST data: Array
+(
+    [course_code] => NC2
+)
+
+[2025-11-24 15:49:06] Session data: Array
+(
+    [user] => Array
+        (
+            [user_id] => 31107421
+            [role] => trainee
+            [first_name] => Erick
+            [last_name] => Gaceta
+            [email] => erick.gaceta@example.com
+        )
+
+)
+
+[2025-11-24 15:49:06] Login check passed - proceeding with enrollment
+[2025-11-24 15:49:06] Database connection test: successful
+[2025-11-24 15:49:06] Enhanced enrollment error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'c.max_capacity' in 'field list'
+[2025-11-24 15:50:22] Enhanced enrollment request received
+[2025-11-24 15:50:22] POST data: Array
+(
+    [course_code] => NC2
+)
+
+[2025-11-24 15:50:22] Session data: Array
+(
+    [user] => Array
+        (
+            [user_id] => 31107421
+            [role] => trainee
+            [first_name] => Erick
+            [last_name] => Gaceta
+            [email] => erick.gaceta@example.com
+        )
+
+)
+
+[2025-11-24 15:50:22] Login check passed - proceeding with enrollment
+[2025-11-24 15:50:22] Database connection test: successful
+[2025-11-24 15:50:22] Creating new enrollment request for trainee_id: 31107421, course_code: NC2
+[2025-11-24 15:50:22] Enrollment insert result: success
+[2025-11-24 15:50:22] New enrollment ID: 27
+[2025-11-24 15:50:22] Enrollment verification: Array
+(
+    [id] => 27
+    [status] => pending
+)
+
+[2025-11-24 15:50:22] Course name update result: success
+[2025-11-24 15:50:22] Final enrollment check - count: 1
+[2025-11-24 15:50:22] Enrollment successful, sending response: {"success":true,"message":"Your enrollment request has been submitted successfully and is pending trainer approval.","verification_required":0,"enrollment_count":1}
+[2025-11-24 15:51:29] Enhanced enrollment request received
+[2025-11-24 15:51:29] POST data: Array
+(
+    [course_code] => NC2
+)
+
+[2025-11-24 15:51:29] Session data: Array
+(
+    [user] => Array
+        (
+            [user_id] => 31107421
+            [role] => trainee
+            [first_name] => Erick
+            [last_name] => Gaceta
+            [email] => erick.gaceta@example.com
+        )
+
+)
+
+[2025-11-24 15:51:29] Login check passed - proceeding with enrollment
+[2025-11-24 15:51:29] Database connection test: successful
+[2025-11-24 15:51:29] Creating new enrollment request for trainee_id: 31107421, course_code: NC2
+[2025-11-24 15:51:29] Enrollment insert result: success
+[2025-11-24 15:51:29] New enrollment ID: 28
+[2025-11-24 15:51:29] Enrollment verification: Array
+(
+    [id] => 28
+    [status] => pending
+)
+
+[2025-11-24 15:51:29] Course name update result: success
+[2025-11-24 15:51:29] Final enrollment check - count: 1
+[2025-11-24 15:51:29] Enrollment successful, sending response: {"success":true,"message":"Your enrollment request has been submitted successfully and is pending trainer approval.","verification_required":0,"enrollment_count":1}

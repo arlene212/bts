@@ -180,17 +180,37 @@ function unenrollFromCourse(courseCode, button) {
     .then(data => { if (data.success) { showNotification(data.message, 'success'); setTimeout(() => window.location.href = `${window.location.pathname}?current_tab=enrolled`, 1500); } else { showNotification(data.message, 'error'); button.disabled = false; button.textContent = 'Yes, Unenroll'; } });
 }
 
+// Initialize enrollment buttons when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - setting up enrollment buttons');
+    setupEnrollmentButtons();
+  });
+} else {
+  console.log('DOM already loaded - setting up enrollment buttons immediately');
+  setupEnrollmentButtons();
+}
+
 function setupEnrollmentButtons() {
+  console.log('Setting up enrollment button listeners...');
   document.addEventListener('click', function(e) {
+    console.log('Document click detected in guest section');
+    console.log('Clicked element:', e.target);
+    console.log('Element classes:', e.target.classList);
+    
     if (e.target.classList.contains('enroll-btn') && !e.target.disabled) {
+      console.log('✅ GUEST ENROLL BUTTON CLICKED!');
       const courseCard = e.target.closest('.course-card') || e.target.closest('.batch-card');
       if (courseCard) {
         const courseCode = courseCard.getAttribute('data-course') || courseCard.getAttribute('data-course-code');
         const courseName = courseCard.getAttribute('data-title') || courseCard.getAttribute('data-course-name');
+        console.log('Extracted course data - Code:', courseCode, 'Name:', courseName);
         if (courseCode && courseName) {
           openEnrollModal(courseCode, courseName);
         }
       }
+    } else {
+      console.log('❌ Not a guest enroll button or button is disabled');
     }
     if (e.target.classList.contains('unenroll-btn') && !e.target.disabled) {
       let courseCode = e.target.getAttribute('data-course-code');

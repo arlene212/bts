@@ -1,16 +1,40 @@
 <?php
-function approveEnrollment($db, $requestId, $trainerId)
+function getEnrollmentDetails($db, $requestId, $trainerId)
 {
-  $stmt = $db->prepare("UPDATE enrollments e JOIN course_assignments ca ON e.course_code = ca.course_code SET e.status = 'approved', e.processed_date = NOW(), e.processed_by = ? WHERE e.id = ? AND ca.trainer_id = ?");
-  $stmt->execute([$trainerId, $requestId, $trainerId]);
-  return ['success' => $stmt->rowCount() > 0, 'message' => $stmt->rowCount() > 0 ? 'Enrollment approved' : 'Approval failed'];
+  // Trainers can only view enrollment details for their assigned courses
+  $stmt = $db->prepare("SELECT e.*, u.first_name, u.last_name, u.email, c.course_name, c.course_code, ca.trainer_id 
+                       FROM enrollments e 
+                       JOIN users u ON e.trainee_id = u.user_id 
+                       JOIN courses c ON e.course_code = c.course_code 
+                       JOIN course_assignments ca ON c.course_code = ca.course_code 
+                       WHERE e.id = ? AND ca.trainer_id = ?");
+  $stmt->execute([$requestId, $trainerId]);
+  $enrollment = $stmt->fetch(PDO::FETCH_ASSOC);
+  
+  if ($enrollment) {
+    return ['success' => true, 'data' => $enrollment, 'message' => 'Enrollment details retrieved'];
+  } else {
+    return ['success' => false, 'message' => 'Enrollment not found or access denied'];
+  }
 }
 
-function rejectEnrollment($db, $requestId, $trainerId)
+function getEnrollmentStatus($db, $requestId, $trainerId)
 {
-  $stmt = $db->prepare("UPDATE enrollments e JOIN course_assignments ca ON e.course_code = ca.course_code SET e.status = 'rejected', e.processed_date = NOW(), e.processed_by = ? WHERE e.id = ? AND ca.trainer_id = ?");
-  $stmt->execute([$trainerId, $requestId, $trainerId]);
-  return ['success' => $stmt->rowCount() > 0, 'message' => $stmt->rowCount() > 0 ? 'Enrollment rejected' : 'Rejection failed'];
+  // Trainers can check status for their assigned courses
+  $stmt = $db->prepare("SELECT e.status, e.date_requested, e.processed_date, e.remarks, c.course_name, u.first_name, u.last_name 
+                       FROM enrollments e 
+                       JOIN users u ON e.trainee_id = u.user_id 
+                       JOIN courses c ON e.course_code = c.course_code 
+                       JOIN course_assignments ca ON c.course_code = ca.course_code 
+                       WHERE e.id = ? AND ca.trainer_id = ?");
+  $stmt->execute([$requestId, $trainerId]);
+  $status = $stmt->fetch(PDO::FETCH_ASSOC);
+  
+  if ($status) {
+    return ['success' => true, 'data' => $status, 'message' => 'Enrollment status retrieved'];
+  } else {
+    return ['success' => false, 'message' => 'Enrollment not found or access denied'];
+  }
 }
 
 function updateTrainerProfile($db, $userId, $data)

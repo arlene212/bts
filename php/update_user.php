@@ -30,11 +30,13 @@ try {
     $pdo = $database->getConnection();
     $pdo->beginTransaction();
 
-    // Common user data
-    $firstName = trim($_POST['first_name']);
-    $lastName = trim($_POST['last_name']);
-    $contactNumber = trim($_POST['contact_number']);
-    $email = trim($_POST['email']);
+    $userStmt = $pdo->prepare("SELECT first_name, last_name, email, contact_number FROM users WHERE user_id = ?");
+    $userStmt->execute([$userId]);
+    $currentUser = $userStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $firstName = isset($_POST['first_name']) ? trim((string)$_POST['first_name']) : ($currentUser['first_name'] ?? '');
+    $lastName = isset($_POST['last_name']) ? trim((string)$_POST['last_name']) : ($currentUser['last_name'] ?? '');
+    $contactNumber = isset($_POST['contact_number']) ? trim((string)$_POST['contact_number']) : ($currentUser['contact_number'] ?? '');
+    $email = isset($_POST['email']) ? trim((string)$_POST['email']) : ($currentUser['email'] ?? '');
 
     // Validate email format
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -57,10 +59,9 @@ try {
             $counter++;
         } while ($stmt->fetch() && $counter < 100);
 
-        $email = $newEmail; // Use the new unique email
+        $email = $newEmail;
     }
 
-    // Update users table, preserving the force_password_change status
     $stmt = $pdo->prepare("
         UPDATE users SET 
             first_name = ?, last_name = ?, email = ?, contact_number = ?
@@ -135,15 +136,14 @@ try {
         $updStatusStmt = $pdo->prepare("UPDATE users SET status = ? WHERE user_id = ?");
         $updStatusStmt->execute([$enrollmentStatus, $userId]);
 
-        // 1. Delete existing enrollment and batch assignment
-        $deleteEnrollmentStmt = $pdo->prepare("DELETE FROM enrollments WHERE trainee_id = ?");
-        $deleteEnrollmentStmt->execute([$userId]);
+    // 1. Create new enrollment and batch assignment if a course is selected (and reset previous assignments)
+    if (!empty($courseCode)) {
+            // Delete existing enrollment and batch assignment only when reassigning
+            $deleteEnrollmentStmt = $pdo->prepare("DELETE FROM enrollments WHERE trainee_id = ?");
+            $deleteEnrollmentStmt->execute([$userId]);
 
-        $deleteBatchStmt = $pdo->prepare("DELETE FROM batch_assignments WHERE trainee_id = ?");
-        $deleteBatchStmt->execute([$userId]);
-
-        // 2. Create new enrollment and batch assignment if a course is selected
-        if (!empty($courseCode)) {
+            $deleteBatchStmt = $pdo->prepare("DELETE FROM batch_assignments WHERE trainee_id = ?");
+            $deleteBatchStmt->execute([$userId]);
             // Get course name
             $courseStmt = $pdo->prepare("SELECT course_name FROM courses WHERE course_code = ?");
             $courseStmt->execute([$courseCode]);
