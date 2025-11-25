@@ -92,9 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 uploadSection.style.display = 'none';
                 submissionSuccess.classList.remove('hidden');
                 // Optionally, redirect or show submission details after a delay
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
+                // Removed auto reload to avoid interrupting user interactions
             } else {
                 alert('Submission failed: ' + data.error);
                 submitBtn.disabled = false;

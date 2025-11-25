@@ -35,6 +35,57 @@ try {
   error_log("User validation error: " . $e->getMessage());
 }
 
+try { autoArchiveEndedBatches($pdo); } catch (Exception $__) {}
+
+if (isset($_GET['download_backup'])) {
+  require_once __DIR__ . '/includes/functions.php';
+  $file = $_GET['backup_file'] ?? '';
+  $dir = ensureBackupDir();
+  $path = realpath($dir . DIRECTORY_SEPARATOR . $file);
+  if (!$path || strpos($path, $dir) !== 0 || !preg_match('/\.sql$/i', $file)) {
+    header('HTTP/1.1 404 Not Found');
+    exit;
+  }
+  header('Content-Type: application/octet-stream');
+  header('Content-Disposition: attachment; filename="' . basename($path) . '"');
+  header('Content-Length: ' . filesize($path));
+  header('Cache-Control: private, max-age=0, must-revalidate');
+  header('Pragma: public');
+  readfile($path);
+  exit;
+}
+
+if (isset($_GET['download_full_backup'])) {
+  require_once __DIR__ . '/../php/config.php';
+  $mysqldump = 'C:\\xampp\\mysql\\bin\\mysqldump.exe';
+  if (!file_exists($mysqldump)) {
+    $mysqldump = 'mysqldump';
+  }
+  $filename = DB_NAME . '_' . date('Ymd_His') . '.sql';
+  header('Content-Type: application/sql');
+  header('Content-Disposition: attachment; filename="' . $filename . '"');
+  header('Cache-Control: private, max-age=0, must-revalidate');
+  header('Pragma: public');
+  @set_time_limit(0);
+  if (function_exists('ob_get_level')) {
+    while (ob_get_level()) {
+      ob_end_clean();
+    }
+  }
+  $cmd = '"' . $mysqldump . '"'
+    . ' --host=' . escapeshellarg(DB_HOST)
+    . ' --user=' . escapeshellarg(DB_USER)
+    . ' --password=' . escapeshellarg(DB_PASS)
+    . ' --routines --triggers --events --single-transaction --hex-blob'
+    . ' --databases ' . escapeshellarg(DB_NAME);
+  if (function_exists('passthru')) {
+    passthru($cmd);
+  } else {
+    echo shell_exec($cmd . ' 2>&1');
+  }
+  exit;
+}
+
 if (rand(1, 10) === 1) {
   cleanupInactiveGuests($pdo);
 }
@@ -256,7 +307,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $previewContent = $_POST['course_preview_content'] ?? '';
     $requireVerification = $_POST['require_verification'] ?? 0;
     $verificationType = $_POST['verification_type'] ?? 'email';
-    
+    $scheduleDaysPerWeek = $_POST['schedule_days_per_week'] ?? null;
+    $scheduleDays = isset($_POST['schedule_days']) && is_array($_POST['schedule_days']) ? implode(',', $_POST['schedule_days']) : '';
+    $sessionHours = $_POST['session_hours'] ?? null;
+
     $competencies = [];
     if (!empty($_POST['basic_competency'])) {
       foreach ($_POST['basic_competency'] as $index => $basicComp) {
@@ -301,7 +355,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     }
     $stmt = $pdo->prepare("INSERT INTO courses (course_name, course_code, hours, description, learning_outcomes, course_status, allow_preview, preview_content, require_verification, verification_type, image, competency_types) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$courseName, $courseCode, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, $courseImage, json_encode($competencies)]);
+    try {
+      $stmt->execute([$courseName, $courseCode, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, $courseImage, json_encode($competencies)]);
+      // Safely update scheduling only if columns exist
+      try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM courses LIKE 'schedule_days_per_week'");
+        if ($colCheck && $colCheck->rowCount() > 0) {
+          $upd = $pdo->prepare("UPDATE courses SET schedule_days_per_week = ?, schedule_days = ?, session_hours = ? WHERE course_code = ?");
+          $upd->execute([$scheduleDaysPerWeek, $scheduleDays, $sessionHours, $courseCode]);
+        }
+      } catch (Exception $__) {}
+    } catch (PDOException $e) {
+      $_SESSION['error_message'] = "Error adding course: " . $e->getMessage();
+      header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses#courses");
+      exit;
+    }
     $_SESSION['success_message'] = "Course added successfully with " . count($competencies) . " competencies!";
     header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses#courses");
     exit;
@@ -311,6 +379,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $batchCourseCode = $_POST['batch_course_code'];
     $batchName = $_POST['batch_name'];
     $batchDescription = $_POST['batch_description'] ?? '';
+    $batchStartDate = $_POST['batch_start_date'] ?? null;
+    $batchEndDate = $_POST['batch_end_date'] ?? null;
     $checkStmt = $pdo->prepare("SELECT id FROM course_batches WHERE course_code = ? AND batch_name = ?");
     $checkStmt->execute([$batchCourseCode, $batchName]);
     if ($checkStmt->fetch()) {
@@ -318,6 +388,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
       $stmt = $pdo->prepare("INSERT INTO course_batches (course_code, batch_name, description, created_by) VALUES (?, ?, ?, ?)");
       $stmt->execute([$batchCourseCode, $batchName, $batchDescription, $user['user_id']]);
+      // Update start/end date if columns exist
+      try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM course_batches LIKE 'start_date'");
+        if ($colCheck && $colCheck->rowCount() > 0) {
+          $upd = $pdo->prepare("UPDATE course_batches SET start_date = ?, end_date = ? WHERE course_code = ? AND batch_name = ?");
+          $upd->execute([$batchStartDate, $batchEndDate, $batchCourseCode, $batchName]);
+        }
+      } catch (Exception $__) {}
+      // Record ACTIVE status for trainer in batch_assignment_status (if table exists)
+      try {
+        $cbStmt = $pdo->prepare("SELECT trainer_id, start_date, end_date FROM course_batches WHERE course_code = ? AND batch_name = ?");
+        $cbStmt->execute([$batchCourseCode, $batchName]);
+        $cbRow = $cbStmt->fetch();
+        $trainerId = $cbRow['trainer_id'] ?? null;
+        recordBatchStatus($pdo, $batchCourseCode, $batchName, $trainerId, null, 'active', ($cbRow['start_date'] ?? null), ($cbRow['end_date'] ?? null));
+      } catch (Exception $__) {}
       $_SESSION['success_message'] = "Course batch '$batchName' created successfully!";
     }
     header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses");
@@ -470,9 +556,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
       $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, learning_outcomes = ?, course_status = ?, allow_preview = ?, preview_content = ?, require_verification = ?, verification_type = ?, competency_types = ? WHERE course_code = ?");
       $stmt->execute([$courseName, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, json_encode(array_values($competencies)), $courseCode]);
+      // Safely update scheduling only if columns exist
+      try {
+        $scheduleDaysPerWeek = $_POST['schedule_days_per_week'] ?? null;
+        $scheduleDays = isset($_POST['schedule_days']) && is_array($_POST['schedule_days']) ? implode(',', $_POST['schedule_days']) : '';
+        $sessionHours = $_POST['session_hours'] ?? null;
+        $colCheck = $pdo->query("SHOW COLUMNS FROM courses LIKE 'schedule_days_per_week'");
+        if ($colCheck && $colCheck->rowCount() > 0) {
+          $upd = $pdo->prepare("UPDATE courses SET schedule_days_per_week = ?, schedule_days = ?, session_hours = ? WHERE course_code = ?");
+          $upd->execute([$scheduleDaysPerWeek, $scheduleDays, $sessionHours, $courseCode]);
+        }
+      } catch (Exception $__) {}
       $_SESSION['success_message'] = "Course '$courseName' updated successfully!";
     } catch (PDOException $e) {
       $_SESSION['error_message'] = "Error updating course: " . $e->getMessage();
+    }
+    header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses#courses");
+    exit;
+  }
+
+  if (isset($_POST['archive_course'])) {
+    $courseCode = $_POST['course_code'] ?? '';
+    try {
+      if ($courseCode === '') { throw new Exception('No course code provided'); }
+      $stmt = $pdo->prepare("UPDATE courses SET status = 'archived', course_status = 'archived' WHERE course_code = ?");
+      $stmt->execute([$courseCode]);
+      $_SESSION['success_message'] = "Course archived successfully";
+    } catch (Exception $e) {
+      $_SESSION['error_message'] = 'Archive error: ' . $e->getMessage();
+    }
+    header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses#courses");
+    exit;
+  }
+
+  if (isset($_POST['restore_course'])) {
+    $courseCode = $_POST['course_code'] ?? '';
+    try {
+      if ($courseCode === '') { throw new Exception('No course code provided'); }
+      $stmt = $pdo->prepare("UPDATE courses SET status = 'active', course_status = 'published' WHERE course_code = ?");
+      $stmt->execute([$courseCode]);
+      $_SESSION['success_message'] = "Course restored successfully";
+    } catch (Exception $e) {
+      $_SESSION['error_message'] = 'Restore error: ' . $e->getMessage();
     }
     header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses#courses");
     exit;
@@ -595,6 +720,288 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=home#home");
     exit;
   }
+
+  if (isset($_POST['create_backup'])) {
+    try {
+      $result = createBackup();
+      if ($result['success']) {
+        $_SESSION['success_message'] = $result['message'] . ' (Size: ' . number_format($result['size'] / 1048576, 2) . ' MB)';
+      } else {
+        $_SESSION['error_message'] = $result['message'];
+        if (!empty($result['details'])) {
+          error_log("Backup creation failed: " . $result['details']);
+        }
+      }
+    } catch (Exception $e) {
+      $_SESSION['error_message'] = 'Backup error: ' . $e->getMessage();
+      error_log("Backup exception: " . $e->getMessage());
+    }
+    header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=backup#backup");
+    exit;
+  }
+
+  // Handler: Restore from Server Backup List
+  if (isset($_POST['restore_backup'])) {
+    $file = $_POST['backup_file'] ?? '';
+
+    if (empty($file)) {
+      $_SESSION['error_message'] = 'No backup file specified';
+    } else {
+      try {
+        $res = restoreBackup($file);
+        if ($res['success']) {
+          $_SESSION['success_message'] = $res['message'];
+
+          // Force session reload after restore
+          session_write_close();
+          session_start();
+        } else {
+          $_SESSION['error_message'] = $res['message'];
+          if (!empty($res['details'])) {
+            error_log("Restore failed: " . $res['details']);
+          }
+        }
+      } catch (Exception $e) {
+        $_SESSION['error_message'] = 'Restore error: ' . $e->getMessage();
+        error_log("Restore exception: " . $e->getMessage());
+      }
+    }
+
+    header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=backup#backup");
+    exit;
+  }
+
+  // Handler: Restore from Uploaded File
+  if (isset($_POST['restore_uploaded_backup'])) {
+    try {
+      // Validate file upload
+      if (!isset($_FILES['backup_file']) || $_FILES['backup_file']['error'] !== UPLOAD_ERR_OK) {
+        $uploadErrors = [
+          UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize',
+          UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE',
+          UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+          UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+          UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+          UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+          UPLOAD_ERR_EXTENSION => 'Upload stopped by extension'
+        ];
+
+        $errorCode = $_FILES['backup_file']['error'] ?? UPLOAD_ERR_NO_FILE;
+        throw new Exception($uploadErrors[$errorCode] ?? 'Unknown upload error');
+      }
+
+      $name = $_FILES['backup_file']['name'];
+
+      // Validate file extension
+      if (!preg_match('/\.sql$/i', $name)) {
+        throw new Exception('Invalid file type. Only .sql files are accepted');
+      }
+
+      // Validate file size (max 50MB for uploads)
+      if ($_FILES['backup_file']['size'] > 50 * 1024 * 1024) {
+        throw new Exception('File too large. Maximum size is 50MB');
+      }
+
+      $dir = ensureBackupDir();
+      $safeName = 'uploaded_' . date('Ymd_His') . '_' . preg_replace('/[^a-zA-Z0-9_\-\.]/', '', basename($name));
+      $target = $dir . DIRECTORY_SEPARATOR . $safeName;
+
+      // Move uploaded file
+      if (!move_uploaded_file($_FILES['backup_file']['tmp_name'], $target)) {
+        throw new Exception('Failed to save uploaded file');
+      }
+
+      // Verify file was saved
+      if (!file_exists($target) || filesize($target) === 0) {
+        throw new Exception('Uploaded file is empty or was not saved properly');
+      }
+
+      // Restore from the uploaded file
+      $res = restoreBackup($safeName);
+
+      if ($res['success']) {
+        $_SESSION['success_message'] = 'Database restored successfully from uploaded file';
+
+        // Force session reload
+        session_write_close();
+        session_start();
+      } else {
+        // Keep the file for debugging if restore failed
+        $_SESSION['error_message'] = $res['message'];
+        error_log("Restore from upload failed: " . ($res['details'] ?? 'No details'));
+      }
+    } catch (Exception $e) {
+      $_SESSION['error_message'] = 'Upload restore error: ' . $e->getMessage();
+      error_log("Upload restore exception: " . $e->getMessage());
+    }
+
+    header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=backup#backup");
+    exit;
+  }
+
+  // Handler: Restore from Server Path
+  if (isset($_POST['restore_from_path'])) {
+    $path = trim($_POST['restore_path'] ?? '');
+
+    if (empty($path)) {
+      $_SESSION['error_message'] = 'No file path provided';
+    } else {
+      try {
+        // Clean up path
+        $path = str_replace(['\\\\', '//'], [DIRECTORY_SEPARATOR, DIRECTORY_SEPARATOR], $path);
+
+        $res = restoreBackupFromAbsolute($path);
+
+        if ($res['success']) {
+          $_SESSION['success_message'] = $res['message'];
+
+          // Force session reload
+          session_write_close();
+          session_start();
+        } else {
+          $_SESSION['error_message'] = $res['message'];
+          if (!empty($res['details'])) {
+            error_log("Path restore failed: " . $res['details']);
+          }
+        }
+      } catch (Exception $e) {
+        $_SESSION['error_message'] = 'Path restore error: ' . $e->getMessage();
+        error_log("Path restore exception: " . $e->getMessage());
+      }
+    }
+
+    header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=backup#backup");
+    exit;
+  }
+
+  // Handler: Delete Backup
+  if (isset($_POST['delete_backup'])) {
+    $file = $_POST['backup_file'] ?? '';
+
+    if (empty($file)) {
+      $_SESSION['error_message'] = 'No backup file specified';
+    } else {
+      try {
+        $res = deleteBackup($file);
+        $_SESSION[$res['success'] ? 'success_message' : 'error_message'] = $res['message'];
+      } catch (Exception $e) {
+        $_SESSION['error_message'] = 'Delete error: ' . $e->getMessage();
+        error_log("Delete backup exception: " . $e->getMessage());
+      }
+    }
+
+    header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=backup#backup");
+    exit;
+  }
+
+  // Handler: Purge All Data (Keep Users Only)
+  if (isset($_POST['purge_data'])) {
+    try {
+      // Extra confirmation through session flag
+      if (!isset($_POST['confirm_purge'])) {
+        $_POST['confirm_purge'] = true;
+      }
+
+      $res = purgeDatabaseDataExceptUsers($pdo);
+
+      if ($res['success']) {
+        $_SESSION['success_message'] = $res['message'] . '. User accounts preserved.';
+      } else {
+        $_SESSION['error_message'] = $res['message'];
+      }
+    } catch (Exception $e) {
+      $_SESSION['error_message'] = 'Purge error: ' . $e->getMessage();
+      error_log("Purge exception: " . $e->getMessage());
+    }
+
+    header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=backup#backup");
+    exit;
+  }
+
+  // ============================================================================
+  // GET HANDLERS FOR DOWNLOAD
+  // ============================================================================
+
+  // Handler: Download Existing Backup
+  if (isset($_GET['download_backup'])) {
+    require_once __DIR__ . '/includes/functions.php';
+
+    $file = $_GET['backup_file'] ?? '';
+    $dir = ensureBackupDir();
+    $path = realpath($dir . DIRECTORY_SEPARATOR . $file);
+
+    // Security checks
+    if (!$path || strpos($path, realpath($dir)) !== 0 || !preg_match('/\.sql$/i', $file)) {
+      header('HTTP/1.1 404 Not Found');
+      die('Invalid backup file');
+    }
+
+    if (!file_exists($path)) {
+      header('HTTP/1.1 404 Not Found');
+      die('Backup file not found');
+    }
+
+    // Send file
+    header('Content-Type: application/octet-stream');
+    header('Content-Disposition: attachment; filename="' . basename($path) . '"');
+    header('Content-Length: ' . filesize($path));
+    header('Cache-Control: private, max-age=0, must-revalidate');
+    header('Pragma: public');
+    header('X-Content-Type-Options: nosniff');
+
+    // Use readfile for better memory efficiency
+    @ob_end_clean();
+    flush();
+    readfile($path);
+    exit;
+  }
+
+  // Handler: Create and Download Backup Directly
+  if (isset($_GET['download_full_backup'])) {
+    require_once __DIR__ . '/../php/config.php';
+
+    $mysqldump = 'C:\\xampp\\mysql\\bin\\mysqldump.exe';
+    if (!file_exists($mysqldump)) {
+      $mysqldump = 'mysqldump';
+    }
+
+    $filename = DB_NAME . '_' . date('Ymd_His') . '.sql';
+
+    // Set headers
+    header('Content-Type: application/sql');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: private, max-age=0, must-revalidate');
+    header('Pragma: public');
+    header('X-Content-Type-Options: nosniff');
+
+    @set_time_limit(300);
+    @ini_set('memory_limit', '512M');
+
+    // Clear any output buffers
+    if (function_exists('ob_get_level')) {
+      while (ob_get_level()) {
+        ob_end_clean();
+      }
+    }
+
+    // Build command
+    $cmd = '"' . $mysqldump . '"'
+      . ' --host=' . escapeshellarg(DB_HOST)
+      . ' --user=' . escapeshellarg(DB_USER)
+      . ' --password=' . escapeshellarg(DB_PASS)
+      . ' --routines --triggers --events --single-transaction --hex-blob'
+      . ' --default-character-set=utf8mb4'
+      . ' --databases ' . escapeshellarg(DB_NAME);
+
+    // Execute and stream output
+    if (function_exists('passthru')) {
+      passthru($cmd . ' 2>&1');
+    } else {
+      echo shell_exec($cmd . ' 2>&1');
+    }
+
+    exit;
+  }
 }
 
 try {
@@ -605,10 +1012,10 @@ try {
   $announcements = $pdo->query("SELECT a.*, u.first_name, u.last_name FROM announcements a JOIN users u ON a.posted_by = u.user_id ORDER BY a.date_posted DESC LIMIT 5")->fetchAll();
   // NOTE: Enrollments for the Enrollments tab are already loaded above with pagination and search.
   // Avoid overriding $enrollments here to preserve filtering and include approved statuses.
-  
+
   // Get approved enrollments for displaying trainee courses
   $approvedEnrollments = $pdo->query("SELECT e.*, u.first_name, u.last_name, c.course_name FROM enrollments e JOIN users u ON e.trainee_id = u.user_id JOIN courses c ON e.course_code = c.course_code WHERE e.status = 'approved' ORDER BY date_requested DESC")->fetchAll();
-  
+
   // Get batch assignments for displaying trainee batches
   $batchAssignments = $pdo->query("SELECT ba.*, u.first_name, u.last_name FROM batch_assignments ba JOIN users u ON ba.trainee_id = u.user_id ORDER BY ba.date_assigned DESC")->fetchAll();
   $courseBatches = $pdo->query("SELECT cb.*, c.course_name, COUNT(ba.id) as trainee_count FROM course_batches cb JOIN courses c ON cb.course_code = c.course_code LEFT JOIN batch_assignments ba ON cb.course_code = ba.course_code AND cb.batch_name = ba.batch_name GROUP BY cb.id, cb.course_code, cb.batch_name ORDER BY cb.created_at DESC")->fetchAll();
@@ -642,8 +1049,13 @@ try {
   $batchAssignments = $pdo->query("SELECT ba.*, u.first_name, u.last_name, c.course_name FROM batch_assignments ba JOIN users u ON ba.trainee_id = u.user_id JOIN courses c ON ba.course_code = c.course_code ORDER BY ba.date_assigned DESC")->fetchAll();
   $courseMaterials = $pdo->query("SELECT cm.*, c.course_name, u.first_name, u.last_name FROM course_materials cm JOIN courses c ON cm.course_code = c.course_code LEFT JOIN users u ON cm.uploaded_by = u.user_id ORDER BY cm.date_created DESC")->fetchAll();
   $submissions = $pdo->query("SELECT s.*, u.first_name, u.last_name, cm.title as material_title, c.course_name FROM submissions s JOIN users u ON s.trainee_id = u.user_id JOIN course_materials cm ON s.material_id = cm.id JOIN courses c ON cm.course_code = c.course_code ORDER BY s.submitted_at DESC")->fetchAll();
+  $backups = listBackups();
 } catch (PDOException $e) {
   error_log("Database error: " . $e->getMessage());
+}
+
+if (!isset($backups) || !is_array($backups)) {
+  try { $backups = listBackups(); } catch (Exception $e) { $backups = []; }
 }
 
 $totalTrainers = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'trainer' AND status = 'active'")->fetchColumn();
@@ -657,4 +1069,3 @@ $activeTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'tra
 $archivedTraineesCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'trainee' AND status = 'archived'")->fetchColumn();
 
 include __DIR__ . '/views/layout.php';
-?>

@@ -11,8 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(r => r.json())
         .then(d => {
           if (d.success) {
-            alert('Profile updated successfully');
-            setTimeout(() => { window.location.reload(); }, 800);
+            alert('Profile updated successfully')
           } else { alert(d.message || 'Update failed'); }
         });
     });

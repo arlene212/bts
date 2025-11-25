@@ -30,5 +30,4 @@ window.onclick = function(event) {
   if (event.target === alertModal) { closeAlertModal(); }
   if (event.target === confirmModal) { closeConfirmModal(); }
 }
-window.confirm = function(message) { return new Promise((resolve) => { showConfirm('Confirmation', message, () => resolve(true)); setTimeout(() => resolve(false), 100); }); };
 window.alert = function(message) { showAlert('info', 'Notice', message); };

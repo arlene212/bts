@@ -153,7 +153,7 @@ function enrollInCourse(courseCode, courseName) {
           const pendingEl = courseCard.querySelector('.enrollment-status.pending'); 
           if (pendingEl) pendingEl.remove();
         }
-        setTimeout(() => { window.location.href = `${window.location.pathname}?current_tab=enrolled`; }, 1200);
+        // Removed auto redirect to avoid interrupting user actions; stay on current view
       } else {
         showNotification(data.message || 'Enrollment failed. Please try again.', 'error');
         if (enrollBtn) { 
@@ -177,7 +177,7 @@ function unenrollFromCourse(courseCode, button) {
   button.disabled = true; button.textContent = 'Unenrolling...';
   fetch('../guest/handlers/ajax_handlers.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `action=unenroll&course_code=${encodeURIComponent(courseCode)}` })
     .then(response => response.json())
-    .then(data => { if (data.success) { showNotification(data.message, 'success'); setTimeout(() => window.location.href = `${window.location.pathname}?current_tab=enrolled`, 1500); } else { showNotification(data.message, 'error'); button.disabled = false; button.textContent = 'Yes, Unenroll'; } });
+    .then(data => { if (data.success) { showNotification(data.message, 'success'); } else { showNotification(data.message, 'error'); button.disabled = false; button.textContent = 'Yes, Unenroll'; } });
 }
 
 // Initialize enrollment buttons when DOM is ready

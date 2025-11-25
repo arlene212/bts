@@ -53,6 +53,7 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
     .alert-modal-btn-danger:hover { background-color: #c82333; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    * { -webkit-user-select: none; -ms-user-select: none; user-select: none; }
   </style>
 </head>
 <body>
@@ -79,6 +80,7 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
         <a href="?current_tab=courses#courses" class="tab-link<?php echo ($currentTab === 'courses' ? ' active' : ''); ?>" data-tab="courses">Courses</a>
         <a href="?current_tab=enrollments#enrollments" class="tab-link<?php echo ($currentTab === 'enrollments' ? ' active' : ''); ?>" data-tab="enrollments">Enrollments</a>
         <a href="?current_tab=user_logs#user_logs" class="tab-link<?php echo ($currentTab === 'user_logs' ? ' active' : ''); ?>" data-tab="user_logs">User Logs</a>
+        <a href="?current_tab=backup#backup" class="tab-link<?php echo ($currentTab === 'backup' ? ' active' : ''); ?>" data-tab="backup">Backup & Recovery</a>
       </nav>
     </aside>
     <main class="main">
@@ -137,6 +139,7 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
         <?php include __DIR__ . '/sections/courses.php'; ?>
         <?php include __DIR__ . '/sections/enrollments.php'; ?>
         <?php include __DIR__ . '/sections/user_logs.php'; ?>
+        <?php include __DIR__ . '/sections/backup.php'; ?>
 
         <section class="main-content tab-content <?php echo ($currentTab === 'trainers' ? 'active' : ''); ?>" id="trainers">
           <div class="tab-header"><h2>Trainer Management</h2><div class="tab-actions"><button class="create-btn" id="createTrainerBtn">+ Create Trainer</button></div></div>
@@ -306,5 +309,16 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
   <script src="../js/admin/enrollments.js"></script>
   <script src="../js/admin/user.js"></script>
   <script src="../js/admin/batches.js"></script>
+  <script>
+    (function(){
+      function d(e){ e.preventDefault(); return false; }
+      ['copy','cut','paste','contextmenu','selectstart','dragstart'].forEach(function(ev){ document.addEventListener(ev, d, {capture:true}); });
+      document.addEventListener('keydown', function(e){
+        var k = String(e.key || '').toLowerCase();
+        if ((e.ctrlKey || e.metaKey) && ['c','x','v','a','s','p','u'].indexOf(k) !== -1) { e.preventDefault(); }
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['i','j','c','u'].indexOf(k) !== -1)) { e.preventDefault(); }
+      }, true);
+    })();
+  </script>
 </body>
 </html>

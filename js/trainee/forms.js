@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
           if (data.success) {
             alert('Profile updated successfully!');
-            setTimeout(() => { window.location.reload(); }, 800);
           } else { throw new Error(data.message || 'Failed to update profile'); }
         })
         .catch(err => { alert('Error updating profile: ' + err.message); })

@@ -120,7 +120,6 @@ function submitQuizForm(form) {
     .then(data => {
         if (data.success) {
             closeModal('addQuizModal');
-            window.location.reload();
         } else {
             alert('Error creating quiz: ' + data.message);
         }

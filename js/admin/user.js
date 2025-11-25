@@ -16,7 +16,6 @@ function setupUserManagement() {
         .then(d => {
           if (d.success) {
             showAlert('success', 'Profile Updated', 'Your profile has been updated successfully.');
-            setTimeout(() => { window.location.reload(); }, 800);
           } else {
             showAlert('error', 'Update Failed', d.message || 'An error occurred while updating your profile.');
           }
@@ -36,7 +35,7 @@ function setupUserManagement() {
       if (checkedBatches.length) { formData.append('trainer_batches', checkedBatches.join(', ')); }
       fetch('../php/update_user.php', { method: 'POST', body: formData })
         .then(response => response.json())
-        .then(data => { if (data.success) { alert(data.message); window.location.reload(); } else { alert('Error updating trainer: ' + data.message); } })
+        .then(data => { if (data.success) { alert(data.message); } else { alert('Error updating trainer: ' + data.message); } })
         .catch(() => {});
     });
   }
@@ -51,16 +50,16 @@ function setupUserManagement() {
         showConfirm('Confirm Update', 'Save changes to this trainee?', () => {
           fetch('../php/update_user.php', { method: 'POST', body: formData })
             .then(response => response.json())
-            .then(data => { if (data.success) { window.location.reload(); } else { alert('Error updating trainee: ' + (data.message || 'Unknown error')); } })
+            .then(data => { if (data.success) { showAlert('success', 'Trainee Updated', 'Changes saved successfully.'); } else { alert('Error updating trainee: ' + (data.message || 'Unknown error')); } })
             .catch(() => { alert('Network error while updating trainee'); });
         });
       } else {
-        if (!window.confirm || window.confirm('Save changes to this trainee?')) {
+        showConfirm('Confirm Update', 'Save changes to this trainee?', () => {
           fetch('../php/update_user.php', { method: 'POST', body: formData })
             .then(response => response.json())
-            .then(data => { if (data.success) { window.location.reload(); } else { alert('Error updating trainee: ' + (data.message || 'Unknown error')); } })
+            .then(data => { if (data.success) { showAlert('success', 'Trainee Updated', 'Changes saved successfully.'); } else { alert('Error updating trainee: ' + (data.message || 'Unknown error')); } })
             .catch(() => { alert('Network error while updating trainee'); });
-        }
+        });
       }
     });
   }
@@ -168,16 +167,16 @@ function setupUserManagement() {
         showConfirm('Confirm Undrop', 'Undrop this trainee and set status to Active?', () => {
           fetch('../php/update_user.php', { method: 'POST', body: fd })
             .then(r => r.json())
-            .then(d => { if (d.success) { window.location.reload(); } else { alert(d.message || 'Failed to undrop trainee'); } })
+            .then(d => { if (d.success) { showAlert('success', 'Undropped', 'Trainee status set to Active.'); } else { alert(d.message || 'Failed to undrop trainee'); } })
             .catch(() => { alert('Network error while undropping trainee'); });
         });
       } else {
-        if (!window.confirm || window.confirm('Undrop this trainee and set status to Active?')) {
+        showConfirm('Confirm Undrop', 'Undrop this trainee and set status to Active?', () => {
           fetch('../php/update_user.php', { method: 'POST', body: fd })
             .then(r => r.json())
-            .then(d => { if (d.success) { window.location.reload(); } else { alert(d.message || 'Failed to undrop trainee'); } })
+            .then(d => { if (d.success) { showAlert('success', 'Undropped', 'Trainee status set to Active.'); } else { alert(d.message || 'Failed to undrop trainee'); } })
             .catch(() => { alert('Network error while undropping trainee'); });
-        }
+        });
       }
     });
   });

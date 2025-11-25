@@ -14,7 +14,7 @@ document.querySelectorAll('.archive-form').forEach(form => {
     const userId = form.querySelector('input[name="user_id"]').value;
     showConfirm('Archive User', 'Are you sure you want to archive this user?', async () => {
       const result = await ajaxRequest('archive_user', { user_id: userId });
-      if (result.success) { showAlert('success', 'Success', result.message); setTimeout(() => location.reload(), 1500); }
+      if (result.success) { showAlert('success', 'Success', result.message); }
       else { showAlert('error', 'Error', result.message); }
     });
   });

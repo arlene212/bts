@@ -24,7 +24,6 @@ function saveProfileData() {
     .then(data => {
       if (data.success) {
         showNotification(data.message, 'success');
-        setTimeout(() => { window.location.reload(); }, 800);
       } else { showNotification(data.message, 'error'); }
     })
     .catch(() => { showNotification('An error occurred while updating your profile.', 'error'); })
@@ -49,7 +48,7 @@ function setupProfileModal() {
   if (openDeleteModal && deleteAccountModal) openDeleteModal.addEventListener('click', () => openModal(deleteAccountModal));
   if (closeDeleteModalBtn && deleteAccountModal) closeDeleteModalBtn.addEventListener('click', () => closeModal(deleteAccountModal));
   if (cancelDeleteBtn && deleteAccountModal) cancelDeleteBtn.addEventListener('click', () => closeModal(deleteAccountModal));
-  if (confirmDeleteBtn) { confirmDeleteBtn.addEventListener('click', function() { showNotification('Account deletion feature would be implemented with backend integration', 'info'); closeModal(deleteAccountModal); setTimeout(() => { window.location.href = '../landingpage.php'; }, 2000); }); }
+  if (confirmDeleteBtn) { confirmDeleteBtn.addEventListener('click', function() { showNotification('Account deletion feature would be implemented with backend integration', 'info'); closeModal(deleteAccountModal); }); }
   const profileUpload = document.getElementById('profileUpload');
   const changeProfileBtn = document.getElementById('changeProfileBtn');
   const profilePreview = document.getElementById('profilePreview');

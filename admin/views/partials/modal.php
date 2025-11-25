@@ -26,6 +26,15 @@
   </div>
 </div>
 
+<style>
+  .checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .checkbox-group label.day-option { display: inline-flex; align-items: center; cursor: pointer; }
+  .checkbox-group label.day-option input { position: absolute; opacity: 0; pointer-events: none; }
+  .checkbox-group label.day-option span { display: inline-block; padding: 6px 10px; border: 1px solid #ced4da; border-radius: 16px; background: #f8f9fa; color: #333; transition: all 0.15s ease-in-out; min-width: 46px; text-align: center; }
+  .checkbox-group label.day-option input:checked + span { background: #0d6efd; color: #fff; border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13,110,253,0.15); }
+  .checkbox-group label.day-option span:hover { background: #e9ecef; }
+</style>
+
 <div class="modal hidden" id="addAnnouncementModal">
   <div class="modal-content">
     <div class="modal-header"><h2>Add New Announcement</h2><span class="close">&times;</span></div>
@@ -83,7 +92,15 @@
           <div class="form-group"><label for="course_name">Course Name:</label><input type="text" id="course_name" name="course_name" required></div>
           <div class="form-group"><label for="course_code">Course Code:</label><input type="text" id="course_code" name="course_code" required></div>
           <div class="form-group"><label for="course_hours">Course Hours:</label><input type="number" id="course_hours" name="course_hours" required min="1"></div>
-          <div class="form-group"><label for="course_image">Course Image:</label><input type="file" id="course_image" name="course_image" accept="image/*"></div>
+          <div class="form-group">
+            <label for="course_image">Course Image:</label>
+            <div class="file-input-wrapper">
+              <input type="file" id="course_image" name="course_image" accept="image/*" class="form-control">
+              <label for="course_image" class="file-input-label"><i class="fas fa-upload"></i> Choose Image</label>
+            </div>
+            <small class="form-text text-muted">Optional: upload an image for this course</small>
+            <div id="add_course_image_preview" class="image-preview-section"></div>
+          </div>
           <div class="form-group form-group-full"><label for="course_description">Description:</label><textarea id="course_description" name="course_description" rows="3"></textarea></div>
           <div class="form-group form-group-full"><label for="course_learning_outcomes">Learning Outcomes:</label><textarea id="course_learning_outcomes" name="course_learning_outcomes" rows="4" placeholder="Enter learning outcomes for this course (what students will be able to do after completing this course)"></textarea></div>
           <div class="form-row">
@@ -101,6 +118,35 @@
                 <option value="0">No</option>
                 <option value="1">Yes</option>
               </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="schedule_days_per_week">Days per week</label>
+              <select id="schedule_days_per_week" name="schedule_days_per_week" class="form-control">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Days to attend</label>
+              <div class="checkbox-group" id="schedule_days_group">
+                <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Mon"><span>Mon</span></label>
+                <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Tue"><span>Tue</span></label>
+                <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Wed"><span>Wed</span></label>
+                <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Thu"><span>Thu</span></label>
+                <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Fri"><span>Fri</span></label>
+                <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Sat"><span>Sat</span></label>
+                <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Sun"><span>Sun</span></label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="session_hours">Hours per session</label>
+              <input type="number" step="0.5" min="0.5" id="session_hours" name="session_hours" class="form-control" placeholder="e.g., 3">
             </div>
           </div>
           <div class="form-group form-group-full" id="preview_content_group" style="display:none;">
@@ -141,7 +187,51 @@
 </div>
 
 <div class="modal hidden" id="addBatchModal">
-  <div class="modal-content"><div class="modal-header"><h2>Add Course Batch</h2><span class="close">&times;</span></div><form method="POST" id="addBatchForm"><input type="hidden" name="current_tab" value="courses"><div class="modal-body"><div class="form-group"><label for="batch_course_code">Course:</label><select id="batch_course_code" name="batch_course_code" required><option value="">Select a course</option><?php foreach ($courses as $course): ?><option value="<?php echo $course['course_code']; ?>"><?php echo htmlspecialchars($course['course_name'] . ' (' . $course['course_code'] . ')'); ?></option><?php endforeach; ?></select></div><div class="form-group"><label for="batch_name">Batch Name:</label><input type="text" id="batch_name" name="batch_name" required></div><div class="form-group"><label for="batch_description">Description:</label><textarea id="batch_description" name="batch_description" rows="3"></textarea></div></div><div class="modal-footer"><button type="button" class="cancel-btn">Cancel</button><button type="submit" name="add_course_batch" class="submit-btn">Add Batch</button></div></form></div>
+  <div class="modal-content">
+    <div class="modal-header"><h2>Add Course Batch</h2><span class="close">&times;</span></div>
+    <form method="POST" id="addBatchForm">
+      <input type="hidden" name="current_tab" value="courses">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="batch_course_code">Course:</label>
+          <select id="batch_course_code" name="batch_course_code" required>
+            <option value="">Select a course</option>
+            <?php foreach ($courses as $course): ?>
+              <option value="<?php echo $course['course_code']; ?>"
+                data-hours="<?php echo (int)($course['hours'] ?? 0); ?>"
+                data-days-per-week="<?php echo (int)($course['schedule_days_per_week'] ?? 0); ?>"
+                data-session-hours="<?php echo htmlspecialchars($course['session_hours'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                <?php echo htmlspecialchars($course['course_name'] . ' (' . $course['course_code'] . ')'); ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="batch_name">Batch Name:</label>
+          <input type="text" id="batch_name" name="batch_name" required>
+        </div>
+        <div class="form-group">
+          <label for="batch_description">Description:</label>
+          <textarea id="batch_description" name="batch_description" rows="3"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="batch_start_date">Start Date</label>
+            <input type="date" id="batch_start_date" name="batch_start_date" required>
+          </div>
+          <div class="form-group">
+            <label for="batch_end_date">End Date</label>
+            <input type="date" id="batch_end_date" name="batch_end_date" readonly>
+            <small class="form-text">Computed using course hours, days/week, and hours/session</small>
+          </div>
+        </div>
+        <div class="form-group">
+          <div id="batch_schedule_info" class="text-muted"></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button type="button" class="cancel-btn">Cancel</button><button type="submit" name="add_course_batch" class="submit-btn">Add Batch</button></div>
+    </form>
+  </div>
 </div>
 
 <div class="modal hidden" id="editCourseModal">
@@ -161,11 +251,11 @@
       <input type="hidden" id="edit_course_code" name="course_code">
       <input type="hidden" name="current_tab" value="courses">
       <div class="modal-body">
-        <div class="form-section">
-          <div class="section-header">
-            <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
-          </div>
-          <div class="form-row">
+      <div class="form-section">
+        <div class="section-header">
+          <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
+        </div>
+        <div class="form-row">
             <div class="form-group">
               <label for="edit_course_name">Course Name <span class="required">*</span></label>
               <input type="text" id="edit_course_name" name="course_name" required class="form-control">
@@ -247,6 +337,35 @@
               </select>
               <small class="form-text">Type of verification required for enrollment</small>
             </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit_schedule_days_per_week">Days per week</label>
+            <select id="edit_schedule_days_per_week" name="schedule_days_per_week" class="form-control">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Days to attend</label>
+            <div class="checkbox-group" id="edit_schedule_days_group">
+              <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Mon"><span>Mon</span></label>
+              <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Tue"><span>Tue</span></label>
+              <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Wed"><span>Wed</span></label>
+              <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Thu"><span>Thu</span></label>
+              <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Fri"><span>Fri</span></label>
+              <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Sat"><span>Sat</span></label>
+              <label class="day-option"><input type="checkbox" name="schedule_days[]" value="Sun"><span>Sun</span></label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="edit_session_hours">Hours per session</label>
+            <input type="number" step="0.5" min="0.5" id="edit_session_hours" name="session_hours" class="form-control" placeholder="e.g., 3">
           </div>
         </div>
 

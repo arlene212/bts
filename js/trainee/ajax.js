@@ -167,7 +167,7 @@ document.addEventListener('click', function(e) {
     const body = new URLSearchParams({ action: 'cancel_request', request_id: requestId });
     fetch('../trainee/handlers/ajax_handlers.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body })
       .then(response => response.json())
-      .then(data => { if (data.success) { alert('Request canceled'); window.location.reload(); } else { alert(data.message || 'Cancel failed'); e.target.disabled = false; e.target.textContent = 'Cancel'; } })
+      .then(data => { if (data.success) { alert('Request canceled'); } else { alert(data.message || 'Cancel failed'); e.target.disabled = false; e.target.textContent = 'Cancel'; } })
       .catch(() => { alert('Network error'); e.target.disabled = false; e.target.textContent = 'Cancel'; });
   }
 });

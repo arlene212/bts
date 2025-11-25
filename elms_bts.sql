@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Nov 24, 2025 at 02:44 PM
+-- Generation Time: Nov 25, 2025 at 05:51 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -87,6 +87,25 @@ CREATE TABLE `batch_assignments` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `batch_assignment_status`
+--
+
+CREATE TABLE `batch_assignment_status` (
+  `id` int(11) NOT NULL,
+  `course_code` varchar(50) NOT NULL,
+  `batch_name` varchar(100) NOT NULL,
+  `trainer_id` varchar(50) DEFAULT NULL,
+  `trainee_id` varchar(50) DEFAULT NULL,
+  `status` enum('active','archived') NOT NULL,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `assigned_at` timestamp NULL DEFAULT NULL,
+  `archived_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `branches`
 --
 
@@ -157,7 +176,10 @@ CREATE TABLE `courses` (
   `require_verification` tinyint(1) DEFAULT 0,
   `verification_type` enum('email','student_id','phone') DEFAULT 'email',
   `date_created` datetime DEFAULT current_timestamp(),
-  `branch_id` int(11) DEFAULT NULL
+  `branch_id` int(11) DEFAULT NULL,
+  `schedule_days_per_week` int(11) DEFAULT NULL,
+  `schedule_days` text DEFAULT NULL,
+  `session_hours` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -187,7 +209,9 @@ CREATE TABLE `course_batches` (
   `description` text DEFAULT NULL,
   `created_by` varchar(20) NOT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
-  `trainer_id` varchar(50) DEFAULT NULL
+  `trainer_id` varchar(50) DEFAULT NULL,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -592,6 +616,16 @@ ALTER TABLE `batch_assignments`
   ADD KEY `trainer_id` (`trainer_id`);
 
 --
+-- Indexes for table `batch_assignment_status`
+--
+ALTER TABLE `batch_assignment_status`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_trainer` (`trainer_id`),
+  ADD KEY `idx_trainee` (`trainee_id`),
+  ADD KEY `idx_course_batch` (`course_code`,`batch_name`);
+
+--
 -- Indexes for table `branches`
 --
 ALTER TABLE `branches`
@@ -834,6 +868,12 @@ ALTER TABLE `announcements`
 -- AUTO_INCREMENT for table `batch_assignments`
 --
 ALTER TABLE `batch_assignments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `batch_assignment_status`
+--
+ALTER TABLE `batch_assignment_status`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --

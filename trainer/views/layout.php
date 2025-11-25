@@ -18,6 +18,7 @@
 </head>
 
 <body>
+  <style>*{ -webkit-user-select: none; -ms-user-select: none; user-select: none; }</style>
   <div class="container">
     <?php include __DIR__ . '/partials/sidebar.php'; ?>
     <main class="main">
@@ -83,6 +84,17 @@
   <script src="../js/trainer/search.js"></script>
   <script src="../js/trainer/course_details.js"></script>
   <script src="../js/trainer/quizzes.js"></script>
+  <script>
+    (function(){
+      function d(e){ e.preventDefault(); return false; }
+      ['copy','cut','paste','contextmenu','selectstart','dragstart'].forEach(function(ev){ document.addEventListener(ev, d, {capture:true}); });
+      document.addEventListener('keydown', function(e){
+        var k = String(e.key || '').toLowerCase();
+        if ((e.ctrlKey || e.metaKey) && ['c','x','v','a','s','p','u'].indexOf(k) !== -1) { e.preventDefault(); }
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['i','j','c','u'].indexOf(k) !== -1)) { e.preventDefault(); }
+      }, true);
+    })();
+  </script>
 </body>
 
 </html>

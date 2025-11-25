@@ -243,4 +243,229 @@ function cleanupInactiveGuests($pdo)
     error_log("Error cleaning up guests: " . $e->getMessage());
   }
 }
+
+function getBackupDir()
+{
+  return realpath(__DIR__ . '/../../') . DIRECTORY_SEPARATOR . 'backups';
+}
+
+function ensureBackupDir()
+{
+  $dir = getBackupDir();
+  if (!is_dir($dir)) {
+    mkdir($dir, 0777, true);
+  }
+  return $dir;
+}
+
+function listBackups()
+{
+  $dir = ensureBackupDir();
+  $list = [];
+  $entries = @scandir($dir) ?: [];
+  foreach ($entries as $entry) {
+    if ($entry === '.' || $entry === '..') continue;
+    $file = $dir . DIRECTORY_SEPARATOR . $entry;
+    if (is_file($file) && preg_match('/\.sql$/i', $entry)) {
+      $list[] = [
+        'name' => $entry,
+        'path' => $file,
+        'size' => @filesize($file) ?: 0,
+        'mtime' => @filemtime($file) ?: 0
+      ];
+    }
+  }
+  usort($list, function ($a, $b) { return ($b['mtime'] <=> $a['mtime']); });
+  return $list;
+}
+
+function createBackup()
+{
+  require_once __DIR__ . '/../../php/config.php';
+  $dir = ensureBackupDir();
+  $filename = DB_NAME . '_' . date('Ymd_His') . '.sql';
+  $backupPath = $dir . DIRECTORY_SEPARATOR . $filename;
+
+  $mysqldump = 'C:\\xampp\\mysql\\bin\\mysqldump.exe';
+  if (!file_exists($mysqldump)) { $mysqldump = 'mysqldump'; }
+
+  $cmd = '"' . $mysqldump . '"'
+    . ' --host=' . escapeshellarg(DB_HOST)
+    . ' --user=' . escapeshellarg(DB_USER)
+    . ' --password=' . escapeshellarg(DB_PASS)
+    . ' --routines --triggers --events --single-transaction --hex-blob'
+    . ' --databases ' . escapeshellarg(DB_NAME)
+    . ' --result-file=' . escapeshellarg($backupPath);
+
+  $output = [];
+  $exitCode = 0;
+  exec($cmd, $output, $exitCode);
+
+  if ($exitCode === 0 && file_exists($backupPath) && filesize($backupPath) > 0) {
+    return ['success' => true, 'message' => 'Backup created successfully', 'file' => $filename];
+  } else {
+    return ['success' => false, 'message' => 'Backup failed', 'details' => implode("\n", $output)];
+  }
+}
+
+function restoreBackup($fileBaseName)
+{
+  require_once __DIR__ . '/../../php/config.php';
+  $dir = ensureBackupDir();
+  $filePath = realpath($dir . DIRECTORY_SEPARATOR . $fileBaseName);
+  if (!$filePath || strpos($filePath, $dir) !== 0 || !preg_match('/\.sql$/i', $fileBaseName)) {
+    return ['success' => false, 'message' => 'Invalid backup file'];
+  }
+
+  $mysql = 'C:\\xampp\\mysql\\bin\\mysql.exe';
+  if (!file_exists($mysql)) { $mysql = 'mysql'; }
+
+  @set_time_limit(0);
+  $cmd = '"' . $mysql . '"'
+    . ' --host=' . escapeshellarg(DB_HOST)
+    . ' --user=' . escapeshellarg(DB_USER)
+    . ' --password=' . escapeshellarg(DB_PASS)
+    . ' --default-character-set=utf8mb4 '
+    . escapeshellarg(DB_NAME);
+
+  $descriptorspec = [
+    0 => ['pipe', 'r'],
+    1 => ['pipe', 'w'],
+    2 => ['pipe', 'w'],
+  ];
+  $pipes = [];
+  $process = proc_open($cmd, $descriptorspec, $pipes);
+  if (!is_resource($process)) {
+    return ['success' => false, 'message' => 'Restore failed: could not start mysql process'];
+  }
+
+  $fh = fopen($filePath, 'rb');
+  if ($fh) {
+    stream_copy_to_stream($fh, $pipes[0]);
+    fclose($fh);
+  }
+  fclose($pipes[0]);
+  $stdout = stream_get_contents($pipes[1]); fclose($pipes[1]);
+  $stderr = stream_get_contents($pipes[2]); fclose($pipes[2]);
+  $exitCode = proc_close($process);
+  $ok = ($exitCode === 0);
+  return ['success' => $ok, 'message' => $ok ? 'Restore completed' : 'Restore failed', 'details' => trim($stdout . "\n" . $stderr)];
+}
+
+function restoreBackupFromAbsolute($absolutePath)
+{
+  require_once __DIR__ . '/../../php/config.php';
+  $filePath = realpath($absolutePath);
+  if (!$filePath || !preg_match('/\.sql$/i', $filePath) || !file_exists($filePath)) {
+    return ['success' => false, 'message' => 'Invalid backup file path'];
+  }
+  $mysql = 'C:\\xampp\\mysql\\bin\\mysql.exe';
+  if (!file_exists($mysql)) { $mysql = 'mysql'; }
+  @set_time_limit(0);
+  $cmd = '"' . $mysql . '"'
+    . ' --host=' . escapeshellarg(DB_HOST)
+    . ' --user=' . escapeshellarg(DB_USER)
+    . ' --password=' . escapeshellarg(DB_PASS)
+    . ' --default-character-set=utf8mb4 '
+    . escapeshellarg(DB_NAME);
+  $descriptorspec = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+  $pipes = [];
+  $process = proc_open($cmd, $descriptorspec, $pipes);
+  if (!is_resource($process)) { return ['success' => false, 'message' => 'Restore failed: could not start mysql process']; }
+  $fh = fopen($filePath, 'rb');
+  if ($fh) { stream_copy_to_stream($fh, $pipes[0]); fclose($fh); }
+  fclose($pipes[0]);
+  $stdout = stream_get_contents($pipes[1]); fclose($pipes[1]);
+  $stderr = stream_get_contents($pipes[2]); fclose($pipes[2]);
+  $exitCode = proc_close($process);
+  $ok = ($exitCode === 0);
+  return ['success' => $ok, 'message' => $ok ? 'Restore completed' : 'Restore failed', 'details' => trim($stdout . "\n" . $stderr)];
+}
+
+function deleteBackup($fileBaseName)
+{
+  $dir = ensureBackupDir();
+  $filePath = realpath($dir . DIRECTORY_SEPARATOR . $fileBaseName);
+  if (!$filePath || strpos($filePath, $dir) !== 0 || !preg_match('/\.sql$/i', $fileBaseName)) {
+    return ['success' => false, 'message' => 'Invalid backup file'];
+  }
+  if (unlink($filePath)) {
+    return ['success' => true, 'message' => 'Backup deleted'];
+  }
+  return ['success' => false, 'message' => 'Failed to delete backup'];
+}
+
+function purgeDatabaseDataExceptUsers($pdo)
+{
+  require_once __DIR__ . '/../../php/config.php';
+  try {
+    $pdo->beginTransaction();
+    $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
+    $stmt = $pdo->prepare('SELECT TABLE_NAME FROM information_schema.tables WHERE TABLE_SCHEMA = ?');
+    $stmt->execute([DB_NAME]);
+    $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $purged = 0;
+    foreach ($tables as $table) {
+      if (strtolower($table) === 'users') { continue; }
+      $pdo->exec('TRUNCATE TABLE `' . str_replace('`','', $table) . '`');
+      $purged++;
+    }
+    $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
+    $pdo->commit();
+    return ['success' => true, 'message' => 'Purged ' . $purged . ' tables'];
+  } catch (Exception $e) {
+    $pdo->rollBack();
+    return ['success' => false, 'message' => 'Purge failed: ' . $e->getMessage()];
+  }
+}
+
+function autoArchiveEndedBatches($pdo)
+{
+  try {
+    $endedBatches = $pdo->query("SELECT course_code, batch_name, trainer_id, start_date, end_date FROM course_batches WHERE end_date IS NOT NULL AND end_date < CURDATE()")->fetchAll();
+    foreach ($endedBatches as $cb) {
+      // Mark batch archived if column exists
+      try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM course_batches LIKE 'status'");
+        if ($colCheck && $colCheck->rowCount() > 0) {
+          $upd = $pdo->prepare("UPDATE course_batches SET status = 'archived' WHERE course_code = ? AND batch_name = ?");
+          $upd->execute([$cb['course_code'], $cb['batch_name']]);
+        }
+      } catch (Exception $__) {}
+
+      // Write archive status rows to batch_assignment_status table (trainer and trainees)
+      recordBatchStatus($pdo, $cb['course_code'], $cb['batch_name'], ($cb['trainer_id'] ?? null), null, 'archived', ($cb['start_date'] ?? null), ($cb['end_date'] ?? null));
+      try {
+        $traineesStmt = $pdo->prepare("SELECT trainee_id FROM batch_assignments WHERE course_code = ? AND batch_name = ?");
+        $traineesStmt->execute([$cb['course_code'], $cb['batch_name']]);
+        $trainees = $traineesStmt->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($trainees as $tid) {
+          recordBatchStatus($pdo, $cb['course_code'], $cb['batch_name'], null, $tid, 'archived', ($cb['start_date'] ?? null), ($cb['end_date'] ?? null));
+        }
+      } catch (Exception $__) {}
+    }
+  } catch (Exception $e) {}
+}
+
+function hasTable($pdo, $table)
+{
+  try {
+    $stmt = $pdo->prepare("SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?");
+    $stmt->execute([$table]);
+    return (bool)$stmt->fetchColumn();
+  } catch (Exception $__) { return false; }
+}
+
+function recordBatchStatus($pdo, $courseCode, $batchName, $trainerId, $traineeId, $status, $startDate = null, $endDate = null)
+{
+  if (!hasTable($pdo, 'batch_assignment_status')) { return false; }
+  try {
+    $stmt = $pdo->prepare("INSERT INTO batch_assignment_status (course_code, batch_name, trainer_id, trainee_id, status, start_date, end_date, assigned_at, archived_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL)");
+    if ($status === 'archived') {
+      $stmt = $pdo->prepare("INSERT INTO batch_assignment_status (course_code, batch_name, trainer_id, trainee_id, status, start_date, end_date, assigned_at, archived_at) VALUES (?, ?, ?, ?, 'archived', ?, ?, NULL, CURRENT_TIMESTAMP)");
+    }
+    $stmt->execute([$courseCode, $batchName, $trainerId, $traineeId, $status, $startDate, $endDate]);
+    return true;
+  } catch (Exception $__) { return false; }
+}
 ?>
