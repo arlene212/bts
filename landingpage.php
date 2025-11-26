@@ -713,12 +713,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
     <script>
         (function(){
             function d(e){ e.preventDefault(); return false; }
-            ['copy','cut','paste','contextmenu','selectstart','dragstart'].forEach(function(ev){ document.addEventListener(ev, d, {capture:true}); });
-            document.addEventListener('keydown', function(e){
-                var k = String(e.key || '').toLowerCase();
-                if ((e.ctrlKey || e.metaKey) && ['c','x','v','a','s','p','u'].indexOf(k) !== -1) { e.preventDefault(); }
-                if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['i','j','c','u'].indexOf(k) !== -1)) { e.preventDefault(); }
-            }, true);
+            ['copy','cut','paste','selectstart','dragstart'].forEach(function(ev){ document.addEventListener(ev, d, {capture:true}); });
         })();
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Landing page scripts initializing...');

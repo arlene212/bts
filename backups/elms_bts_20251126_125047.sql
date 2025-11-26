@@ -116,6 +116,41 @@ INSERT INTO `announcements` VALUES (1,'Ann','Ann','1000000001','2025-11-19 15:56
 UNLOCK TABLES;
 
 --
+-- Table structure for table `batch_assignment_status`
+--
+
+DROP TABLE IF EXISTS `batch_assignment_status`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `batch_assignment_status` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `course_code` varchar(50) NOT NULL,
+  `batch_name` varchar(100) NOT NULL,
+  `trainer_id` varchar(50) DEFAULT NULL,
+  `trainee_id` varchar(50) DEFAULT NULL,
+  `status` enum('active','archived') NOT NULL,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `assigned_at` timestamp NULL DEFAULT NULL,
+  `archived_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_trainer` (`trainer_id`),
+  KEY `idx_trainee` (`trainee_id`),
+  KEY `idx_course_batch` (`course_code`,`batch_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `batch_assignment_status`
+--
+
+LOCK TABLES `batch_assignment_status` WRITE;
+/*!40000 ALTER TABLE `batch_assignment_status` DISABLE KEYS */;
+/*!40000 ALTER TABLE `batch_assignment_status` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `batch_assignments`
 --
 
@@ -140,7 +175,7 @@ CREATE TABLE `batch_assignments` (
   CONSTRAINT `batch_assignments_ibfk_2` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`),
   CONSTRAINT `batch_assignments_ibfk_3` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`user_id`),
   CONSTRAINT `batch_assignments_ibfk_5` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -149,6 +184,7 @@ CREATE TABLE `batch_assignments` (
 
 LOCK TABLES `batch_assignments` WRITE;
 /*!40000 ALTER TABLE `batch_assignments` DISABLE KEYS */;
+INSERT INTO `batch_assignments` VALUES (8,'31123082','21107477','CC1','B1','2025-11-25 16:50:05','1000000001');
 /*!40000 ALTER TABLE `batch_assignments` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -264,7 +300,7 @@ CREATE TABLE `course_assignments` (
   CONSTRAINT `course_assignments_ibfk_1` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`user_id`),
   CONSTRAINT `course_assignments_ibfk_2` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`),
   CONSTRAINT `course_assignments_ibfk_3` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -273,7 +309,7 @@ CREATE TABLE `course_assignments` (
 
 LOCK TABLES `course_assignments` WRITE;
 /*!40000 ALTER TABLE `course_assignments` DISABLE KEYS */;
-INSERT INTO `course_assignments` VALUES (6,'21107477','NC2','2025-11-19 22:10:00','1000000001');
+INSERT INTO `course_assignments` VALUES (7,'21107477','CC1','2025-11-25 16:49:45','1000000001'),(8,'21107477','NC2','2025-11-25 16:49:45','1000000001');
 /*!40000 ALTER TABLE `course_assignments` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -292,6 +328,8 @@ CREATE TABLE `course_batches` (
   `created_by` varchar(20) NOT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   `trainer_id` varchar(50) DEFAULT NULL,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_batch` (`course_code`,`batch_name`),
   KEY `created_by` (`created_by`),
@@ -299,7 +337,7 @@ CREATE TABLE `course_batches` (
   CONSTRAINT `course_batches_ibfk_1` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`),
   CONSTRAINT `course_batches_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`),
   CONSTRAINT `course_batches_ibfk_3` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -308,7 +346,7 @@ CREATE TABLE `course_batches` (
 
 LOCK TABLES `course_batches` WRITE;
 /*!40000 ALTER TABLE `course_batches` DISABLE KEYS */;
-INSERT INTO `course_batches` VALUES (1,'NC2','Batch 1','First Batch for this course','1000000001','2025-11-19 20:57:00','21107477'),(2,'NC2','Batch 2','2nd batch for this course','1000000001','2025-11-19 21:02:50',NULL);
+INSERT INTO `course_batches` VALUES (1,'NC2','Batch 1','First Batch for this course','1000000001','2025-11-19 20:57:00','21107477',NULL,NULL),(2,'NC2','Batch 2','2nd batch for this course','1000000001','2025-11-19 21:02:50',NULL,NULL,NULL),(5,'CC1','B1','Batch 1','1000000001','2025-11-25 16:37:35','21107477','2025-11-30','2026-05-22');
 /*!40000 ALTER TABLE `course_batches` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -406,12 +444,15 @@ CREATE TABLE `courses` (
   `verification_type` enum('email','student_id','phone') DEFAULT 'email',
   `date_created` datetime DEFAULT current_timestamp(),
   `branch_id` int(11) DEFAULT NULL,
+  `schedule_days_per_week` int(11) DEFAULT NULL,
+  `schedule_days` text DEFAULT NULL,
+  `session_hours` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `course_code` (`course_code`),
   KEY `idx_courses_verification` (`require_verification`,`verification_type`),
   KEY `idx_courses_status` (`course_status`),
   KEY `idx_courses_branch` (`branch_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -420,7 +461,7 @@ CREATE TABLE `courses` (
 
 LOCK TABLES `courses` WRITE;
 /*!40000 ALTER TABLE `courses` DISABLE KEYS */;
-INSERT INTO `courses` VALUES (1,'Name Course','NC2',80,'Nice Course ','','692284547322d_1_bs_W87qsqUHCigj_6wuQLg.png','[{\"type\":\"basic\",\"name\":\"Baic One\",\"description\":\"One Competency\"},{\"type\":\"common\",\"name\":\"Common One\",\"description\":\"Commone One Competency\"},{\"type\":\"core\",\"name\":\"Core One\",\"description\":\"Core One Competency\"}]','active','published',0,'',0,'email','2025-11-07 14:03:42',NULL);
+INSERT INTO `courses` VALUES (1,'Name Course','NC2',80,'Nice Course ','','692284547322d_1_bs_W87qsqUHCigj_6wuQLg.png','[{\"type\":\"basic\",\"name\":\"Baic One\",\"description\":\"One Competency\"},{\"type\":\"common\",\"name\":\"Common One\",\"description\":\"Commone One Competency\"},{\"type\":\"core\",\"name\":\"Core One\",\"description\":\"Core One Competency\"}]','active','published',0,'',0,'email','2025-11-07 14:03:42',NULL,NULL,NULL,NULL),(2,'Cat Course','CC1',150,'Desc','Outcome','','[{\"type\":\"basic\",\"name\":\"Basic Cat\",\"description\":\"Cat Basic\"},{\"type\":\"common\",\"name\":\"Common Cat\",\"description\":\"Cat Common\"},{\"type\":\"core\",\"name\":\"Core Cat\",\"description\":\"Cat Core\"}]','active','published',0,'',0,'email','2025-11-25 16:25:18',NULL,3,'Mon,Wed,Fri',2);
 /*!40000 ALTER TABLE `courses` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -461,7 +502,7 @@ CREATE TABLE `enrollments` (
   CONSTRAINT `enrollments_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `users` (`user_id`),
   CONSTRAINT `enrollments_ibfk_2` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`),
   CONSTRAINT `enrollments_ibfk_3` FOREIGN KEY (`processed_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -470,7 +511,7 @@ CREATE TABLE `enrollments` (
 
 LOCK TABLES `enrollments` WRITE;
 /*!40000 ALTER TABLE `enrollments` DISABLE KEYS */;
-INSERT INTO `enrollments` VALUES (28,'31107421','NC2','Name Course',NULL,'pending',NULL,'','','pending','2025-11-24 14:51:29',NULL,NULL,0.00,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `enrollments` VALUES (28,'31107421','NC2','Name Course',NULL,'approved','You Are now enrolled!!','','','pending','2025-11-24 14:51:29','2025-11-25 16:47:46','1000000001',0.00,NULL,NULL,NULL,NULL,NULL),(30,'31123082','CC1','Cat Course',NULL,'approved',NULL,NULL,NULL,'pending','2025-11-25 16:50:05',NULL,NULL,0.00,NULL,NULL,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `enrollments` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -987,7 +1028,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'1000000001','admin',NULL,'Admin',NULL,'User',NULL,'admin@bts.gov.ph',0,NULL,0,NULL,'$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','1000000001_1763591632.png',1,'active','2025-11-07 21:57:10','2025-11-25 13:36:42',NULL),(2,'21107477','trainer',NULL,'Faucet','Light','Gripo','','gripo.faucet@bts.gov.ph',0,NULL,0,'09692066683','$2y$10$E7tIcO9XNOR8cVS.yN1cfOFTsJtrxUhA7zW4Rj7f4XY8oiuUlZ98S',NULL,1,'active','2025-11-07 13:59:27','2025-11-24 15:03:59','2025-11-07 14:00:32'),(3,'31107421','trainee',NULL,'Erick','N','Gaceta','','gaceta.31107421@bts.gov.ph',0,NULL,0,'09201555544','$2y$10$yskghCf.UGebjmSHhN.IFO5WOnRLox9pZIOkE00WuLA5FmXcsVyz6','profile_31107421_1762531844.png',1,'active','2025-11-07 14:04:20','2025-11-24 13:18:25','2025-11-07 14:15:59'),(4,'411071438','guest',NULL,'Erick','Cats','Gaceta',NULL,'gacetaerick124@gmail.com',0,NULL,0,'09123456789','$2y$10$eRxqt0JxAkl7pz0cTtd62O0pC7QciajHl0JNTxvpNp09cIxfpIC8S','profile_411071438_1763473468.jpg',1,'active','2025-11-07 14:05:31','2025-11-23 09:29:41','2025-11-20 11:13:58'),(6,'31123082','trainee',NULL,'Erick','N','Gaceta','','gaceta.31123082@bts.gov.ph',0,NULL,0,'09684633995','$2y$10$.Dn0./oJDNg9kgv9ttSXjOe0EkFBFY4apV6XFWHXs6KY29nmNP2ym',NULL,1,'active','2025-11-23 12:08:01','2025-11-24 14:53:50','2025-11-23 12:11:53');
+INSERT INTO `users` VALUES (1,'1000000001','admin',NULL,'Admin',NULL,'User',NULL,'admin@bts.gov.ph',0,NULL,0,NULL,'$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','1000000001_1763591632.png',1,'active','2025-11-07 21:57:10','2025-11-26 11:49:38',NULL),(2,'21107477','trainer',NULL,'Faucet','Light','Gripo','','gripo.faucet@bts.gov.ph',0,NULL,0,'09692066683','$2y$10$E7tIcO9XNOR8cVS.yN1cfOFTsJtrxUhA7zW4Rj7f4XY8oiuUlZ98S',NULL,1,'active','2025-11-07 13:59:27','2025-11-24 15:03:59','2025-11-07 14:00:32'),(3,'31107421','trainee',NULL,'Erick','N','Gaceta','','gaceta.31107421@bts.gov.ph',0,NULL,0,'09201555544','$2y$10$yskghCf.UGebjmSHhN.IFO5WOnRLox9pZIOkE00WuLA5FmXcsVyz6','profile_31107421_1762531844.png',1,'active','2025-11-07 14:04:20','2025-11-24 13:18:25','2025-11-07 14:15:59'),(4,'411071438','guest',NULL,'Erick','Cats','Gaceta',NULL,'gacetaerick124@gmail.com',0,NULL,0,'09123456789','$2y$10$eRxqt0JxAkl7pz0cTtd62O0pC7QciajHl0JNTxvpNp09cIxfpIC8S','profile_411071438_1763473468.jpg',1,'active','2025-11-07 14:05:31','2025-11-23 09:29:41','2025-11-20 11:13:58'),(6,'31123082','trainee',NULL,'Erick','N','Gaceta','','gaceta.31123082@bts.gov.ph',0,NULL,0,'09684633995','$2y$10$.Dn0./oJDNg9kgv9ttSXjOe0EkFBFY4apV6XFWHXs6KY29nmNP2ym',NULL,1,'active','2025-11-23 12:08:01','2025-11-24 14:53:50','2025-11-23 12:11:53');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1039,4 +1080,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-11-25 21:45:49
+-- Dump completed on 2025-11-26 19:50:47

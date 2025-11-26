@@ -38,8 +38,8 @@ if (!$guest_id) {
 
 <section class="quizzes-section">
     <div class="section-header">
-        <h2><i class="fas fa-question-circle"></i> Available Quizzes</h2>
-        <p class="section-subtitle">Test your knowledge with interactive quizzes for your enrolled courses</p>
+        <h2><i class="fas fa-tasks"></i> Available Activities</h2>
+        <p class="section-subtitle">Complete interactive activities for your enrolled courses</p>
     </div>
 
     <?php if (empty($enrolledCourses)): ?>
@@ -58,8 +58,8 @@ if (!$guest_id) {
             <div class="empty-icon">
                 <i class="fas fa-clipboard-question"></i>
             </div>
-            <h3>No Quizzes Available</h3>
-            <p>Your enrolled courses don't have any quizzes available yet. Check back soon!</p>
+            <h3>No Activities Available</h3>
+            <p>Your enrolled courses don't have any activities available yet. Check back soon!</p>
             <div class="empty-actions">
                 <a href="?current_tab=courses" class="btn btn-outline-primary">
                     <i class="fas fa-arrow-left"></i> Back to Courses
@@ -101,7 +101,7 @@ if (!$guest_id) {
                         <div class="quiz-stats">
                             <div class="stat">
                                 <i class="fas fa-question-circle"></i>
-                                <span><?php echo $quiz['question_count']; ?> Questions</span>
+                                <span><?php echo $quiz['question_count']; ?> Tasks</span>
                             </div>
                             <div class="stat">
                                 <i class="fas fa-clock"></i>
@@ -138,7 +138,7 @@ if (!$guest_id) {
                     <div class="quiz-actions">
                         <?php if ($quiz['attempt_count'] < $quiz['max_attempts']): ?>
                             <button class="btn btn-primary take-quiz-btn" data-quiz-id="<?php echo $quiz['id']; ?>">
-                                <i class="fas fa-play"></i> Start Quiz
+                                <i class="fas fa-play"></i> Start Activity
                             </button>
                         <?php else: ?>
                             <button class="btn btn-secondary" disabled>
@@ -148,7 +148,7 @@ if (!$guest_id) {
                         
                         <?php if ($quiz['attempt_count'] > 0): ?>
                             <button class="btn btn-outline-primary view-results-btn" data-quiz-id="<?php echo $quiz['id']; ?>">
-                                <i class="fas fa-chart-line"></i> View Results
+                                <i class="fas fa-chart-line"></i> View Activity Results
                             </button>
                         <?php endif; ?>
                     </div>
@@ -162,7 +162,7 @@ if (!$guest_id) {
 <div class="modal hidden" id="quizAttemptModal">
     <div class="modal-content modal-content-large">
         <div class="modal-header">
-            <h2>Quiz Attempt</h2>
+            <h2>Activity Attempt</h2>
             <span class="close">&times;</span>
         </div>
         <div class="modal-body" id="quizAttemptBody">
@@ -170,7 +170,7 @@ if (!$guest_id) {
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" onclick="closeModal('quizAttemptModal')">Cancel</button>
-            <button type="button" class="btn btn-primary" id="submitQuizBtn">Submit Quiz</button>
+            <button type="button" class="btn btn-primary" id="submitQuizBtn">Submit Activity</button>
         </div>
     </div>
 </div>
@@ -179,7 +179,7 @@ if (!$guest_id) {
 <div class="modal hidden" id="quizResultsModal">
     <div class="modal-content modal-content-large">
         <div class="modal-header">
-            <h2>Quiz Results</h2>
+            <h2>Activity Results</h2>
             <span class="close">&times;</span>
         </div>
         <div class="modal-body" id="quizResultsBody">

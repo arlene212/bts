@@ -63,15 +63,15 @@ $currentTab = $_GET['current_tab'] ?? 'quizzes';
 <section class="main-content tab-content <?php echo ($currentTab === 'quizzes' ? 'active' : ''); ?>" id="quizzes">
     <div class="tab-header">
         <div class="header-content">
-            <h2><i class="fas fa-question-circle"></i> Quiz Management</h2>
-            <p class="header-subtitle">Create and manage interactive quizzes for your courses</p>
+            <h2><i class="fas fa-tasks"></i> Activity Management</h2>
+            <p class="header-subtitle">Create and manage interactive activities for your courses</p>
         </div>
         <div class="tab-actions">
             <button class="btn btn-primary" id="addQuizBtn">
-                <i class="fas fa-plus"></i> Create Quiz
+                <i class="fas fa-plus"></i> Create Activity
             </button>
             <button class="btn btn-secondary" id="addQuestionBtn">
-                <i class="fas fa-question"></i> Add Question
+                <i class="fas fa-check"></i> Add Task
             </button>
         </div>
     </div>
@@ -80,13 +80,13 @@ $currentTab = $_GET['current_tab'] ?? 'quizzes';
         <?php if (empty($activeQuizzes)): ?>
             <div class="empty-state">
                 <div class="empty-icon">
-                    <i class="fas fa-question-circle"></i>
+                    <i class="fas fa-tasks"></i>
                 </div>
-                <h3>No Quizzes Found</h3>
-                <p>Create your first quiz to start assessing your students' knowledge and progress.</p>
+                <h3>No Activities Found</h3>
+                <p>Create your first activity to start assessing your students' knowledge and progress.</p>
                 <div class="empty-actions">
                     <button class="btn btn-primary" onclick="openModal('addQuizModal')">
-                        <i class="fas fa-plus"></i> Create Your First Quiz
+                        <i class="fas fa-plus"></i> Create Your First Activity
                     </button>
                     <button class="btn btn-outline-secondary" onclick="showHelp()">
                         <i class="fas fa-info-circle"></i> Learn More
@@ -133,8 +133,8 @@ $currentTab = $_GET['current_tab'] ?? 'quizzes';
 
                         <div class="quiz-stats">
                             <div class="stat">
-                                <i class="fas fa-question-circle"></i>
-                                <span><?php echo $quiz['question_count']; ?> Questions</span>
+                                <i class="fas fa-tasks"></i>
+                                <span><?php echo $quiz['question_count']; ?> Tasks</span>
                             </div>
                             <div class="stat">
                                 <i class="fas fa-clock"></i>
@@ -182,31 +182,31 @@ $currentTab = $_GET['current_tab'] ?? 'quizzes';
                         <button class="btn btn-primary view-questions-btn"
                             data-quiz-id="<?php echo $quiz['id']; ?>"
                             data-quiz-title="<?php echo htmlspecialchars($quiz['title']); ?>"
-                            title="Manage questions">
-                            <i class="fas fa-list"></i> Questions
+                            title="Manage tasks">
+                            <i class="fas fa-list"></i> Tasks
                         </button>
                         <?php if ($quiz['status'] === 'draft'): ?>
                         <button class="btn btn-success publish-quiz-btn"
                             data-quiz-id="<?php echo $quiz['id']; ?>"
-                            title="Publish this quiz">
+                            title="Publish this activity">
                             <i class="fas fa-globe"></i> Publish
                         </button>
                         <?php endif; ?>
                         <?php if ($quiz['status'] !== 'archived'): ?>
                         <button class="btn btn-outline-secondary archive-quiz-btn"
                             data-quiz-id="<?php echo $quiz['id']; ?>"
-                            title="Archive this quiz">
+                            title="Archive this activity">
                             <i class="fas fa-archive"></i> Archive
                         </button>
                         <?php endif; ?>
                         <button class="btn btn-success view-results-btn"
                             data-quiz-id="<?php echo $quiz['id']; ?>"
-                            title="View student results">
+                            title="View activity results">
                             <i class="fas fa-chart-bar"></i> Results
                         </button>
                         <button class="btn btn-info duplicate-quiz-btn"
                             data-quiz-id="<?php echo $quiz['id']; ?>"
-                            title="Duplicate this quiz">
+                            title="Duplicate this activity">
                             <i class="fas fa-copy"></i> Duplicate
                         </button>
                     </div>
@@ -218,8 +218,8 @@ $currentTab = $_GET['current_tab'] ?? 'quizzes';
     <div class="archived-section">
         <div class="tab-header" style="margin-top: 24px;">
             <div class="header-content">
-                <h3><i class="fas fa-archive"></i> Archived Quizzes</h3>
-                <p class="header-subtitle">Quizzes that are no longer available to trainees</p>
+                <h3><i class="fas fa-archive"></i> Archived Activities</h3>
+                <p class="header-subtitle">Activities that are no longer available to trainees</p>
             </div>
         </div>
         <div class="quizzes-grid">
@@ -228,8 +228,8 @@ $currentTab = $_GET['current_tab'] ?? 'quizzes';
                     <div class="empty-icon">
                         <i class="fas fa-archive"></i>
                     </div>
-                    <h3>No Archived Quizzes</h3>
-                    <p>Archived quizzes will appear here for reference.</p>
+                    <h3>No Archived Activities</h3>
+                    <p>Archived activities will appear here for reference.</p>
                 </div>
             <?php else: ?>
                 <?php foreach ($archivedQuizzes as $index => $quiz): ?>
@@ -383,11 +383,29 @@ document.addEventListener('DOMContentLoaded', function() {
         addQuizForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const fd = new FormData(addQuizForm);
-            const isEdit = addQuizForm.dataset.mode === 'edit' && fd.get('quiz_id');
-            fd.append('action', isEdit ? 'update_quiz' : 'create_quiz');
+            const quizIdField = addQuizForm.querySelector('input[name="quiz_id"]');
+            const quizIdVal = quizIdField ? quizIdField.value : '';
+            const isEdit = addQuizForm.dataset.mode === 'edit' && !!quizIdVal;
+            if (fd.has('action')) { fd.delete('action'); }
+            if (isEdit) {
+              fd.set('action', 'update_quiz');
+              fd.set('quiz_id', quizIdVal);
+            } else {
+              fd.set('action', 'create_quiz');
+            }
             fetch('../trainer/handlers/quiz_handler.php', { method:'POST', body: fd })
               .then(r=>r.json())
-              .then(data=>{ if (data.success) { alert(isEdit?'Quiz updated successfully':'Quiz created successfully'); location.reload(); } else { alert(data.message||'Error'); } })
+              .then(data=>{
+                if (data.success) {
+                  alert(isEdit ? 'Activity updated successfully' : 'Activity created successfully');
+                  if (confirm('Reload the page to refresh the activity list?')) {
+                    location.reload();
+                  } else {
+                    const modal = document.getElementById('addQuizModal');
+                    if (modal) { modal.style.display='none'; modal.classList.add('hidden'); }
+                  }
+                } else { alert(data.message||'Error'); }
+              })
               .catch(()=>alert('Request failed'));
         });
     }
@@ -565,20 +583,20 @@ function showHelp() {
 
 <!-- Add Quiz Modal -->
 
-<div class="modal hidden" id="addQuizModal" style="position:fixed;inset:0;z-index:1000;display:none;align-items:flex-start;justify-content:center;overflow:auto;background:rgba(0,0,0,0.3)">
+<div class="modal hidden" id="addQuizModal" style="position:fixed;inset:0;z-index:1000;display:none;align-items:flex-start;justify-content:center;overflow:auto;">
     <div class="modal-content modal-content-large" style="max-height:85vh;overflow:auto;margin:40px auto;width:95%;max-width:900px">
-        <div class="modal-header">
-            <h2>Create New Quiz</h2>
+    <div class="modal-header">
+            <h2>Create New Activity</h2>
             <span class="close">&times;</span>
         </div>
         <form id="addQuizForm">
             <div class="modal-body">
                 <div id="quizFormErrors" class="form-errors hidden"></div>
-                <div class="form-section">
-                    <div class="form-group">
-                        <label for="quiz_title">Quiz Title <span class="required">*</span></label>
-                        <input type="text" id="quiz_title" name="quiz_title" required class="form-control">
-                    </div>
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="quiz_title">Activity Title <span class="required">*</span></label>
+                    <input type="text" id="quiz_title" name="quiz_title" required class="form-control">
+                </div>
 
                     <div class="form-group">
                         <label for="quiz_course">Course <span class="required">*</span></label>
@@ -593,8 +611,17 @@ function showHelp() {
                     </div>
 
                     <div class="form-group">
+                        <label for="quiz_activity_type">Activity Type <span class="required">*</span></label>
+                        <select id="quiz_activity_type" name="activity_type" required class="form-control">
+                            <option value="quiz" selected>Quiz</option>
+                            <option value="activity">Activity</option>
+                            <option value="exam">Exam</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label for="quiz_description">Description</label>
-                        <textarea id="quiz_description" name="quiz_description" rows="3" class="form-control" placeholder="Describe the purpose and content of this quiz..."></textarea>
+                        <textarea id="quiz_description" name="quiz_description" rows="3" class="form-control" placeholder="Describe the purpose and content of this activity..."></textarea>
                     </div>
                     <div class="form-group">
                         <label for="quiz_due_date">Due Date</label>
@@ -603,7 +630,7 @@ function showHelp() {
                 </div>
 
                 <div class="form-section">
-                    <h4>Quiz Settings</h4>
+                    <h4>Activity Settings</h4>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="quiz_time_limit">Time Limit (minutes)</label>
@@ -640,10 +667,9 @@ function showHelp() {
                     </div>
                 </div>
             </div>
-
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary cancel-btn">Cancel</button>
-                <button type="submit" class="btn btn-primary submit-btn">Create Quiz</button>
+                <button type="submit" class="btn btn-primary submit-btn">Create Activity</button>
             </div>
         </form>
     </div>
@@ -652,8 +678,8 @@ function showHelp() {
 <!-- Add Question Modal -->
 <div class="modal hidden" id="addQuestionModal">
     <div class="modal-content modal-content-large">
-        <div class="modal-header">
-            <h2>Add Quiz Question</h2>
+    <div class="modal-header">
+            <h2>Add Activity Question</h2>
             <span class="close">&times;</span>
         </div>
         <form id="addQuestionForm">
@@ -661,7 +687,7 @@ function showHelp() {
                 <div id="questionFormErrors" class="form-errors hidden"></div>
                 <div class="form-section">
                     <div class="form-group">
-                        <label for="question_quiz">Select Quiz <span class="required">*</span></label>
+                        <label for="question_quiz">Select Activity <span class="required">*</span></label>
                         <select id="question_quiz" name="question_quiz" required class="form-control">
                             <option value="">Select Quiz</option>
                             <?php foreach ($quizzes as $quiz): ?>

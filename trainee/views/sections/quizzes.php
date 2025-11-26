@@ -37,8 +37,8 @@ if (!$trainee_id) {
 
 <section class="quizzes-section">
     <div class="section-header">
-        <h2><i class="fas fa-question-circle"></i> Available Quizzes</h2>
-        <p class="section-subtitle">Test your knowledge and track your progress with interactive quizzes</p>
+        <h2><i class="fas fa-tasks"></i> Available Activities</h2>
+        <p class="section-subtitle">Complete activities and track your progress</p>
     </div>
 
     <?php if (empty($enrolledCourses)): ?>
@@ -53,8 +53,8 @@ if (!$trainee_id) {
     <?php elseif (empty($quizzes)): ?>
         <div class="empty-state">
             <i class="fas fa-clipboard-question"></i>
-            <h3>No Quizzes Available</h3>
-            <p>Your enrolled courses don't have any quizzes yet. Check back later for new assessments.</p>
+            <h3>No Activities Available</h3>
+            <p>Your enrolled courses don't have any activities yet. Check back later for new tasks.</p>
             <a href="?current_tab=courses" class="btn btn-outline-primary">
                 <i class="fas fa-arrow-left"></i> Back to Courses
             </a>
@@ -80,7 +80,7 @@ if (!$trainee_id) {
                     <div class="quiz-stats">
                         <div class="stat">
                             <i class="fas fa-question"></i>
-                            <span><?php echo $quiz['question_count']; ?> Questions</span>
+                            <span><?php echo $quiz['question_count']; ?> Tasks</span>
                         </div>
                         <div class="stat">
                             <i class="fas fa-clock"></i>
@@ -112,7 +112,7 @@ if (!$trainee_id) {
                     <div class="quiz-actions">
                         <?php if ($quiz['attempt_count'] < $quiz['max_attempts']): ?>
                             <button class="btn btn-primary take-quiz-btn" data-quiz-id="<?php echo $quiz['id']; ?>">
-                                <i class="fas fa-play"></i> Start Quiz
+                                <i class="fas fa-play"></i> Start Activity
                             </button>
                         <?php else: ?>
                             <button class="btn btn-secondary" disabled>
@@ -122,7 +122,7 @@ if (!$trainee_id) {
                         
                         <?php if ($quiz['attempt_count'] > 0): ?>
                             <button class="btn btn-outline-primary view-results-btn" data-quiz-id="<?php echo $quiz['id']; ?>">
-                                <i class="fas fa-chart-bar"></i> View Results
+                                <i class="fas fa-chart-bar"></i> View Activity Results
                             </button>
                         <?php endif; ?>
                     </div>
@@ -136,7 +136,7 @@ if (!$trainee_id) {
 <div class="modal hidden" id="quizAttemptModal">
     <div class="modal-content modal-content-large quiz-modal">
         <div class="modal-header quiz-modal-header">
-            <h2><i class="fas fa-play-circle"></i> Quiz Attempt</h2>
+            <h2><i class="fas fa-play-circle"></i> Activity Attempt</h2>
             <span class="close">&times;</span>
         </div>
         <div class="modal-body quiz-modal-body" id="quizAttemptBody">
@@ -147,7 +147,7 @@ if (!$trainee_id) {
                 <i class="fas fa-times"></i> Cancel
             </button>
             <button type="button" class="btn btn-primary" id="submitQuizBtn">
-                <i class="fas fa-paper-plane"></i> Submit Quiz
+                <i class="fas fa-paper-plane"></i> Submit Activity
             </button>
         </div>
     </div>
@@ -157,7 +157,7 @@ if (!$trainee_id) {
 <div class="modal hidden" id="quizResultsModal">
     <div class="modal-content modal-content-large quiz-results-modal">
         <div class="modal-header quiz-results-header">
-            <h2><i class="fas fa-chart-line"></i> Quiz Results</h2>
+            <h2><i class="fas fa-chart-line"></i> Activity Results</h2>
             <span class="close">&times;</span>
         </div>
         <div class="modal-body quiz-results-body" id="quizResultsBody">

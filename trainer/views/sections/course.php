@@ -36,3 +36,34 @@
   </div>
   <div id="submissions-view" class="detail-view"><div class="submissions-section-main"><h3>Activity Submissions</h3><div id="submissions-list"></div></div></div>
 </section>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const toggleWrapper = document.querySelector('#courses .course-detail-toggle');
+  if (!toggleWrapper) return;
+  const btns = toggleWrapper.querySelectorAll('.switch-btn');
+  const switchInner = toggleWrapper.querySelector('.switch-inner');
+  function showView(key){
+    const views = document.querySelectorAll('#courses .detail-view');
+    views.forEach(v => v.classList.remove('active'));
+    const target = document.getElementById(key + '-view');
+    if (target) target.classList.add('active');
+  }
+  function setActiveBtn(btn){
+    btns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (switchInner) {
+      const idx = Array.from(btns).indexOf(btn);
+      switchInner.style.transform = 'translateX(' + (idx * 100) + '%)';
+    }
+  }
+  btns.forEach(btn => {
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      const key = this.dataset.view;
+      if (!key) return;
+      setActiveBtn(this);
+      showView(key);
+    });
+  });
+});
+</script>

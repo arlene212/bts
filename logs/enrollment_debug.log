@@ -105,3 +105,41 @@
 [2025-11-24 15:51:29] Course name update result: success
 [2025-11-24 15:51:29] Final enrollment check - count: 1
 [2025-11-24 15:51:29] Enrollment successful, sending response: {"success":true,"message":"Your enrollment request has been submitted successfully and is pending trainer approval.","verification_required":0,"enrollment_count":1}
+[2025-11-26 12:59:01] Enhanced enrollment request received
+[2025-11-26 12:59:01] POST data: Array
+(
+    [course_code] => NC2
+    [action] => enroll
+)
+
+[2025-11-26 12:59:01] Session data: Array
+(
+    [user] => Array
+        (
+            [id] => 4
+            [user_id] => 411071438
+            [role] => guest
+            [first_name] => Erick
+            [last_name] => Gaceta
+            [email] => gacetaerick124@gmail.com
+            [contact_number] => 09123456789
+            [profile_picture] => 
+            [password_changed_at] => 2025-11-20 11:13:58
+        )
+
+)
+
+[2025-11-26 12:59:01] Login check passed - proceeding with enrollment
+[2025-11-26 12:59:01] Database connection test: successful
+[2025-11-26 12:59:01] Creating new enrollment request for trainee_id: 411071438, course_code: NC2
+[2025-11-26 12:59:01] Enrollment insert result: success
+[2025-11-26 12:59:01] New enrollment ID: 31
+[2025-11-26 12:59:01] Enrollment verification: Array
+(
+    [id] => 31
+    [status] => pending
+)
+
+[2025-11-26 12:59:01] Course name update result: success
+[2025-11-26 12:59:01] Final enrollment check - count: 1
+[2025-11-26 12:59:01] Enrollment successful, sending response: {"success":true,"message":"Your enrollment request has been submitted successfully and is pending trainer approval.","verification_required":0,"enrollment_count":1}

@@ -499,6 +499,12 @@ function viewGradeDetails(gradeId) {
   
   const modal = document.getElementById('gradeDetailsModal');
   const content = document.getElementById('gradeDetailsContent');
+  const titleEl = modal.querySelector('.modal-header h3');
+  if (titleEl) titleEl.textContent = 'Grade Details';
+  const saveBtn = document.getElementById('saveGradeChanges');
+  const cancelBtn = document.getElementById('cancelGradeEdit');
+  if (saveBtn) { saveBtn.style.display = 'none'; saveBtn.onclick = null; }
+  if (cancelBtn) { cancelBtn.textContent = 'Close'; cancelBtn.style.display = 'inline-flex'; cancelBtn.onclick = function(){ closeModal(modal); }; }
   
   content.innerHTML = `
     <div class="grade-details">
@@ -551,9 +557,73 @@ function viewGradeDetails(gradeId) {
 function editGrade(gradeId) {
   const grade = filteredGrades.find(g => g.id === gradeId);
   if (!grade) return;
-  
-  // Implementation for grade editing
-  showNotification('Grade editing functionality will be implemented', 'info');
+  const modal = document.getElementById('gradeDetailsModal');
+  const content = document.getElementById('gradeDetailsContent');
+  const titleEl = modal.querySelector('.modal-header h3');
+  if (titleEl) titleEl.textContent = 'Edit Grade';
+  const saveBtn = document.getElementById('saveGradeChanges');
+  const cancelBtn = document.getElementById('cancelGradeEdit');
+  content.innerHTML = `
+    <form id="editGradeForm">
+      <div class="grade-details">
+        <div class="student-details">
+          <h4>${escapeHtml(grade.student_name)}</h4>
+          <p><strong>Student ID:</strong> ${escapeHtml(grade.student_id)}</p>
+          <p><strong>Course:</strong> ${escapeHtml(grade.course_name)}</p>
+          <p><strong>Activity:</strong> ${escapeHtml(grade.activity_name)}</p>
+        </div>
+        <div class="grade-breakdown">
+          <h5>Edit Grade</h5>
+          <div class="grade-info">
+            <div class="grade-item">
+              <label>Score:</label>
+              <input type="number" name="score" class="form-control" min="0" step="0.01" value="${grade.score}">
+            </div>
+            <div class="grade-item">
+              <label>Max Score:</label>
+              <input type="number" name="max_score" class="form-control" min="1" step="1" value="${grade.max_score}">
+            </div>
+            <div class="grade-item">
+              <label>Feedback:</label>
+              <textarea name="feedback" rows="3" class="form-control">${escapeHtml(grade.feedback || '')}</textarea>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" name="grade_id" value="${grade.id}">
+      </div>
+    </form>
+  `;
+  if (saveBtn) {
+    saveBtn.style.display = 'inline-flex';
+    saveBtn.onclick = function() {
+      const form = document.getElementById('editGradeForm');
+      const fd = new FormData(form);
+      fd.append('action', 'update_grade');
+      fetch('../trainer/handlers/grade_handler.php', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            // update local data
+            const idx = filteredGrades.findIndex(g => g.id === grade.id);
+            if (idx !== -1) {
+              filteredGrades[idx].score = parseFloat(fd.get('score'));
+              filteredGrades[idx].max_score = parseFloat(fd.get('max_score'));
+              filteredGrades[idx].percentage = (filteredGrades[idx].score / filteredGrades[idx].max_score * 100).toFixed(1);
+              filteredGrades[idx].feedback = fd.get('feedback');
+              updateGradesTable();
+              updateSummaryCards();
+            }
+            showNotification('Grade updated successfully', 'success');
+            closeModal(modal);
+          } else {
+            showNotification(data.message || 'Failed to update grade', 'error');
+          }
+        })
+        .catch(() => showNotification('Request failed', 'error'));
+    };
+  }
+  if (cancelBtn) { cancelBtn.textContent = 'Cancel'; cancelBtn.style.display = 'inline-flex'; cancelBtn.onclick = function(){ closeModal(modal); }; }
+  openModal(modal);
 }
 
 function exportGrades() {
@@ -590,14 +660,14 @@ function showNotification(message, type = 'info') {
 function openModal(modal) {
   if (modal) {
     modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    modal.style.display = 'flex';
   }
 }
 
 function closeModal(modal) {
   if (modal) {
     modal.classList.add('hidden');
-    document.body.style.overflow = '';
+    modal.style.display = 'none';
   }
 }
 

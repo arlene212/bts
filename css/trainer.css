@@ -2136,8 +2136,6 @@ body::before {
   left: 0;
   width: 100%;
   height: max-content;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(5px);
   z-index: 1000;
   padding: var(--spacing-4);
   opacity: 1;

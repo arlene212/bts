@@ -17,8 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
+    $action = $_POST['action'] ?? '';
+    if ($action === 'create_quiz' && !empty($_POST['quiz_id'])) { $action = 'update_quiz'; }
     // Create Quiz
-    if (isset($_POST['action']) && $_POST['action'] === 'create_quiz') {
+    if ($action === 'create_quiz') {
         $title = $_POST['quiz_title'] ?? '';
         $courseCode = $_POST['quiz_course'] ?? '';
         $description = $_POST['quiz_description'] ?? '';
@@ -61,7 +63,7 @@ try {
         exit;
     }
     
-    if (isset($_POST['action']) && $_POST['action'] === 'update_quiz') {
+    if ($action === 'update_quiz') {
         $quizId = $_POST['quiz_id'] ?? '';
         $title = $_POST['quiz_title'] ?? '';
         $courseCode = $_POST['quiz_course'] ?? '';
@@ -72,14 +74,14 @@ try {
         $isRandomized = isset($_POST['quiz_randomized']) ? 1 : 0;
         $showCorrectAnswers = isset($_POST['quiz_show_answers']) ? 1 : 0;
         $dueDateRaw = $_POST['quiz_due_date'] ?? '';
-        if (empty($quizId)) { echo json_encode(['success'=>false,'message'=>'Quiz ID is required']); exit; }
-        if (empty($title) || empty($courseCode)) { echo json_encode(['success'=>false,'message'=>'Title and course are required']); exit; }
-        $checkStmt = $pdo->prepare("SELECT q.id FROM quizzes q JOIN course_assignments ca ON q.course_code = ca.course_code WHERE q.id = ? AND ca.trainer_id = ?");
-        $checkStmt->execute([$quizId, $user['user_id']]);
-        if (!$checkStmt->fetch()) { echo json_encode(['success'=>false,'message'=>'You do not have access to this quiz']); exit; }
-        $courseAccess = $pdo->prepare("SELECT id FROM course_assignments WHERE trainer_id = ? AND course_code = ?");
-        $courseAccess->execute([$user['user_id'], $courseCode]);
-        if (!$courseAccess->fetch()) { echo json_encode(['success'=>false,'message'=>'You do not have access to the selected course']); exit; }
+        
+        if (!$quizId || !$title || !$courseCode) { echo json_encode(['success'=>false,'message'=>'Missing data']); exit; }
+        $own = $pdo->prepare("SELECT 1 FROM quizzes q JOIN course_assignments ca ON q.course_code = ca.course_code WHERE q.id = ? AND ca.trainer_id = ? LIMIT 1");
+        $own->execute([$quizId, $user['user_id']]);
+        if (!$own->fetchColumn()) { echo json_encode(['success'=>false,'message'=>'Access denied']); exit; }
+        $courseOk = $pdo->prepare("SELECT 1 FROM course_assignments WHERE trainer_id = ? AND course_code = ? LIMIT 1");
+        $courseOk->execute([$user['user_id'], $courseCode]);
+        if (!$courseOk->fetchColumn()) { echo json_encode(['success'=>false,'message'=>'Access denied for course']); exit; }
         $upd = $pdo->prepare("UPDATE quizzes SET course_code = ?, title = ?, description = ?, time_limit = ?, max_attempts = ?, passing_score = ?, is_randomized = ?, show_correct_answers = ?, updated_at = NOW() WHERE id = ?");
         $upd->execute([$courseCode, $title, $description, $timeLimit, $maxAttempts, $passingScore, $isRandomized, $showCorrectAnswers, $quizId]);
         if (!empty($dueDateRaw)) {

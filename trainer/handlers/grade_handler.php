@@ -64,7 +64,7 @@ try {
         exit;
     }
 
-    if ($action === 'export') {
+  if ($action === 'export') {
         $courseCode = $_GET['course_code'] ?? '';
         $stmtSql = "SELECT qa.id, qa.quiz_id, qa.trainee_id, qa.score, qa.max_score, qa.completed_at, qa.time_spent, qa.attempt_number,
                            u.first_name, u.last_name, u.user_id, q.title AS quiz_title, q.course_code, c.course_name
@@ -100,9 +100,32 @@ try {
                 $r['completed_at'],
             ]);
         }
-        fclose($out);
-        exit;
+    fclose($out);
+    exit;
+  }
+
+  if ($action === 'update_grade') {
+    $gradeId = isset($_POST['grade_id']) ? (int)$_POST['grade_id'] : 0;
+    $points = isset($_POST['score']) ? (float)$_POST['score'] : 0.0;
+    $max = isset($_POST['max_score']) ? (int)$_POST['max_score'] : 0;
+    if ($gradeId <= 0 || $max <= 0 || $points < 0) {
+      echo json_encode(['success' => false, 'message' => 'Invalid input']);
+      exit;
     }
+    // Ensure trainer owns the course for this attempt
+    $ownStmt = $pdo->prepare("SELECT qa.id, q.course_code FROM quiz_attempts qa JOIN quizzes q ON qa.quiz_id = q.id WHERE qa.id = ? AND q.course_code IN (SELECT course_code FROM course_assignments WHERE trainer_id = ?)");
+    $ownStmt->execute([$gradeId, $user['user_id']]);
+    $row = $ownStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+      echo json_encode(['success' => false, 'message' => 'Unauthorized or grade not found']);
+      exit;
+    }
+    $pct = max(0, min(100, ($points / $max) * 100));
+    $upd = $pdo->prepare("UPDATE quiz_attempts SET score = ?, max_score = ? WHERE id = ?");
+    $upd->execute([$pct, $max, $gradeId]);
+    echo json_encode(['success' => true, 'percentage' => round($pct, 1)]);
+    exit;
+  }
 
     echo json_encode(['success' => false, 'message' => 'Invalid action']);
 } catch (Exception $e) {
