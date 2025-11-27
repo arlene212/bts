@@ -57,3 +57,39 @@
     </div>
   </div>
 </section>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('#offered-courses .enroll-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const code = this.getAttribute('data-course-code');
+      const name = this.getAttribute('data-course-name');
+      if (!code) { alert('Invalid course'); return; }
+      const original = this.innerHTML;
+      this.disabled = true;
+      this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+      const fd = new URLSearchParams();
+      fd.append('action','request_enroll');
+      fd.append('course_code', code);
+      fd.append('course_name', name || '');
+      fetch('../trainee/handlers/enrollment_handler.php', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/x-www-form-urlencoded' },
+        body: fd.toString()
+      }).then(r=>r.json())
+        .then(data=>{
+          if (data.success) {
+            const status = document.createElement('span');
+            status.className = 'status-badge status-pending';
+            status.innerHTML = '<i class="fas fa-clock"></i> Request Pending';
+            const actions = this.closest('.course-actions');
+            if (actions) { actions.innerHTML = ''; actions.appendChild(status); }
+          } else {
+            alert(data.message || 'Failed to send request');
+            this.disabled = false; this.innerHTML = original;
+          }
+        })
+        .catch(()=>{ alert('Request failed'); this.disabled = false; this.innerHTML = original; });
+    });
+  });
+});
+</script>

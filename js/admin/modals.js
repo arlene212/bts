@@ -10,7 +10,7 @@ function showAlert(type, title, message) {
   body.innerHTML = message;
   modal.style.display = 'block';
 }
-function closeAlertModal() { document.getElementById('alertModal').style.display = 'none'; }
+function closeAlertModal() { document.getElementById('alertModal').style.display = 'none'; window.location.reload(); }
 function showConfirm(title, message, onConfirm) {
   const modal = document.getElementById('confirmModal');
   const titleEl = document.getElementById('confirmTitle');

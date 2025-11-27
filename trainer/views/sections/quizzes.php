@@ -57,7 +57,7 @@ try {
     $quizzes = [];
 }
 
-$currentTab = $_GET['current_tab'] ?? 'quizzes';
+ 
 ?>
 
 <section class="main-content tab-content <?php echo ($currentTab === 'quizzes' ? 'active' : ''); ?>" id="quizzes">

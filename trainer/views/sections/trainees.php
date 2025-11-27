@@ -7,6 +7,7 @@
   </div>
   <div class="search-container">
     <form method="GET" action="index.php#trainees" id="trainees-search-form">
+      <input type="hidden" name="current_tab" value="trainees">
       <input type="hidden" name="trainee_page" value="1">
       <div class="row g-3">
         <div class="col-md-6">
@@ -31,7 +32,7 @@
         </div>
       </div>
       <?php if (!empty($traineeSearch) || $traineeStatus !== 'active'): ?>
-        <a href="index.php?trainee_page=1&trainee_status=active#trainees" class="btn btn-outline-secondary btn-ripple mt-2">Clear Filters</a>
+        <a href="index.php?current_tab=trainees&trainee_page=1&trainee_status=active#trainees" class="btn btn-outline-secondary btn-ripple mt-2">Clear Filters</a>
       <?php endif; ?>
     </form>
   </div>
@@ -82,7 +83,7 @@
       </td></tr>
     <?php endif; ?>
   </tbody></table></div>
-  <?php if ($totalTraineePages > 1): ?><div class="pagination"><?php for ($i = 1; $i <= $totalTraineePages; $i++): ?><a href="index.php?trainee_page=<?php echo $i; ?>&trainee_search=<?php echo urlencode($traineeSearch); ?>&trainee_status=<?php echo urlencode($traineeStatus); ?>#trainees" class="btn btn-sm <?php echo $i == $traineePage ? 'btn-primary' : 'btn-outline-primary'; ?> btn-ripple"><?php echo $i; ?></a><?php endfor; ?></div><?php endif; ?>
+  <?php if ($totalTraineePages > 1): ?><div class="pagination"><?php for ($i = 1; $i <= $totalTraineePages; $i++): ?><a href="index.php?current_tab=trainees&trainee_page=<?php echo $i; ?>&trainee_search=<?php echo urlencode($traineeSearch); ?>&trainee_status=<?php echo urlencode($traineeStatus); ?>#trainees" class="btn btn-sm <?php echo $i == $traineePage ? 'btn-primary' : 'btn-outline-primary'; ?> btn-ripple"><?php echo $i; ?></a><?php endfor; ?></div><?php endif; ?>
   </div>
 </section>
 

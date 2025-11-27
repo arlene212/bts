@@ -144,11 +144,11 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
         <section class="main-content tab-content <?php echo ($currentTab === 'trainers' ? 'active' : ''); ?>" id="trainers">
           <div class="tab-header"><h2>Trainer Management</h2><div class="tab-actions"><button class="create-btn" id="createTrainerBtn">+ Create Trainer</button></div></div>
           <div class="search-container">
-            <div class="search-input-group">
-              <i class="fas fa-search search-icon"></i>
-              <input type="text" id="trainerSearchInput" class="search-input" placeholder="Search trainers by name, ID, or email..." value="<?php echo htmlspecialchars($trainerSearch); ?>">
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-search"></i></span>
+              <input type="text" id="trainerSearchInput" class="form-control" placeholder="Search trainers by name, ID, or email..." value="<?php echo htmlspecialchars($trainerSearch); ?>">
               <div class="search-loading hidden" id="trainerSearchLoading"><i class="fas fa-spinner fa-spin"></i></div>
-              <?php if (!empty($trainerSearch)): ?><a href="?trainer_page=1" class="clear-search" id="trainerClearSearch">Clear</a><?php endif; ?>
+              <?php if (!empty($trainerSearch)): ?><a href="?trainer_page=1" class="btn btn-link" id="trainerClearSearch">Clear</a><?php endif; ?>
             </div>
             <div class="search-results-dropdown" id="trainerSearchResults"></div>
             <div class="search-results-info" id="trainerSearchResultsInfo">

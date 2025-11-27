@@ -105,21 +105,29 @@ $trainerOffset = ($trainerPage - 1) * $itemsPerPage;
 $activeTrainerQuery = "SELECT * FROM users WHERE role = 'trainer' AND status = 'active'";
 $activeTrainerCountQuery = "SELECT COUNT(*) FROM users WHERE role = 'trainer' AND status = 'active'";
 if (!empty($trainerSearch)) {
-  $activeTrainerQuery .= " AND (first_name LIKE :search OR last_name LIKE :search OR user_id LIKE :search OR email LIKE :search)";
-  $activeTrainerCountQuery .= " AND (first_name LIKE :search OR last_name LIKE :search OR user_id LIKE :search OR email LIKE :search)";
+  $activeTrainerQuery .= " AND (first_name LIKE :search1 OR last_name LIKE :search2 OR user_id LIKE :search3 OR email LIKE :search4 OR CONCAT_WS(' ', first_name, last_name) LIKE :search_full)";
+  $activeTrainerCountQuery .= " AND (first_name LIKE :search1 OR last_name LIKE :search2 OR user_id LIKE :search3 OR email LIKE :search4 OR CONCAT_WS(' ', first_name, last_name) LIKE :search_full)";
 }
 $activeTrainerQuery .= " ORDER BY date_created DESC LIMIT :limit OFFSET :offset";
 $trainerCountStmt = $pdo->prepare($activeTrainerCountQuery);
 if (!empty($trainerSearch)) {
   $trainerSearchParam = "%$trainerSearch%";
-  $trainerCountStmt->bindValue(':search', $trainerSearchParam);
+  $trainerCountStmt->bindValue(':search1', $trainerSearchParam);
+  $trainerCountStmt->bindValue(':search2', $trainerSearchParam);
+  $trainerCountStmt->bindValue(':search3', $trainerSearchParam);
+  $trainerCountStmt->bindValue(':search4', $trainerSearchParam);
+  $trainerCountStmt->bindValue(':search_full', $trainerSearchParam);
 }
 $trainerCountStmt->execute();
 $totalActiveTrainers = $trainerCountStmt->fetchColumn();
 $totalActiveTrainerPages = ceil($totalActiveTrainers / $itemsPerPage);
 $activeTrainerStmt = $pdo->prepare($activeTrainerQuery);
 if (!empty($trainerSearch)) {
-  $activeTrainerStmt->bindValue(':search', $trainerSearchParam);
+  $activeTrainerStmt->bindValue(':search1', $trainerSearchParam);
+  $activeTrainerStmt->bindValue(':search2', $trainerSearchParam);
+  $activeTrainerStmt->bindValue(':search3', $trainerSearchParam);
+  $activeTrainerStmt->bindValue(':search4', $trainerSearchParam);
+  $activeTrainerStmt->bindValue(':search_full', $trainerSearchParam);
 }
 $activeTrainerStmt->bindValue(':limit', $itemsPerPage, PDO::PARAM_INT);
 $activeTrainerStmt->bindValue(':offset', $trainerOffset, PDO::PARAM_INT);
@@ -131,20 +139,28 @@ $archivedTrainerOffset = ($archivedTrainerPage - 1) * $itemsPerPage;
 $archivedTrainerQuery = "SELECT * FROM users WHERE role = 'trainer' AND status = 'archived'";
 $archivedTrainerCountQuery = "SELECT COUNT(*) FROM users WHERE role = 'trainer' AND status = 'archived'";
 if (!empty($trainerSearch)) {
-  $archivedTrainerQuery .= " AND (first_name LIKE :search OR last_name LIKE :search OR user_id LIKE :search OR email LIKE :search)";
-  $archivedTrainerCountQuery .= " AND (first_name LIKE :search OR last_name LIKE :search OR user_id LIKE :search OR email LIKE :search)";
+  $archivedTrainerQuery .= " AND (first_name LIKE :search1 OR last_name LIKE :search2 OR user_id LIKE :search3 OR email LIKE :search4 OR CONCAT_WS(' ', first_name, last_name) LIKE :search_full)";
+  $archivedTrainerCountQuery .= " AND (first_name LIKE :search1 OR last_name LIKE :search2 OR user_id LIKE :search3 OR email LIKE :search4 OR CONCAT_WS(' ', first_name, last_name) LIKE :search_full)";
 }
 $archivedTrainerQuery .= " ORDER BY date_created DESC LIMIT :limit OFFSET :offset";
 $archivedTrainerCountStmt = $pdo->prepare($archivedTrainerCountQuery);
 if (!empty($trainerSearch)) {
-  $archivedTrainerCountStmt->bindValue(':search', $trainerSearchParam);
+  $archivedTrainerCountStmt->bindValue(':search1', $trainerSearchParam);
+  $archivedTrainerCountStmt->bindValue(':search2', $trainerSearchParam);
+  $archivedTrainerCountStmt->bindValue(':search3', $trainerSearchParam);
+  $archivedTrainerCountStmt->bindValue(':search4', $trainerSearchParam);
+  $archivedTrainerCountStmt->bindValue(':search_full', $trainerSearchParam);
 }
 $archivedTrainerCountStmt->execute();
 $totalArchivedTrainers = $archivedTrainerCountStmt->fetchColumn();
 $totalArchivedTrainerPages = ceil($totalArchivedTrainers / $itemsPerPage);
 $archivedTrainerStmt = $pdo->prepare($archivedTrainerQuery);
 if (!empty($trainerSearch)) {
-  $archivedTrainerStmt->bindValue(':search', $trainerSearchParam);
+  $archivedTrainerStmt->bindValue(':search1', $trainerSearchParam);
+  $archivedTrainerStmt->bindValue(':search2', $trainerSearchParam);
+  $archivedTrainerStmt->bindValue(':search3', $trainerSearchParam);
+  $archivedTrainerStmt->bindValue(':search4', $trainerSearchParam);
+  $archivedTrainerStmt->bindValue(':search_full', $trainerSearchParam);
 }
 $archivedTrainerStmt->bindValue(':limit', $itemsPerPage, PDO::PARAM_INT);
 $archivedTrainerStmt->bindValue(':offset', $archivedTrainerOffset, PDO::PARAM_INT);
@@ -157,21 +173,29 @@ $traineeOffset = ($traineePage - 1) * $itemsPerPage;
 $traineeQuery = "SELECT * FROM users WHERE role = 'trainee' AND status = 'active'";
 $traineeCountQuery = "SELECT COUNT(*) FROM users WHERE role = 'trainee' AND status = 'active'";
 if (!empty($traineeSearch)) {
-  $traineeQuery .= " AND (first_name LIKE :search OR last_name LIKE :search OR user_id LIKE :search OR email LIKE :search)";
-  $traineeCountQuery .= " AND (first_name LIKE :search OR last_name LIKE :search OR user_id LIKE :search OR email LIKE :search)";
+  $traineeQuery .= " AND (first_name LIKE :search1 OR last_name LIKE :search2 OR user_id LIKE :search3 OR email LIKE :search4 OR CONCAT_WS(' ', first_name, last_name) LIKE :search_full)";
+  $traineeCountQuery .= " AND (first_name LIKE :search1 OR last_name LIKE :search2 OR user_id LIKE :search3 OR email LIKE :search4 OR CONCAT_WS(' ', first_name, last_name) LIKE :search_full)";
 }
 $traineeQuery .= " ORDER BY date_created DESC LIMIT :trainee_limit OFFSET :trainee_offset";
 $traineeStmt = $pdo->prepare($traineeCountQuery);
 if (!empty($traineeSearch)) {
   $traineeSearchParam = "%$traineeSearch%";
-  $traineeStmt->bindValue(':search', $traineeSearchParam);
+  $traineeStmt->bindValue(':search1', $traineeSearchParam);
+  $traineeStmt->bindValue(':search2', $traineeSearchParam);
+  $traineeStmt->bindValue(':search3', $traineeSearchParam);
+  $traineeStmt->bindValue(':search4', $traineeSearchParam);
+  $traineeStmt->bindValue(':search_full', $traineeSearchParam);
 }
 $traineeStmt->execute();
 $totalTrainees = $traineeStmt->fetchColumn();
 $totalActiveTraineePages = ceil($totalTrainees / $itemsPerPage);
 $traineeStmt = $pdo->prepare($traineeQuery);
 if (!empty($traineeSearch)) {
-  $traineeStmt->bindValue(':search', $traineeSearchParam);
+  $traineeStmt->bindValue(':search1', $traineeSearchParam);
+  $traineeStmt->bindValue(':search2', $traineeSearchParam);
+  $traineeStmt->bindValue(':search3', $traineeSearchParam);
+  $traineeStmt->bindValue(':search4', $traineeSearchParam);
+  $traineeStmt->bindValue(':search_full', $traineeSearchParam);
 }
 $traineeStmt->bindValue(':trainee_limit', $itemsPerPage, PDO::PARAM_INT);
 $traineeStmt->bindValue(':trainee_offset', $traineeOffset, PDO::PARAM_INT);
@@ -183,20 +207,28 @@ $archivedTraineeOffset = ($archivedTraineePage - 1) * $itemsPerPage;
 $archivedTraineeQuery = "SELECT * FROM users WHERE role = 'trainee' AND status = 'archived'";
 $archivedTraineeCountQuery = "SELECT COUNT(*) FROM users WHERE role = 'trainee' AND status = 'archived'";
 if (!empty($traineeSearch)) {
-  $archivedTraineeQuery .= " AND (first_name LIKE :search OR last_name LIKE :search OR user_id LIKE :search OR email LIKE :search)";
-  $archivedTraineeCountQuery .= " AND (first_name LIKE :search OR last_name LIKE :search OR user_id LIKE :search OR email LIKE :search)";
+  $archivedTraineeQuery .= " AND (first_name LIKE :search1 OR last_name LIKE :search2 OR user_id LIKE :search3 OR email LIKE :search4 OR CONCAT_WS(' ', first_name, last_name) LIKE :search_full)";
+  $archivedTraineeCountQuery .= " AND (first_name LIKE :search1 OR last_name LIKE :search2 OR user_id LIKE :search3 OR email LIKE :search4 OR CONCAT_WS(' ', first_name, last_name) LIKE :search_full)";
 }
 $archivedTraineeQuery .= " ORDER BY date_created DESC LIMIT :limit OFFSET :offset";
 $archivedTraineeCountStmt = $pdo->prepare($archivedTraineeCountQuery);
 if (!empty($traineeSearch)) {
-  $archivedTraineeCountStmt->bindValue(':search', $traineeSearchParam);
+  $archivedTraineeCountStmt->bindValue(':search1', $traineeSearchParam);
+  $archivedTraineeCountStmt->bindValue(':search2', $traineeSearchParam);
+  $archivedTraineeCountStmt->bindValue(':search3', $traineeSearchParam);
+  $archivedTraineeCountStmt->bindValue(':search4', $traineeSearchParam);
+  $archivedTraineeCountStmt->bindValue(':search_full', $traineeSearchParam);
 }
 $archivedTraineeCountStmt->execute();
 $totalArchivedTrainees = $archivedTraineeCountStmt->fetchColumn();
 $totalArchivedTraineePages = ceil($totalArchivedTrainees / $itemsPerPage);
 $archivedTraineeStmt = $pdo->prepare($archivedTraineeQuery);
 if (!empty($traineeSearch)) {
-  $archivedTraineeStmt->bindValue(':search', $traineeSearchParam);
+  $archivedTraineeStmt->bindValue(':search1', $traineeSearchParam);
+  $archivedTraineeStmt->bindValue(':search2', $traineeSearchParam);
+  $archivedTraineeStmt->bindValue(':search3', $traineeSearchParam);
+  $archivedTraineeStmt->bindValue(':search4', $traineeSearchParam);
+  $archivedTraineeStmt->bindValue(':search_full', $traineeSearchParam);
 }
 $archivedTraineeStmt->bindValue(':limit', $itemsPerPage, PDO::PARAM_INT);
 $archivedTraineeStmt->bindValue(':offset', $archivedTraineeOffset, PDO::PARAM_INT);

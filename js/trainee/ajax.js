@@ -22,71 +22,90 @@ function openEnrollModal(courseCode, courseName) {
 
 function enrollRequest(courseCode, courseName) {
   console.log('=== ENROLLMENT REQUEST STARTED ===');
-  console.log('Starting enrollment request for:', courseCode, courseName);
+  console.log('Course Code:', courseCode);
+  console.log('Course Name:', courseName);
   
-  // Debug: Check if we're in the right context
-  console.log('Current page:', window.location.href);
-  console.log('User role:', document.body.getAttribute('data-user-role') || 'not set');
-  
-  const enrollBtn = document.querySelector(`.enroll-btn[data-course-code="${courseCode}"]`) || document.querySelector(`.course-card[data-course="${courseCode}"] .enroll-btn`);
-  console.log('Found enrollment button:', enrollBtn);
-  
-  if (!enrollBtn) {
-    console.error('ENROLLMENT BUTTON NOT FOUND!');
-    alert('Error: Enrollment button not found. Please refresh the page and try again.');
+  if (!courseCode) {
+    console.error('ERROR: No course code!');
+    alert('Error: Course code is missing.');
     return;
   }
   
-  if (enrollBtn) { 
-    enrollBtn.disabled = true; 
-    enrollBtn.textContent = 'Requesting...'; 
-    console.log('Button disabled and text changed');
+  const enrollBtn = document.querySelector(`.enroll-btn[data-course-code="${courseCode}"]`) || 
+                     document.querySelector(`.course-card[data-course="${courseCode}"] .enroll-btn`);
+  
+  if (enrollBtn) {
+    enrollBtn.disabled = true;
+    enrollBtn.textContent = 'Requesting...';
   }
-  // Use URLSearchParams instead of FormData for better compatibility
+  
+  // Create form data
   const params = new URLSearchParams();
   params.append('course_code', courseCode);
-  console.log('Sending enrollment request to PHP with course_code:', courseCode);
-  console.log('URLSearchParams contents:');
-  for (let pair of params.entries()) {
-    console.log(pair[0] + ': ' + pair[1]);
-  }
-  fetch('../php/enhanced_enrollment.php', { 
-    method: 'POST', 
+  
+  console.log('📤 Sending to: ../php/enhanced_enrollment.php');
+  console.log('📦 Data:', {course_code: courseCode});
+  
+  fetch('../php/enhanced_enrollment.php', {
+    method: 'POST',
     body: params,
     headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/x-www-form-urlencoded'
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json'
     }
   })
-    .then(response => {
-      console.log('Enrollment response received:', response);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log('Enrollment data received:', data);
+  .then(response => {
+    console.log('📥 Response status:', response.status);
+    return response.text();
+  })
+  .then(text => {
+    console.log('📄 Raw response:', text);
+    try {
+      const data = JSON.parse(text);
+      console.log('✅ Parsed JSON:', data);
+      
       if (data.success) {
+        console.log('🎉 SUCCESS!');
+        
         if (enrollBtn) {
-          const requestedBadge = document.createElement('span');
-          requestedBadge.className = 'status-badge status-pending';
-          requestedBadge.innerHTML = '<i class="fas fa-clock"></i> Requested';
-          enrollBtn.parentNode.replaceChild(requestedBadge, enrollBtn);
+          const badge = document.createElement('span');
+          badge.className = 'status-badge status-pending';
+          badge.innerHTML = '<i class="fas fa-clock"></i> Request Pending';
+          enrollBtn.parentNode.replaceChild(badge, enrollBtn);
         }
+        
+        alert(data.message || 'Enrollment request sent!');
+        
+        setTimeout(() => location.reload(), 1000);
       } else {
+        console.error('❌ Failed:', data.message);
         alert(data.message || 'Request failed');
-        if (enrollBtn) { enrollBtn.disabled = false; enrollBtn.textContent = 'Request to Enroll'; }
+        
+        if (enrollBtn) {
+          enrollBtn.disabled = false;
+          enrollBtn.textContent = 'Request to Enroll';
+        }
       }
-    })
-    .catch((error) => { 
-      console.error('Enrollment error:', error);
-      alert('Network error: ' + error.message); 
-      if (enrollBtn) { 
-        enrollBtn.disabled = false; 
-        enrollBtn.textContent = 'Request to Enroll'; 
+    } catch (e) {
+      console.error('❌ JSON parse error:', e);
+      console.error('Response was:', text);
+      alert('Server error - check console');
+      
+      if (enrollBtn) {
+        enrollBtn.disabled = false;
+        enrollBtn.textContent = 'Request to Enroll';
       }
-    });
+    }
+  })
+  .catch(error => {
+    console.error('❌ Network error:', error);
+    alert('Network error: ' + error.message);
+    
+    if (enrollBtn) {
+      enrollBtn.disabled = false;
+      enrollBtn.textContent = 'Request to Enroll';
+    }
+  });
 }
 
 // Debug function to test enrollment directly
@@ -144,30 +163,105 @@ if (document.readyState === 'loading') {
 }
 
 document.addEventListener('click', function(e) {
-  console.log('Document click detected, checking for enroll-btn class...');
-  console.log('Clicked element:', e.target);
-  console.log('Element classes:', e.target.classList);
-  
-  if (e.target.classList.contains('enroll-btn') && !e.target.disabled) {
-    console.log('✅ ENROLL BUTTON CLICKED!');
-    console.log('Enroll button clicked:', e.target);
-    const courseCard = e.target.closest('.course-card');
-    console.log('Course card found:', courseCard);
-    const courseCode = e.target.getAttribute('data-course-code') || courseCard.getAttribute('data-course');
-    const courseName = e.target.getAttribute('data-course-name') || courseCard.getAttribute('data-title');
-    console.log('Extracted course data - Code:', courseCode, 'Name:', courseName);
-    openEnrollModal(courseCode, courseName);
-  } else {
-    console.log('❌ Not an enroll button or button is disabled');
-  }
+  // Only check for cancel button, since enroll buttons are handled directly
   if (e.target.classList.contains('btn-cancel') && !e.target.disabled) {
+    console.log('Cancel button clicked');
     const requestId = e.target.getAttribute('data-request-id');
     e.target.disabled = true;
     e.target.textContent = 'Canceling...';
-    const body = new URLSearchParams({ action: 'cancel_request', request_id: requestId });
-    fetch('../trainee/handlers/ajax_handlers.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body })
+    
+    const body = new URLSearchParams({ 
+      action: 'cancel_request', 
+      request_id: requestId 
+    });
+    
+    fetch('../trainee/handlers/ajax_handlers.php', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
+      body 
+    })
       .then(response => response.json())
-      .then(data => { if (data.success) { alert('Request canceled'); } else { alert(data.message || 'Cancel failed'); e.target.disabled = false; e.target.textContent = 'Cancel'; } })
-      .catch(() => { alert('Network error'); e.target.disabled = false; e.target.textContent = 'Cancel'; });
+      .then(data => { 
+        if (data.success) { 
+          alert('Request canceled'); 
+          location.reload();
+        } else { 
+          alert(data.message || 'Cancel failed'); 
+          e.target.disabled = false; 
+          e.target.textContent = 'Cancel'; 
+        } 
+      })
+      .catch(() => { 
+        alert('Network error'); 
+        e.target.disabled = false; 
+        e.target.textContent = 'Cancel'; 
+      });
+  }
+});
+
+// Add this at the END of your ajax.js file
+
+console.log('=== SETTING UP ENROLL BUTTONS ===');
+
+// Wait for DOM to be ready
+setTimeout(function() {
+  const enrollButtons = document.querySelectorAll('.enroll-btn');
+  console.log('Found enroll buttons:', enrollButtons.length);
+  
+  if (enrollButtons.length === 0) {
+    console.warn('⚠️ No enroll buttons found! Check if you are on the correct tab.');
+  }
+  
+  enrollButtons.forEach(function(button, index) {
+    console.log(`Setting up button ${index + 1}:`, {
+      courseCode: button.getAttribute('data-course-code'),
+      courseName: button.getAttribute('data-course-name')
+    });
+    
+    // Add click handler directly to button
+    button.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      console.log('✅✅✅ BUTTON CLICKED!');
+      
+      const courseCode = this.getAttribute('data-course-code');
+      const courseName = this.getAttribute('data-course-name');
+      
+      console.log('Opening modal for:', courseCode, courseName);
+      
+      if (!courseCode) {
+        alert('Error: Course code not found');
+        return false;
+      }
+      
+      openEnrollModal(courseCode, courseName);
+      return false;
+    };
+  });
+  
+  console.log('✅ Button setup complete');
+}, 500); // Give the page 500ms to load
+
+// Also set up when tab changes
+document.addEventListener('click', function(e) {
+  // Check if clicking on a tab
+  if (e.target.closest('[data-tab]') || e.target.closest('.nav-item')) {
+    console.log('Tab clicked, will reinitialize buttons...');
+    setTimeout(function() {
+      const enrollButtons = document.querySelectorAll('.enroll-btn');
+      console.log('Reinitializing', enrollButtons.length, 'buttons');
+      enrollButtons.forEach(function(button) {
+        if (!button.onclick) {
+          button.onclick = function(e) {
+            e.preventDefault();
+            const courseCode = this.getAttribute('data-course-code');
+            const courseName = this.getAttribute('data-course-name');
+            openEnrollModal(courseCode, courseName);
+            return false;
+          };
+        }
+      });
+    }, 300);
   }
 });
