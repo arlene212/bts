@@ -36,32 +36,19 @@ try {
     $courseStmt->execute([$courseCode]);
     $course = $courseStmt->fetch(PDO::FETCH_ASSOC);
 
-    // Get the names of 'basic' competencies for this specific course from its JSON data
-    $courseCompetencies = json_decode($course['competency_types'] ?? '[]', true);
-    $basicCompetencyNames = [];
-    foreach ($courseCompetencies as $comp) {
-        if (isset($comp['type']) && $comp['type'] === 'basic' && isset($comp['name'])) {
-            $basicCompetencyNames[] = $comp['name'];
-        }
-    }
+    // Get 'basic' competencies for this course from competencies table via course_topics
+    // Fetch basic competencies by course_id
+    $cstmt = $pdo->prepare("SELECT competency_code, competency_name, competency_type, description FROM competencies WHERE course_id = (SELECT id FROM courses WHERE course_code = ?) AND status = 'active' AND competency_type = 'basic' ORDER BY competency_name");
+    $cstmt->execute([$courseCode]);
+    $basicCompetencies = $cstmt->fetchAll(PDO::FETCH_ASSOC);
 
     $structuredContent = [];
 
-    if (!empty($basicCompetencyNames)) {
+    if (!empty($basicCompetencies)) {
         // Get topics, materials, and activities, but only for 'basic' competencies
-        $inClause = implode(',', array_fill(0, count($basicCompetencyNames), '?'));
-        $stmt = $pdo->prepare("
-            SELECT 
-                ct.id as topic_id, ct.competency_id, ct.topic_name, ct.topic_description,
-                tm.id as material_id, tm.material_title, tm.material_description, tm.file_path as material_file_path,
-                ta.id as activity_id, ta.activity_title, ta.activity_description, ta.activity_type, ta.due_date, ta.max_score, ta.attachment_path
-            FROM course_topics ct
-            LEFT JOIN topic_materials tm ON ct.id = tm.topic_id
-            LEFT JOIN topic_activities ta ON ct.id = ta.topic_id
-            WHERE ct.course_code = ? AND ct.competency_id IN ($inClause)
-            ORDER BY ct.created_at ASC, tm.uploaded_at ASC, ta.created_at ASC
-        ");
-        $params = array_merge([$courseCode], $basicCompetencyNames);
+        $inClause = implode(',', array_fill(0, count($basicCompetencies), '?'));
+        $stmt = $pdo->prepare("\n            SELECT \n                ct.id as topic_id, ct.competency_id, ct.topic_name, ct.topic_description,\n                tm.id as material_id, tm.material_title, tm.material_description, tm.file_path as material_file_path,\n                ta.id as activity_id, ta.activity_title, ta.activity_description, ta.activity_type, ta.due_date, ta.max_score, ta.attachment_path\n            FROM course_topics ct\n            LEFT JOIN topic_materials tm ON ct.id = tm.topic_id\n            LEFT JOIN topic_activities ta ON ct.id = ta.topic_id\n            WHERE ct.course_code = ? AND ct.competency_id IN ($inClause)\n            ORDER BY ct.created_at ASC, tm.uploaded_at ASC, ta.created_at ASC\n        ");
+        $params = array_merge([$courseCode], array_map(function($c){ return $c['competency_code']; }, $basicCompetencies));
         $stmt->execute($params);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -96,18 +83,21 @@ try {
         }
 
         // Group topics under their respective basic competencies and clean up the structure
-        foreach ($courseCompetencies as $comp) {
-            if ($comp['type'] === 'basic') {
-                $compTopics = [];
-                foreach ($topics as $topic) {
-                    if ($topic['competency_id'] === $comp['name']) {
-                        $topic['materials'] = array_values($topic['materials']);
-                        $topic['activities'] = array_values($topic['activities']);
-                        $compTopics[] = $topic;
-                    }
+        foreach ($basicCompetencies as $comp) {
+            $compTopics = [];
+            foreach ($topics as $topic) {
+                if ($topic['competency_id'] === $comp['competency_code']) {
+                    $topic['materials'] = array_values($topic['materials']);
+                    $topic['activities'] = array_values($topic['activities']);
+                    $compTopics[] = $topic;
                 }
-                $structuredContent[] = array_merge($comp, ['topics' => $compTopics]);
             }
+            $structuredContent[] = [
+              'type' => $comp['competency_type'],
+              'name' => $comp['competency_name'],
+              'description' => $comp['description'] ?? '',
+              'topics' => $compTopics
+            ];
         }
     }
     

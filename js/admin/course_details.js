@@ -32,7 +32,28 @@ function renderCourseDetails(content, data) {
   if (data.error) { content.innerHTML = `<div class="error">${data.error}</div>`; return; }
   let html = `
     <button class="back-to-course-list-btn hidden">← Back to Course Details</button>
-    <div class="course-details"><div class="course-header">`;
+    <div class="course-details"><style>
+      .course-details { padding: 12px; }
+      .course-header { display:flex; gap:16px; align-items:flex-start; }
+      .course-detail-image { width:160px; height:120px; object-fit:cover; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+      .course-basic-info h3 { margin:0 0 6px 0; }
+      .detail-section { margin-top:16px; }
+      #batch-selection-section .batches-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+      .batch-item { display:flex; align-items:center; justify-content:space-between; padding:10px; border:1px solid #e2e6ea; border-radius:8px; background:#fafafa; cursor:pointer; }
+      .competency-index { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px; }
+      .comp-index-chip { padding:6px 10px; border-radius:16px; border:1px solid #e2e6ea; background:#f8f9fa; font-size:0.85em; cursor:pointer; }
+      .comp-index-chip.core { background:#ffe3e3; border-color:#ff8787; color:#c92a2a; }
+      .comp-index-chip.common { background:#fff3bf; border-color:#fcc419; color:#7c5d00; }
+      .comp-index-chip.basic { background:#e7f5ff; border-color:#74c0fc; color:#1c7ed6; }
+      .competencies-accordion .competency-item { border:1px solid #e2e6ea; border-radius:8px; margin-bottom:10px; overflow:hidden; }
+      .competency-header { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#f8f9fa; cursor:pointer; }
+      .competency-content { display:none; padding:10px 12px; }
+      .competency-content.active { display:block; }
+      .toggle-icon { font-size:0.9em; color:#6c757d; }
+      .topics-section .topic-item { border-top:1px dashed #e2e6ea; padding:10px 0; }
+      .materials-section, .activities-section { margin-top:8px; }
+      .submissions-section { margin-top:8px; }
+    </style><div class="course-header">`;
   if (data.course && data.course.image) {
     html += `<img src="../uploads/courses/${data.course.image}" alt="${data.course.course_name}" class="course-detail-image">`;
   } else {
@@ -47,24 +68,55 @@ function renderCourseDetails(content, data) {
     html += `<div class="course-section" id="batch-selection-section"><h4>Batches</h4><p class="no-data">No batches defined for this course.</p></div>`;
   }
   if (data.competencies && data.competencies.length > 0) {
-    html += `<div class="course-section hidden" id="course-content-section"><h4>Competencies & Content</h4><div class="competencies-accordion">`;
+    // Competency index chips
+    html += `<div class="detail-section"><h4>Competency Index</h4><div class="competency-index">`;
+    data.competencies.forEach(ci => {
+      const t = ci.competency_type || ci.type; const n = ci.competency_name || ci.name; const code = ci.competency_code || ci.code;
+      if (t && n) { html += `<span class="comp-index-chip ${t}" data-comp-code="${code}" title="${String(t).toUpperCase()} - ${n}">${n}</span>`; }
+    });
+    html += `</div></div>`;
+    // Competencies accordion
+    html += `<div class="course-section" id="course-content-section"><h4>Competencies & Content</h4><div class="competencies-accordion">`;
     data.competencies.forEach(comp => {
-      if (comp && comp.type && comp.name) {
-        html += `<div class="competency-item"><div class="competency-header"><strong>${comp.type.toUpperCase()} COMPETENCY:</strong>${comp.name}${comp.description ? ` - ${comp.description}` : ''}<span class="toggle-icon">▼</span></div><div class="competency-content">`;
-        if (comp.topics && comp.topics.length > 0) {
+      const type = comp.competency_type || comp.type;
+      const name = comp.competency_name || comp.name;
+      const desc = comp.description || '';
+      const code = comp.competency_code || comp.code;
+      if (type && name) {
+        html += `<div class="competency-item" id="comp-${code}"><div class="competency-header"><strong>${String(type).toUpperCase()}:</strong> ${name}${desc ? ` - ${desc}` : ''}<span class="toggle-icon">▼</span></div><div class="competency-content">`;
+        const modules = (data.materialsByCompetency && data.materialsByCompetency[code]) ? data.materialsByCompetency[code] : [];
+        if (modules.length) {
+          html += `<div class="materials-section"><h6>📚 Modules:</h6><ul class="materials-list">`;
+          modules.forEach(m => {
+            const fp = m.file_path;
+            const isLink = fp && (fp.startsWith('http://') || fp.startsWith('https://'));
+            const href = isLink ? fp : (fp ? `../uploads/courses/${fp}` : '');
+            html += `<li><strong>${m.title || '(Untitled Module)'}</strong>${href ? `<br><a href="${href}" target="_blank" class="download-link">View</a>` : ''}${m.date_created ? `<br><small>Added ${new Date(m.date_created).toLocaleDateString()}</small>` : ''}</li>`;
+          });
+          html += `</ul></div>`;
+        }
+        const quizzes = (data.quizzesByCompetency && data.quizzesByCompetency[code]) ? data.quizzesByCompetency[code] : [];
+        if (quizzes.length) {
+          html += `<div class="materials-section"><h6>🧪 Quizzes:</h6><ul class="materials-list">`;
+          quizzes.forEach(q => {
+            const due = q.due_date ? new Date(q.due_date).toLocaleString() : '';
+            const tl = q.time_limit ? `${q.time_limit} min` : 'No limit';
+            const ps = (q.passing_score != null) ? `${q.passing_score}%` : '—';
+            const qa = (q.attempt_count != null) ? q.attempt_count : 0;
+            const qc = (q.question_count != null) ? q.question_count : 0;
+            html += `<li>
+              <strong>${q.title || '(Untitled Activity)'}</strong>
+              <br><small>Status: ${q.status || 'draft'}</small>
+              ${due ? `<br><small>Due: ${due}</small>` : ''}
+              <br><small>Questions: ${qc} • Attempts: ${qa} • Time: ${tl} • Pass: ${ps}</small>
+            </li>`;
+          });
+          html += `</ul></div>`;
+        }
+        if ((comp.topics && comp.topics.length > 0)) {
           html += `<div class="topics-section">`;
           comp.topics.forEach(topic => {
-            html += `<div class="topic-item"><h5>📚 ${topic.topic_name}</h5>${topic.topic_description ? `<p class="topic-description">${topic.topic_description}</p>` : ''}`;
-            if (topic.materials && topic.materials.length > 0) {
-              html += `<div class="materials-section"><h6>📎 Course Materials:</h6><ul class="materials-list">`;
-              topic.materials.forEach(material => {
-                const filePath = material.material_file_path || material.file_path;
-                const isLink = filePath && (filePath.startsWith('http://') || filePath.startsWith('https://'));
-                const downloadPath = isLink ? filePath : `../uploads/courses/${filePath}`;
-                html += `<li><strong>${material.material_title}</strong>${material.material_description ? `<br><small>${material.material_description}</small>` : ''}${filePath ? `<br><a href="${downloadPath}" target="_blank" class="download-link">View Material</a>` : ''}<br><small>Uploaded by: ${material.first_name || 'Unknown'} ${material.last_name || ''} on ${new Date(material.uploaded_at).toLocaleDateString()}</small></li>`;
-              });
-              html += `</ul></div>`;
-            }
+            html += `<div class="topic-item"><h5>🧩 ${topic.topic_name}</h5>${topic.topic_description ? `<p class="topic-description">${topic.topic_description}</p>` : ''}`;
             if (topic.activities && topic.activities.length > 0) {
               html += `<div class="activities-section"><h6>📝 Activities:</h6><div class="activities-list">`;
               topic.activities.forEach(activity => {
@@ -74,7 +126,7 @@ function renderCourseDetails(content, data) {
                   activity.submissions.forEach(submission => {
                     const status = submission.score !== null ? 'Graded' : 'Submitted';
                     const statusClass = submission.score !== null ? 'graded' : 'submitted';
-                    html += `<tr><td>${submission.first_name} ${submission.last_name}</td><td>${new Date(submission.submitted_at).toLocaleString()}</td><td><span class="status-badge ${statusClass}">${status}</span></td><td>${submission.score !== null ? submission.score : 'Not graded'}</td><td>${submission.file_path ? `<a href="../uploads/submissions/${submission.file_path}" target="_blank" class="view-submission-btn">View</a>` : ''}${submission.submission_text ? `<button class="view-text-btn" data-text="${submission.submission_text}">View Text</button>` : ''}</td></tr>`;
+                    html += `<tr><td>${submission.trainee_first_name || submission.first_name || ''} ${submission.trainee_last_name || submission.last_name || ''}</td><td>${new Date(submission.submitted_at).toLocaleString()}</td><td><span class="status-badge ${statusClass}">${status}</span></td><td>${submission.score !== null ? submission.score : 'Not graded'}</td><td>${submission.submission_file_path || submission.file_path ? `<a href="../uploads/submissions/${submission.submission_file_path || submission.file_path}" target="_blank" class="view-submission-btn">View</a>` : ''}${submission.submission_text ? `<button class="view-text-btn" data-text="${submission.submission_text}">View Text</button>` : ''}</td></tr>`;
                   });
                   html += `</tbody></table>`;
                 } else {
@@ -101,6 +153,7 @@ function renderCourseDetails(content, data) {
   content.innerHTML = html;
   initializeBatchView(content);
   initializeAccordions();
+  initializeCompetencyIndex();
   initializeSubmissionViewers();
   content.querySelectorAll('.activity-header').forEach(header => {
     header.addEventListener('click', function() {
@@ -127,6 +180,28 @@ function initializeBatchView(modalContent) {
 function initializeAccordions() {
   const competencyHeaders = document.querySelectorAll('.competency-header');
   competencyHeaders.forEach(header => { header.addEventListener('click', function() { const content = this.nextElementSibling; const icon = this.querySelector('.toggle-icon'); content.classList.toggle('active'); icon.textContent = content.classList.contains('active') ? '▲' : '▼'; }); });
+}
+
+function initializeCompetencyIndex() {
+  document.querySelectorAll('.comp-index-chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+      const code = this.getAttribute('data-comp-code');
+      const target = document.getElementById('comp-' + code);
+      if (target) {
+        const section = document.getElementById('course-content-section');
+        const batchSection = document.getElementById('batch-selection-section');
+        batchSection && batchSection.classList.add('hidden');
+        section && section.classList.remove('hidden');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const content = target.querySelector('.competency-content');
+        const icon = target.querySelector('.toggle-icon');
+        if (content && !content.classList.contains('active')) {
+          content.classList.add('active');
+          if (icon) icon.textContent = '▲';
+        }
+      }
+    });
+  });
 }
 
 function initializeSubmissionViewers() {

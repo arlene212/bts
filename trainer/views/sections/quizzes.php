@@ -349,6 +349,7 @@ document.addEventListener('DOMContentLoaded', function() {
             form.querySelector('#quiz_title').value = quiz.title || '';
             const courseSelect = form.querySelector('#quiz_course');
             if (courseSelect) courseSelect.value = quiz.course_code || '';
+            const competencySelect = form.querySelector('#quiz_competency');
             form.querySelector('#quiz_description').value = quiz.description || '';
             form.querySelector('#quiz_time_limit').value = quiz.time_limit || '';
             form.querySelector('#quiz_max_attempts').value = quiz.max_attempts || 1;
@@ -375,14 +376,89 @@ document.addEventListener('DOMContentLoaded', function() {
             const modal = document.getElementById('addQuizModal');
             if (modal) { modal.classList.remove('hidden'); modal.style.display='flex'; }
             form.dataset.mode = 'edit';
+            if (courseSelect && competencySelect) {
+                competencySelect.disabled = true;
+                competencySelect.innerHTML = '<option value="">Loading...</option>';
+                fetch('../php/get_competencies.php?course_code=' + encodeURIComponent(courseSelect.value))
+                  .then(r=>r.json())
+                  .then(list=>{
+                    const opts = Array.isArray(list) ? list : [];
+                    if (opts.length === 0) {
+                      competencySelect.innerHTML = '<option value="">No competencies found</option>';
+                      competencySelect.disabled = true;
+                    } else {
+                      competencySelect.innerHTML = '<option value="">Select Competency</option>';
+                      opts.forEach(c=>{
+                        const opt = document.createElement('option');
+                        opt.value = String(c.id);
+                        opt.textContent = `${c.competency_name} (${c.competency_type})`;
+                        competencySelect.appendChild(opt);
+                      });
+                      competencySelect.disabled = false;
+                      if (quiz.competency_id) {
+                        competencySelect.value = String(quiz.competency_id);
+                      }
+                    }
+                  })
+                  .catch(()=>{
+                    competencySelect.innerHTML = '<option value="">Failed to load</option>';
+                    competencySelect.disabled = true;
+                  });
+            }
         });
     });
 
     const addQuizForm = document.getElementById('addQuizForm');
     if (addQuizForm) {
+        const courseSelectEl = addQuizForm.querySelector('#quiz_course');
+        const competencySelectEl = addQuizForm.querySelector('#quiz_competency');
+        const loadCompetenciesForCourse = (code) => {
+            if (!competencySelectEl) return;
+            competencySelectEl.innerHTML = '<option value="">Loading...</option>';
+            competencySelectEl.disabled = true;
+            if (!code) {
+                competencySelectEl.innerHTML = '<option value="">Select Competency</option>';
+                competencySelectEl.disabled = true;
+                return;
+            }
+            fetch('../php/get_competencies.php?course_code=' + encodeURIComponent(code))
+              .then(r=>r.json())
+              .then(list=>{
+                const opts = Array.isArray(list) ? list : [];
+                if (opts.length === 0) {
+                    competencySelectEl.innerHTML = '<option value="">No competencies found</option>';
+                    competencySelectEl.disabled = true;
+                } else {
+                    competencySelectEl.innerHTML = '<option value="">Select Competency</option>';
+                    opts.forEach(c=>{
+                        const opt = document.createElement('option');
+                        opt.value = String(c.id);
+                        opt.textContent = `${c.competency_name} (${c.competency_type})`;
+                        competencySelectEl.appendChild(opt);
+                    });
+                    competencySelectEl.disabled = false;
+                }
+              })
+              .catch(()=>{
+                competencySelectEl.innerHTML = '<option value="">Failed to load</option>';
+                competencySelectEl.disabled = true;
+              });
+        };
+
+        if (courseSelectEl) {
+            courseSelectEl.addEventListener('change', function(){
+                loadCompetenciesForCourse(courseSelectEl.value);
+            });
+        }
         addQuizForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            if (addQuizForm.dataset.submitting === '1') { return; }
+            addQuizForm.dataset.submitting = '1';
+            const submitBtnEl = addQuizForm.querySelector('.submit-btn');
+            const originalSubmitHTML = submitBtnEl ? submitBtnEl.innerHTML : '';
+            if (submitBtnEl) { submitBtnEl.disabled = true; submitBtnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; }
             const fd = new FormData(addQuizForm);
+            const compVal = competencySelectEl ? competencySelectEl.value : '';
             const quizIdField = addQuizForm.querySelector('input[name="quiz_id"]');
             const quizIdVal = quizIdField ? quizIdField.value : '';
             const isEdit = addQuizForm.dataset.mode === 'edit' && !!quizIdVal;
@@ -393,20 +469,17 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
               fd.set('action', 'create_quiz');
             }
+            if (compVal) { fd.set('quiz_competency', compVal); }
             fetch('../trainer/handlers/quiz_handler.php', { method:'POST', body: fd })
               .then(r=>r.json())
               .then(data=>{
                 if (data.success) {
                   alert(isEdit ? 'Activity updated successfully' : 'Activity created successfully');
-                  if (confirm('Reload the page to refresh the activity list?')) {
-                    location.reload();
-                  } else {
-                    const modal = document.getElementById('addQuizModal');
-                    if (modal) { modal.style.display='none'; modal.classList.add('hidden'); }
-                  }
+                  location.reload();
                 } else { alert(data.message||'Error'); }
               })
-              .catch(()=>alert('Request failed'));
+              .catch(()=>alert('Request failed'))
+              .finally(()=>{ addQuizForm.dataset.submitting = ''; if (submitBtnEl) { submitBtnEl.disabled = false; submitBtnEl.innerHTML = originalSubmitHTML; } });
         });
     }
 
@@ -607,6 +680,13 @@ function showHelp() {
                                     <?php echo htmlspecialchars($course['course_name'] . ' (' . $course['course_code'] . ')'); ?>
                                 </option>
                             <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quiz_competency">Competency <span class="required">*</span></label>
+                        <select id="quiz_competency" name="quiz_competency" required class="form-control" disabled>
+                            <option value="">Select Competency</option>
                         </select>
                     </div>
 

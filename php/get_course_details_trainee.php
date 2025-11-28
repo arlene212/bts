@@ -65,21 +65,20 @@ try {
         throw $e;
     }
 
-    // Process the flat results into a structured array
-    $competenciesData = json_decode($course['competency_types'] ?? '[]', true);
+    // Build competencies list using competencies table via course_topics mapping
     $competencies = [];
-    
-    // Handle case where competency_types is null or invalid JSON
-    if (!is_array($competenciesData)) {
-        $competenciesData = [];
-    }
-    
-    foreach ($competenciesData as $comp) {
-        if (isset($comp['name']) && isset($comp['type'])) {
-            $competencies[$comp['name']] = [
-                'type' => $comp['type'],
-                'name' => $comp['name'],
-                'description' => $comp['description'] ?? '',
+    $compCodesStmt = $pdo->prepare("SELECT DISTINCT competency_id FROM course_topics WHERE course_code = ?");
+    $compCodesStmt->execute([$courseCode]);
+    $codes = array_map(function($r){ return $r['competency_id']; }, $compCodesStmt->fetchAll(PDO::FETCH_ASSOC));
+    if (!empty($codes)) {
+        $in = implode(',', array_fill(0, count($codes), '?'));
+        $cstmt = $pdo->prepare("SELECT competency_code, competency_name, competency_type, description FROM competencies WHERE competency_code IN ($in) AND status = 'active'");
+        $cstmt->execute($codes);
+        foreach ($cstmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $competencies[$row['competency_code']] = [
+                'type' => $row['competency_type'],
+                'name' => $row['competency_name'],
+                'description' => $row['description'] ?? '',
                 'topics' => []
             ];
         }

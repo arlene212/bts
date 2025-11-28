@@ -8,8 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const courseName = batch.dataset.course;
       const courseCode = batch.dataset.code;
       const courseHours = batch.dataset.hours;
-      const courseDataStr = batch.dataset.courseData;
-      loadCourseDetails(courseCode, courseName, courseHours, courseDataStr);
+      loadCourseDetails(courseCode, courseName, courseHours);
       enrolledTab && enrolledTab.classList.add('hidden');
       courseDetail && courseDetail.classList.remove('hidden');
     });
@@ -45,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     enrolledTab && enrolledTab.classList.remove('hidden');
   });
 
-  function loadCourseDetails(courseCode, courseName, courseHours, courseDataStr) {
+  function loadCourseDetails(courseCode, courseName, courseHours) {
     if (document.getElementById('course-detail-title')) document.getElementById('course-detail-title').textContent = courseName || '';
     if (document.getElementById('course-code')) document.getElementById('course-code').textContent = courseCode || '';
     if (document.getElementById('course-hours')) document.getElementById('course-hours').textContent = courseHours || '';
@@ -59,9 +58,15 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(data => {
         if (data.error) throw new Error(data.error);
         document.getElementById('course-description')?.textContent = data.course?.description || 'No description available';
-        let courseData = courseDataStr ? JSON.parse(courseDataStr) : { competency_types: [] };
-        courseData.competency_types.forEach(comp => { comp.topics = data.topicsByCompetency[comp.name] || []; });
-        renderCompetencies(courseData.competency_types || []);
+        const competencies = (data.competencies || []).map(c => ({
+          id: c.id,
+          code: c.competency_code,
+          name: c.competency_name,
+          type: c.competency_type,
+          description: c.description,
+          topics: (data.topicsByCompetency && data.topicsByCompetency[c.competency_code]) ? data.topicsByCompetency[c.competency_code] : (c.topics || [])
+        }));
+        renderCompetencies(competencies);
         renderSubmissionsView(data.topicsByCompetency || {});
       })
       .catch(err => {

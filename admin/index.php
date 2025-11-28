@@ -343,40 +343,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $scheduleDays = isset($_POST['schedule_days']) && is_array($_POST['schedule_days']) ? implode(',', $_POST['schedule_days']) : '';
     $sessionHours = $_POST['session_hours'] ?? null;
 
-    $competencies = [];
-    if (!empty($_POST['basic_competency'])) {
-      foreach ($_POST['basic_competency'] as $index => $basicComp) {
-        if (!empty(trim($basicComp))) {
-          $competencies[] = [
-            'type' => 'basic',
-            'name' => trim($basicComp),
-            'description' => trim($_POST['basic_competency_desc'][$index] ?? '')
-          ];
-        }
-      }
-    }
-    if (!empty($_POST['common_competency'])) {
-      foreach ($_POST['common_competency'] as $index => $commonComp) {
-        if (!empty(trim($commonComp))) {
-          $competencies[] = [
-            'type' => 'common',
-            'name' => trim($commonComp),
-            'description' => trim($_POST['common_competency_desc'][$index] ?? '')
-          ];
-        }
-      }
-    }
-    if (!empty($_POST['core_competency'])) {
-      foreach ($_POST['core_competency'] as $index => $coreComp) {
-        if (!empty(trim($coreComp))) {
-          $competencies[] = [
-            'type' => 'core',
-            'name' => trim($coreComp),
-            'description' => trim($_POST['core_competency_desc'][$index] ?? '')
-          ];
-        }
-      }
-    }
+    // Collect competencies for insertion into competencies table
+    $basicList = $_POST['basic_competency'] ?? [];
+    $basicDesc = $_POST['basic_competency_desc'] ?? [];
+    $commonList = $_POST['common_competency'] ?? [];
+    $commonDesc = $_POST['common_competency_desc'] ?? [];
+    $coreList = $_POST['core_competency'] ?? [];
+    $coreDesc = $_POST['core_competency_desc'] ?? [];
     $courseImage = '';
     if (isset($_FILES['course_image']) && $_FILES['course_image']['error'] === 0) {
       $uploadDir = __DIR__ . '/../uploads/courses/';
@@ -386,23 +359,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $courseImage = $fileName;
       }
     }
-    $stmt = $pdo->prepare("INSERT INTO courses (course_name, course_code, hours, description, learning_outcomes, course_status, allow_preview, preview_content, require_verification, verification_type, image, competency_types) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO courses (course_name, course_code, hours, description, learning_outcomes, course_status, allow_preview, preview_content, require_verification, verification_type, image, schedule_days_per_week, schedule_days, session_hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     try {
-      $stmt->execute([$courseName, $courseCode, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, $courseImage, json_encode($competencies)]);
-      // Safely update scheduling only if columns exist
-      try {
-        $colCheck = $pdo->query("SHOW COLUMNS FROM courses LIKE 'schedule_days_per_week'");
-        if ($colCheck && $colCheck->rowCount() > 0) {
-          $upd = $pdo->prepare("UPDATE courses SET schedule_days_per_week = ?, schedule_days = ?, session_hours = ? WHERE course_code = ?");
-          $upd->execute([$scheduleDaysPerWeek, $scheduleDays, $sessionHours, $courseCode]);
+      $stmt->execute([$courseName, $courseCode, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, $courseImage, $scheduleDaysPerWeek, $scheduleDays, $sessionHours]);
+      // Insert competencies linked to this course
+      $cidStmt = $pdo->prepare("SELECT id FROM courses WHERE course_code = ?");
+      $cidStmt->execute([$courseCode]);
+      $courseRow = $cidStmt->fetch(PDO::FETCH_ASSOC);
+      $courseId = $courseRow ? (int)$courseRow['id'] : 0;
+      if ($courseId > 0) {
+        $insComp = $pdo->prepare("INSERT INTO competencies (course_id, competency_code, competency_name, competency_type, description, status, date_created) VALUES (?, ?, ?, ?, ?, 'active', NOW())");
+        $makeCode = function($courseCode, $type, $num) { return $courseCode . '-' . ucfirst($type) . '-' . $num; };
+        // basic
+        foreach ((array)$basicList as $idx => $name) {
+          $name = trim((string)$name);
+          if ($name !== '') {
+            $desc = trim((string)($basicDesc[$idx] ?? ''));
+            $code = $makeCode($courseCode, 'basic', $idx + 1);
+            $insComp->execute([$courseId, $code, $name, 'basic', $desc]);
+          }
         }
-      } catch (Exception $__) {}
+        // common
+        foreach ((array)$commonList as $idx => $name) {
+          $name = trim((string)$name);
+          if ($name !== '') {
+            $desc = trim((string)($commonDesc[$idx] ?? ''));
+            $code = $makeCode($courseCode, 'common', $idx + 1);
+            $insComp->execute([$courseId, $code, $name, 'common', $desc]);
+          }
+        }
+        // core
+        foreach ((array)$coreList as $idx => $name) {
+          $name = trim((string)$name);
+          if ($name !== '') {
+            $desc = trim((string)($coreDesc[$idx] ?? ''));
+            $code = $makeCode($courseCode, 'core', $idx + 1);
+            $insComp->execute([$courseId, $code, $name, 'core', $desc]);
+          }
+        }
+      }
     } catch (PDOException $e) {
       $_SESSION['error_message'] = "Error adding course: " . $e->getMessage();
       header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses#courses");
       exit;
     }
-    $_SESSION['success_message'] = "Course added successfully with " . count($competencies) . " competencies!";
+    $_SESSION['success_message'] = "Course added successfully!";
     header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses#courses");
     exit;
   }
@@ -584,10 +585,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $previewContent = $_POST['course_preview_content'] ?? '';
     $requireVerification = $_POST['require_verification'] ?? 0;
     $verificationType = $_POST['verification_type'] ?? 'email';
-    $competencies = $_POST['competencies'] ?? [];
     try {
-      $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, learning_outcomes = ?, course_status = ?, allow_preview = ?, preview_content = ?, require_verification = ?, verification_type = ?, competency_types = ? WHERE course_code = ?");
-      $stmt->execute([$courseName, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, json_encode(array_values($competencies)), $courseCode]);
+      $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, learning_outcomes = ?, course_status = ?, allow_preview = ?, preview_content = ?, require_verification = ?, verification_type = ? WHERE course_code = ?");
+      $stmt->execute([$courseName, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, $courseCode]);
       // Safely update scheduling only if columns exist
       try {
         $scheduleDaysPerWeek = $_POST['schedule_days_per_week'] ?? null;

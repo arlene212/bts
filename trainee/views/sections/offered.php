@@ -19,7 +19,7 @@
                data-course="<?php echo htmlspecialchars($course['course_code']); ?>" 
                data-title="<?php echo htmlspecialchars($course['course_name']); ?>"
                data-course-id="<?php echo htmlspecialchars($course['id']); ?>">
-            <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : '../images/course-placeholder.jpg'; ?>" 
+            <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : '../images/school.png'; ?>" 
                  alt="<?php echo htmlspecialchars($course['course_name']); ?>" 
                  class="course-img">
             <div class="batch-info">

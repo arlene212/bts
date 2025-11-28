@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Nov 25, 2025 at 05:51 PM
+-- Generation Time: Nov 28, 2025 at 04:43 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -146,6 +146,7 @@ CREATE TABLE `certificates` (
 
 CREATE TABLE `competencies` (
   `id` int(11) NOT NULL,
+  `course_id` int(11) NOT NULL,
   `competency_code` varchar(50) NOT NULL,
   `competency_name` varchar(255) NOT NULL,
   `competency_type` enum('basic','common','core') NOT NULL,
@@ -168,7 +169,6 @@ CREATE TABLE `courses` (
   `description` text DEFAULT NULL,
   `learning_outcomes` text DEFAULT NULL,
   `image` varchar(255) DEFAULT NULL,
-  `competency_types` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`competency_types`)),
   `status` enum('active','archived') DEFAULT 'active',
   `course_status` enum('draft','published','archived') DEFAULT 'draft',
   `allow_preview` tinyint(1) DEFAULT 0,
@@ -223,6 +223,7 @@ CREATE TABLE `course_batches` (
 CREATE TABLE `course_materials` (
   `id` int(11) NOT NULL,
   `course_code` varchar(50) NOT NULL,
+  `competency_id` int(11) NOT NULL,
   `title` varchar(255) NOT NULL,
   `content_type` enum('pdf','video','text','quiz','assignment','assessment') NOT NULL,
   `file_path` varchar(255) DEFAULT NULL,
@@ -311,7 +312,7 @@ CREATE TABLE `grades` (
 CREATE TABLE `quizzes` (
   `id` int(11) NOT NULL,
   `course_code` varchar(50) NOT NULL,
-  `category_id` int(11) DEFAULT NULL,
+  `competency_id` int(11) DEFAULT NULL,
   `title` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
   `time_limit` int(11) DEFAULT NULL,
@@ -646,7 +647,8 @@ ALTER TABLE `certificates`
 --
 ALTER TABLE `competencies`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `competency_code` (`competency_code`);
+  ADD UNIQUE KEY `competency_code` (`competency_code`),
+  ADD KEY `competencies_ibfk_1` (`course_id`);
 
 --
 -- Indexes for table `courses`
@@ -681,7 +683,8 @@ ALTER TABLE `course_batches`
 --
 ALTER TABLE `course_materials`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `course_code` (`course_code`);
+  ADD KEY `course_code` (`course_code`),
+  ADD KEY `competency_id` (`competency_id`);
 
 --
 -- Indexes for table `course_topics`
@@ -720,7 +723,7 @@ ALTER TABLE `grades`
 ALTER TABLE `quizzes`
   ADD PRIMARY KEY (`id`),
   ADD KEY `course_code` (`course_code`),
-  ADD KEY `category_id` (`category_id`),
+  ADD KEY `category_id` (`competency_id`),
   ADD KEY `created_by` (`created_by`),
   ADD KEY `idx_quiz_status` (`status`);
 
@@ -1059,6 +1062,12 @@ ALTER TABLE `batch_assignments`
   ADD CONSTRAINT `batch_assignments_ibfk_5` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
+-- Constraints for table `competencies`
+--
+ALTER TABLE `competencies`
+  ADD CONSTRAINT `competencies_ibfk_1` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Constraints for table `course_assignments`
 --
 ALTER TABLE `course_assignments`
@@ -1078,7 +1087,8 @@ ALTER TABLE `course_batches`
 -- Constraints for table `course_materials`
 --
 ALTER TABLE `course_materials`
-  ADD CONSTRAINT `course_materials_ibfk_1` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`);
+  ADD CONSTRAINT `course_materials_ibfk_1` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `course_materials_ibfk_2` FOREIGN KEY (`competency_id`) REFERENCES `competencies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `course_topics`
@@ -1094,6 +1104,13 @@ ALTER TABLE `enrollments`
   ADD CONSTRAINT `enrollments_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `users` (`user_id`),
   ADD CONSTRAINT `enrollments_ibfk_2` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`),
   ADD CONSTRAINT `enrollments_ibfk_3` FOREIGN KEY (`processed_by`) REFERENCES `users` (`user_id`);
+
+--
+-- Constraints for table `quizzes`
+--
+ALTER TABLE `quizzes`
+  ADD CONSTRAINT `quizzes_ibfk_1` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `quizzes_ibfk_2` FOREIGN KEY (`competency_id`) REFERENCES `competencies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `quiz_attempts`

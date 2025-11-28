@@ -24,6 +24,7 @@ try {
         $title = $_POST['quiz_title'] ?? '';
         $courseCode = $_POST['quiz_course'] ?? '';
         $description = $_POST['quiz_description'] ?? '';
+        $competencyId = isset($_POST['quiz_competency']) ? intval($_POST['quiz_competency']) : 0;
         $timeLimit = $_POST['quiz_time_limit'] ? intval($_POST['quiz_time_limit']) : null;
         $maxAttempts = intval($_POST['quiz_max_attempts'] ?? 1);
         $passingScore = floatval($_POST['quiz_passing_score'] ?? 70);
@@ -43,16 +44,30 @@ try {
             echo json_encode(['success' => false, 'message' => 'You do not have access to this course']);
             exit;
         }
+
+        // Validate competency selection for this course
+        if ($competencyId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Competency is required']);
+            exit;
+        }
+        $cmp = $pdo->prepare("SELECT id FROM competencies WHERE id = ? AND course_id = (SELECT id FROM courses WHERE course_code = ?) LIMIT 1");
+        $cmp->execute([$competencyId, $courseCode]);
+        if (!$cmp->fetchColumn()) {
+            echo json_encode(['success' => false, 'message' => 'Invalid competency for selected course']);
+            exit;
+        }
         
-        $stmt = $pdo->prepare("
-            INSERT INTO quizzes (course_code, title, description, time_limit, max_attempts, passing_score, 
-                               is_randomized, show_correct_answers, created_by, created_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-        ");
-        $stmt->execute([$courseCode, $title, $description, $timeLimit, $maxAttempts, $passingScore, 
-                       $isRandomized, $showCorrectAnswers, $user['user_id']]);
-        
-        $quizId = $pdo->lastInsertId();
+        // Duplicate guard: prevent rapid double-submit creating two rows
+        $dup = $pdo->prepare("SELECT id FROM quizzes WHERE course_code = ? AND title = ? AND created_by = ? AND created_at >= (NOW() - INTERVAL 15 SECOND) ORDER BY id DESC LIMIT 1");
+        $dup->execute([$courseCode, $title, $user['user_id']]);
+        $existingId = $dup->fetchColumn();
+        if ($existingId) {
+            $quizId = $existingId;
+        } else {
+            $stmt = $pdo->prepare("INSERT INTO quizzes (course_code, competency_id, title, description, time_limit, max_attempts, passing_score, is_randomized, show_correct_answers, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+            $stmt->execute([$courseCode, $competencyId, $title, $description, $timeLimit, $maxAttempts, $passingScore, $isRandomized, $showCorrectAnswers, $user['user_id']]);
+            $quizId = $pdo->lastInsertId();
+        }
         if (!empty($dueDateRaw)) {
             $dueDate = str_replace('T', ' ', $dueDateRaw);
             if (strlen($dueDate) === 16) { $dueDate .= ':00'; }
@@ -68,6 +83,7 @@ try {
         $title = $_POST['quiz_title'] ?? '';
         $courseCode = $_POST['quiz_course'] ?? '';
         $description = $_POST['quiz_description'] ?? '';
+        $competencyId = isset($_POST['quiz_competency']) ? intval($_POST['quiz_competency']) : 0;
         $timeLimit = $_POST['quiz_time_limit'] ? intval($_POST['quiz_time_limit']) : null;
         $maxAttempts = intval($_POST['quiz_max_attempts'] ?? 1);
         $passingScore = floatval($_POST['quiz_passing_score'] ?? 70);
@@ -82,8 +98,13 @@ try {
         $courseOk = $pdo->prepare("SELECT 1 FROM course_assignments WHERE trainer_id = ? AND course_code = ? LIMIT 1");
         $courseOk->execute([$user['user_id'], $courseCode]);
         if (!$courseOk->fetchColumn()) { echo json_encode(['success'=>false,'message'=>'Access denied for course']); exit; }
-        $upd = $pdo->prepare("UPDATE quizzes SET course_code = ?, title = ?, description = ?, time_limit = ?, max_attempts = ?, passing_score = ?, is_randomized = ?, show_correct_answers = ?, updated_at = NOW() WHERE id = ?");
-        $upd->execute([$courseCode, $title, $description, $timeLimit, $maxAttempts, $passingScore, $isRandomized, $showCorrectAnswers, $quizId]);
+        if ($competencyId > 0) {
+            $cmp = $pdo->prepare("SELECT id FROM competencies WHERE id = ? AND course_id = (SELECT id FROM courses WHERE course_code = ?) LIMIT 1");
+            $cmp->execute([$competencyId, $courseCode]);
+            if (!$cmp->fetchColumn()) { echo json_encode(['success'=>false,'message'=>'Invalid competency for course']); exit; }
+        } else { echo json_encode(['success'=>false,'message'=>'Competency is required']); exit; }
+        $upd = $pdo->prepare("UPDATE quizzes SET course_code = ?, competency_id = ?, title = ?, description = ?, time_limit = ?, max_attempts = ?, passing_score = ?, is_randomized = ?, show_correct_answers = ?, updated_at = NOW() WHERE id = ?");
+        $upd->execute([$courseCode, $competencyId, $title, $description, $timeLimit, $maxAttempts, $passingScore, $isRandomized, $showCorrectAnswers, $quizId]);
         if (!empty($dueDateRaw)) {
             $dueDate = str_replace('T',' ',$dueDateRaw);
             if (strlen($dueDate) === 16) { $dueDate .= ':00'; }
@@ -315,3 +336,14 @@ try {
     error_log("Error in quiz_handler.php: " . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }
+        if ($competencyId > 0) {
+            $cmp = $pdo->prepare("SELECT id FROM competencies WHERE id = ? AND course_id = (SELECT id FROM courses WHERE course_code = ?) AND status = 'active' LIMIT 1");
+            $cmp->execute([$competencyId, $courseCode]);
+            if (!$cmp->fetchColumn()) {
+                echo json_encode(['success' => false, 'message' => 'Invalid competency for selected course']);
+                exit;
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Competency is required']);
+            exit;
+        }

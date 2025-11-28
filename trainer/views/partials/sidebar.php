@@ -32,7 +32,7 @@
       </a>
       <a href="?current_tab=quizzes" class="tab-link <?php echo $currentTab === 'quizzes' ? 'active' : ''; ?>" data-tab="quizzes">
         <i class="fas fa-question-circle"></i>
-        <span>Quizzes</span>
+        <span>Activities/ Exams</span>
       </a>
       <a href="?current_tab=grades" class="tab-link <?php echo $currentTab === 'grades' ? 'active' : ''; ?>" data-tab="grades">
         <i class="fas fa-chart-bar"></i>

@@ -5247,6 +5247,7 @@ input:invalid, textarea:invalid, select:invalid {
 /* Trainer batch selection */
 .batch-checkboxes {
     display: flex;
+    flex-direction: column;
     flex-wrap: wrap;
     gap: 8px 12px;
 }

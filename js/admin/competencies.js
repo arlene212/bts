@@ -31,9 +31,14 @@ function addCompetencyField(type) {
       <label>Description:</label>
       <textarea name="${type}_competency_desc[]" rows="2" placeholder="Enter description (optional)"></textarea>
     </div>
+    <div class="form-group">
+      <label>Generated Code:</label>
+      <input type="text" class="generated-comp-code" readonly placeholder="Auto-generated">
+    </div>
     <button type="button" class="remove-competency-btn" style="background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-top: 10px;">Remove</button>
   `;
   fieldsContainer.appendChild(newFieldGroup);
+  updateAddCompetencyCodes();
 }
 
 function initializeEditCompetencyHandlers() {
@@ -82,3 +87,28 @@ function addNewCompetencyField() {
   `;
   container.appendChild(newFieldGroup);
 }
+function updateAddCompetencyCodes() {
+  const codeInput = document.getElementById('course_code');
+  const courseCode = (codeInput && codeInput.value) ? codeInput.value.trim() : '';
+  ['basic','common','core'].forEach(type => {
+    const group = document.getElementById(`${type}CompetenciesGroup`);
+    if (!group) return;
+    const items = Array.from(group.querySelectorAll('.competency-field-group'));
+    items.forEach((item, idx) => {
+      const codeEl = item.querySelector('.generated-comp-code');
+      if (codeEl) {
+        const num = idx + 1;
+        const typeCap = type.charAt(0).toUpperCase() + type.slice(1);
+        codeEl.value = courseCode ? `${courseCode}-${typeCap}-${num}` : `${typeCap}-${num}`;
+      }
+    });
+  });
+}
+
+document.addEventListener('input', function(e){
+  if (e.target && (e.target.id === 'course_code' || e.target.name === 'basic_competency[]' || e.target.name === 'common_competency[]' || e.target.name === 'core_competency[]')) {
+    updateAddCompetencyCodes();
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function(){ updateAddCompetencyCodes(); initializeCompetencyHandlers(); });

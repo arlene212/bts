@@ -29,20 +29,12 @@ try {
     $courseStatus = $_POST['course_status'] ?? 'published';
     $allowPreview = $_POST['allow_preview'] ?? 0;
     $previewContent = $_POST['course_preview_content'] ?? '';
+    $scheduleDaysPerWeek = isset($_POST['schedule_days_per_week']) ? (int)$_POST['schedule_days_per_week'] : null;
+    $sessionHours = isset($_POST['session_hours']) ? trim((string)$_POST['session_hours']) : '';
+    $scheduleDaysArr = isset($_POST['schedule_days']) && is_array($_POST['schedule_days']) ? array_map('trim', $_POST['schedule_days']) : [];
+    $scheduleDays = implode(', ', $scheduleDaysArr);
     
-    // Process competencies
-    $competencies = [];
-    if (isset($_POST['competencies']) && is_array($_POST['competencies'])) {
-        foreach ($_POST['competencies'] as $comp) {
-            if (!empty(trim($comp['name']))) {
-                $competencies[] = [
-                    'type' => $comp['type'],
-                    'name' => trim($comp['name']),
-                    'description' => trim($comp['description'] ?? '')
-                ];
-            }
-        }
-    }
+    // Competencies are managed in the competencies table
     
     // Handle file upload
     $courseImage = null;
@@ -76,11 +68,11 @@ try {
     
     // Build update query
     if ($courseImage) {
-        $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, learning_outcomes = ?, course_status = ?, allow_preview = ?, preview_content = ?, image = ?, competency_types = ? WHERE course_code = ?");
-        $stmt->execute([$courseName, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $courseImage, json_encode($competencies), $courseCode]);
+        $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, learning_outcomes = ?, course_status = ?, allow_preview = ?, preview_content = ?, image = ?, schedule_days_per_week = ?, schedule_days = ?, session_hours = ? WHERE course_code = ?");
+        $stmt->execute([$courseName, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $courseImage, $scheduleDaysPerWeek, $scheduleDays, $sessionHours, $courseCode]);
     } else {
-        $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, learning_outcomes = ?, course_status = ?, allow_preview = ?, preview_content = ?, competency_types = ? WHERE course_code = ?");
-        $stmt->execute([$courseName, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, json_encode($competencies), $courseCode]);
+        $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, learning_outcomes = ?, course_status = ?, allow_preview = ?, preview_content = ?, schedule_days_per_week = ?, schedule_days = ?, session_hours = ? WHERE course_code = ?");
+        $stmt->execute([$courseName, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $scheduleDaysPerWeek, $scheduleDays, $sessionHours, $courseCode]);
     }
     
     if ($stmt->rowCount() > 0) {

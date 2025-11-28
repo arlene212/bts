@@ -28,14 +28,10 @@ try {
         exit;
     }
 
-    // 2. Decode competencies from the course table.
-    $course['competency_types'] = [];
-    if (!empty($course['competency_types'])) {
-        $decodedCompetencies = json_decode($course['competency_types'], true);
-        if (is_array($decodedCompetencies)) {
-            $course['competency_types'] = $decodedCompetencies;
-        }
-    }
+    // 2. Fetch competencies for this course using course_id
+    $competenciesStmt = $pdo->prepare("SELECT id, competency_code, competency_name, competency_type, description, status FROM competencies WHERE course_id = ? AND status = 'active' ORDER BY competency_type, competency_name");
+    $competenciesStmt->execute([(int)$course['id']]);
+    $competencies = $competenciesStmt->fetchAll(PDO::FETCH_ASSOC);
 
     // 3. Fetch course batches.
     $batchStmt = $pdo->prepare("
@@ -51,15 +47,13 @@ try {
 
     // 4. Fetch all content (topics, materials, activities, submissions) for the course.
     $competenciesWithContent = [];
-    foreach ($course['competency_types'] as $competency) {
-        if (empty($competency['name'])) continue;
-
-        $competencyName = $competency['name']; // The competency name is used as the ID in the topics table.
+    foreach ($competencies as &$competency) {
+        $competencyCode = $competency['competency_code'];
         $competency['topics'] = [];
 
         // Fetch topics for this competency.
         $topicStmt = $pdo->prepare("SELECT * FROM course_topics WHERE course_code = ? AND competency_id = ? ORDER BY created_at ASC");
-        $topicStmt->execute([$courseCode, $competencyName]);
+        $topicStmt->execute([$courseCode, $competencyCode]);
         $topics = $topicStmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($topics as $topic) {
@@ -99,10 +93,43 @@ try {
     }
 
     // 5. Assemble the final JSON response.
+    // Fetch course materials grouped by competency (modules)
+    $materialsByCompetency = [];
+    try {
+        $matStmt = $pdo->prepare("SELECT cm.*, comp.competency_code FROM course_materials cm JOIN competencies comp ON cm.competency_id = comp.id WHERE cm.course_code = ? ORDER BY cm.date_created ASC");
+        $matStmt->execute([$courseCode]);
+        foreach ($matStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $code = $row['competency_code'];
+            if (!isset($materialsByCompetency[$code])) { $materialsByCompetency[$code] = []; }
+            $materialsByCompetency[$code][] = [
+                'id' => $row['id'],
+                'title' => $row['title'],
+                'content_type' => $row['content_type'],
+                'file_path' => $row['file_path'],
+                'content' => $row['content'],
+                'date_created' => $row['date_created']
+            ];
+        }
+    } catch (Exception $__) {}
+
+    // 6. Fetch quizzes grouped by competency (linked via competencies.id)
+    $quizzesByCompetency = [];
+    try {
+        $quizStmt = $pdo->prepare("\n            SELECT q.id, q.title, q.status, q.time_limit, q.max_attempts, q.passing_score, q.is_randomized, q.show_correct_answers, q.created_at,\n                   comp.competency_code, comp.id AS competency_id,\n                   (SELECT COUNT(*) FROM quiz_questions qq WHERE qq.quiz_id = q.id) AS question_count,\n                   (SELECT COUNT(*) FROM quiz_attempts qa WHERE qa.quiz_id = q.id) AS attempt_count,\n                   (SELECT setting_value FROM quiz_settings qs WHERE qs.quiz_id = q.id AND qs.setting_key = 'due_date' LIMIT 1) AS due_date\n            FROM quizzes q\n            JOIN competencies comp ON q.competency_id = comp.id\n            WHERE q.course_code = ?\n            ORDER BY q.created_at DESC\n        ");
+        $quizStmt->execute([$courseCode]);
+        foreach ($quizStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $code = $row['competency_code'];
+            if (!isset($quizzesByCompetency[$code])) { $quizzesByCompetency[$code] = []; }
+            $quizzesByCompetency[$code][] = $row;
+        }
+    } catch (Exception $__) {}
+
     $response = [
         'course' => $course,
         'batches' => $batches,
-        'competencies' => $competenciesWithContent
+        'competencies' => $competenciesWithContent,
+        'materialsByCompetency' => $materialsByCompetency,
+        'quizzesByCompetency' => $quizzesByCompetency
     ];
 
     echo json_encode($response);

@@ -93,37 +93,134 @@ function setupCourseEditing() {
 
   // Batch end date auto calculation
   setupBatchScheduling();
+
+  const addBtn = document.getElementById('add_new_competency_btn');
+  if (addBtn) {
+    addBtn.addEventListener('click', function(){
+      const container = document.getElementById('edit_competencies_container');
+      const form = document.createElement('div');
+      form.className = 'competency-add-form';
+      form.innerHTML = `
+        <div class="form-row">
+          <div class="form-group"><label>Name</label><input type="text" id="new_comp_name" placeholder="Competency name"></div>
+          <div class="form-group"><label>Type</label><select id="new_comp_type"><option value="basic">Basic</option><option value="common">Common</option><option value="core">Core</option></select></div>
+        </div>
+        <div class="form-row"><div class="form-group" style="flex:1"><label>Description</label><textarea id="new_comp_desc" rows="2"></textarea></div></div>
+        <div style="text-align:right"><button type="button" id="create_comp_btn">Create</button></div>
+        <hr>`;
+      container.prepend(form);
+      form.querySelector('#create_comp_btn').addEventListener('click', function(){
+        const fd = new FormData();
+        const nameVal = document.getElementById('new_comp_name').value.trim();
+        const typeVal = document.getElementById('new_comp_type').value;
+        const descVal = document.getElementById('new_comp_desc').value.trim();
+        fd.append('competency_name', nameVal);
+        fd.append('competency_type', typeVal);
+        fd.append('description', descVal);
+        const refresh = () => {
+          const code = document.getElementById('edit_course_code').value;
+          fetch('../php/get_competencies.php?course_code=' + encodeURIComponent(code))
+            .then(r=>r.json()).then(list=>populateCompetencies(list||[]));
+        };
+        if (window.__edit_course_id) { fd.append('course_id', window.__edit_course_id); }
+        fetch('../php/competencies_add.php', { method: 'POST', body: fd })
+          .then(r => r.json()).then(d => {
+            if (d.success) { alert('Competency created'); form.remove(); refresh(); }
+            else { alert(d.message || 'Create failed'); }
+          });
+      });
+    });
+  }
 }
 
 function openEditCourseModal(courseData) {
-  document.getElementById('edit_course_code').value = courseData.course_code;
-  document.getElementById('edit_course_code_display').value = courseData.course_code;
-  document.getElementById('edit_course_name').value = courseData.course_name || '';
-  document.getElementById('edit_course_hours').value = courseData.hours || '';
-  document.getElementById('edit_course_description').value = courseData.description || '';
-  document.getElementById('edit_course_learning_outcomes').value = courseData.learning_outcomes || '';
-  document.getElementById('edit_course_status').value = courseData.course_status || 'published';
-  document.getElementById('edit_allow_preview').value = courseData.allow_preview || 0;
-  document.getElementById('edit_course_preview_content').value = courseData.preview_content || '';
-  document.getElementById('edit_require_verification').value = courseData.require_verification || 0;
-  document.getElementById('edit_verification_type').value = courseData.verification_type || 'email';
-  
-  // Show/hide preview content based on allow_preview setting
-  const previewContentGroup = document.getElementById('edit_preview_content_group');
-  if (courseData.allow_preview == 1) {
-    previewContentGroup.style.display = 'block';
-  } else {
-    previewContentGroup.style.display = 'none';
-  }
-  
-  const imagePreview = document.getElementById('current_image_preview');
-  if (courseData.image) {
-    imagePreview.innerHTML = `<p><strong>Current Image:</strong></p><img src="../uploads/courses/${courseData.image}">`;
-  } else {
-    imagePreview.innerHTML = '<p class="field-note"><em>No current image</em></p>';
-  }
-  populateCompetencies(courseData.competency_types || []);
-  openModal('editCourseModal');
+  const code = courseData.course_code;
+  document.getElementById('edit_course_code').value = code;
+  document.getElementById('edit_course_code_display').value = code;
+  // Fetch latest course details to ensure all available data is loaded
+  fetch('../php/get_course_details.php?course_code=' + encodeURIComponent(code))
+    .then(r => r.json())
+    .then(data => {
+      const c = data.course || {};
+      window.__edit_course_id = c.id || courseData.course_id || null;
+      document.getElementById('edit_course_name').value = c.course_name || courseData.course_name || '';
+      document.getElementById('edit_course_hours').value = c.hours || courseData.hours || '';
+      document.getElementById('edit_course_description').value = c.description || courseData.description || '';
+      document.getElementById('edit_course_learning_outcomes').value = c.learning_outcomes || courseData.learning_outcomes || '';
+      document.getElementById('edit_course_status').value = c.course_status ?? courseData.course_status ?? 'published';
+      document.getElementById('edit_allow_preview').value = c.allow_preview ?? courseData.allow_preview ?? 0;
+      document.getElementById('edit_course_preview_content').value = c.preview_content ?? courseData.preview_content ?? '';
+      document.getElementById('edit_require_verification').value = c.require_verification ?? courseData.require_verification ?? 0;
+      document.getElementById('edit_verification_type').value = c.verification_type ?? courseData.verification_type ?? 'email';
+
+      // Schedule fields
+      const editDaysPerWeek = document.getElementById('edit_schedule_days_per_week');
+      const editDaysGroup = document.getElementById('edit_schedule_days_group');
+      const editSessionHours = document.getElementById('edit_session_hours');
+      const daysPerWeek = c.schedule_days_per_week ?? courseData.schedule_days_per_week ?? '';
+      const sessionHours = c.session_hours ?? courseData.session_hours ?? '';
+      const daysStr = String(c.schedule_days ?? courseData.schedule_days ?? '').trim();
+      if (editDaysPerWeek) { editDaysPerWeek.value = daysPerWeek; }
+      if (editSessionHours) { editSessionHours.value = sessionHours; }
+      if (editDaysGroup) {
+        const days = daysStr ? daysStr.split(',').map(d => d.trim()) : [];
+        editDaysGroup.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = days.includes(cb.value); });
+      }
+
+      // Show/hide preview content based on allow_preview setting
+      const previewContentGroup = document.getElementById('edit_preview_content_group');
+      if ((c.allow_preview ?? courseData.allow_preview ?? 0) == 1) { previewContentGroup.style.display = 'block'; }
+      else { previewContentGroup.style.display = 'none'; }
+
+      // Image
+      const imagePreview = document.getElementById('current_image_preview');
+      const img = c.image ?? courseData.image;
+      if (img) { imagePreview.innerHTML = `<p><strong>Current Image:</strong></p><img src="../uploads/courses/${img}">`; }
+      else { imagePreview.innerHTML = '<p class="field-note"><em>No current image</em></p>'; }
+
+      // Competencies (by course_id)
+      const courseId = c.id ?? courseData.course_id ?? null;
+      const compUrl = courseId ? ('../php/get_competencies.php?course_id=' + encodeURIComponent(courseId)) : ('../php/get_competencies.php?course_code=' + encodeURIComponent(code));
+      fetch(compUrl)
+        .then(rr => rr.json())
+        .then(list => { populateCompetencies(list || []); })
+        .catch(() => { populateCompetencies([]); });
+
+      openModal('editCourseModal');
+    })
+    .catch(() => {
+      // Fallback to provided dataset
+      document.getElementById('edit_course_name').value = courseData.course_name || '';
+      document.getElementById('edit_course_hours').value = courseData.hours || '';
+      document.getElementById('edit_course_description').value = courseData.description || '';
+      document.getElementById('edit_course_learning_outcomes').value = courseData.learning_outcomes || '';
+      document.getElementById('edit_course_status').value = courseData.course_status || 'published';
+      document.getElementById('edit_allow_preview').value = courseData.allow_preview || 0;
+      document.getElementById('edit_course_preview_content').value = courseData.preview_content || '';
+      document.getElementById('edit_require_verification').value = courseData.require_verification || 0;
+      document.getElementById('edit_verification_type').value = courseData.verification_type || 'email';
+      const editDaysPerWeek = document.getElementById('edit_schedule_days_per_week');
+      const editDaysGroup = document.getElementById('edit_schedule_days_group');
+      const editSessionHours = document.getElementById('edit_session_hours');
+      if (editDaysPerWeek) { editDaysPerWeek.value = courseData.schedule_days_per_week || ''; }
+      if (editSessionHours) { editSessionHours.value = courseData.session_hours || ''; }
+      if (editDaysGroup) {
+        const daysStr = String(courseData.schedule_days || '').trim();
+        const days = daysStr ? daysStr.split(',').map(d => d.trim()) : [];
+        editDaysGroup.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = days.includes(cb.value); });
+      }
+      const previewContentGroup = document.getElementById('edit_preview_content_group');
+      if (courseData.allow_preview == 1) { previewContentGroup.style.display = 'block'; } else { previewContentGroup.style.display = 'none'; }
+      const imagePreview = document.getElementById('current_image_preview');
+      if (courseData.image) { imagePreview.innerHTML = `<p><strong>Current Image:</strong></p><img src="../uploads/courses/${courseData.image}">`; }
+      else { imagePreview.innerHTML = '<p class="field-note"><em>No current image</em></p>'; }
+      const fallbackCourseId = courseData.course_id ? ('&course_id=' + encodeURIComponent(courseData.course_id)) : '';
+      fetch('../php/get_competencies.php?course_code=' + encodeURIComponent(code) + (fallbackCourseId ? '' : ''))
+        .then(r => r.json())
+        .then(list => { populateCompetencies(list || []); })
+        .catch(() => { populateCompetencies([]); });
+      openModal('editCourseModal');
+    });
   
   // Debug: Check if buttons exist
   setTimeout(() => {
@@ -148,66 +245,79 @@ function populateCompetencies(competencies) {
   const container = document.getElementById('edit_competencies_container');
   container.innerHTML = '';
   if (competencies.length === 0) { container.innerHTML = '<p><em>No competencies defined</em></p>'; return; }
-  competencies.forEach((comp, index) => {
-    const compHtml = `
-      <div class="competency-edit-group" data-index="${index}">
-        <div class="competency-header">
-          <h4>${comp.type ? comp.type.charAt(0).toUpperCase() + comp.type.slice(1) : 'Basic'} Competency</h4>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Type:</label>
-            <select name="competencies[${index}][type]" required>
-              <option value="basic" ${comp.type === 'basic' ? 'selected' : ''}>Basic</option>
-              <option value="common" ${comp.type === 'common' ? 'selected' : ''}>Common</option>
-              <option value="core" ${comp.type === 'core' ? 'selected' : ''}>Core</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Name:</label>
-            <input type="text" name="competencies[${index}][name]" value="${comp.name || ''}" required placeholder="Enter competency name">
-          </div>
+  competencies.forEach((comp) => {
+    const row = document.createElement('div');
+    row.className = 'competency-edit-row';
+    row.innerHTML = `
+      <div class="form-row">
+        <div class="form-group">
+          <label>Code</label>
+          <input type="text" class="comp-code" value="${comp.competency_code || ''}" placeholder="e.g., CMP-001">
         </div>
         <div class="form-group">
-          <label>Description:</label>
-          <textarea name="competencies[${index}][description]" rows="2" placeholder="Enter description (optional)">${comp.description || ''}</textarea>
+          <label>Name</label>
+          <input type="text" class="comp-name" value="${comp.competency_name || ''}" placeholder="Competency name">
         </div>
-        <div class="competency-actions" style="text-align: right;">
-          <button type="button" class="remove-competency-btn" data-index="${index}">Remove</button>
+        <div class="form-group">
+          <label>Type</label>
+          <select class="comp-type">
+            <option value="basic" ${comp.competency_type === 'basic' ? 'selected' : ''}>Basic</option>
+            <option value="common" ${comp.competency_type === 'common' ? 'selected' : ''}>Common</option>
+            <option value="core" ${comp.competency_type === 'core' ? 'selected' : ''}>Core</option>
+          </select>
         </div>
-        <hr>
-      </div>`;
-    container.innerHTML += compHtml;
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label>Description</label>
+          <textarea class="comp-desc" rows="2">${comp.description || ''}</textarea>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select class="comp-status">
+            <option value="active" ${comp.status === 'active' ? 'selected' : ''}>Active</option>
+            <option value="archived" ${comp.status === 'archived' ? 'selected' : ''}>Archived</option>
+          </select>
+        </div>
+      </div>
+      <div class="competency-actions" style="text-align:right">
+        <button type="button" class="save-comp-btn" data-id="${comp.id}">Save</button>
+        <button type="button" class="archive-comp-btn" data-id="${comp.id}">Archive</button>
+      </div>
+      <hr>`;
+    container.appendChild(row);
   });
-  container.querySelectorAll('.remove-competency-btn').forEach(btn => {
-    btn.addEventListener('click', function() { const index = this.getAttribute('data-index'); removeCompetency(index); });
+  container.addEventListener('click', function(e){
+    const saveBtn = e.target.closest('.save-comp-btn');
+    const archBtn = e.target.closest('.archive-comp-btn');
+    if (saveBtn) {
+      const row = saveBtn.closest('.competency-edit-row');
+      const fd = new FormData();
+      fd.append('id', saveBtn.getAttribute('data-id'));
+      fd.append('competency_code', row.querySelector('.comp-code').value.trim());
+      fd.append('competency_name', row.querySelector('.comp-name').value.trim());
+      fd.append('competency_type', row.querySelector('.comp-type').value);
+      fd.append('description', row.querySelector('.comp-desc').value.trim());
+      fd.append('status', row.querySelector('.comp-status').value);
+      fetch('../php/competencies_update.php', { method: 'POST', body: fd })
+        .then(r => r.json()).then(d => { if (d.success) { alert('Saved'); } else { alert(d.message || 'Save failed'); } });
+    }
+    if (archBtn) {
+      const fd = new FormData();
+      fd.append('id', archBtn.getAttribute('data-id'));
+      fd.append('competency_code', '');
+      fd.append('competency_name', '');
+      fd.append('competency_type', 'basic');
+      fd.append('description', '');
+      fd.append('status', 'archived');
+      fetch('../php/competencies_update.php', { method: 'POST', body: fd })
+        .then(r => r.json()).then(d => { if (d.success) { alert('Archived'); } else { alert(d.message || 'Archive failed'); } });
+    }
   });
 }
 
-function removeCompetency(index) {
-  if (confirm('Are you sure you want to remove this competency?')) {
-    const competencyGroup = document.querySelector(`.competency-edit-group[data-index="${index}"]`);
-    if (competencyGroup) { competencyGroup.remove(); reindexCompetencies(); }
-  }
-}
-
-function reindexCompetencies() {
-  const competencyGroups = document.querySelectorAll('.competency-edit-group');
-  let newIndex = 0;
-  competencyGroups.forEach(group => {
-    group.setAttribute('data-index', newIndex);
-    group.querySelectorAll('[name]').forEach(input => {
-      const oldName = input.getAttribute('name');
-      const newName = oldName.replace(/competencies\[\d+\]/, `competencies[${newIndex}]`);
-      input.setAttribute('name', newName);
-    });
-    const removeBtn = group.querySelector('.remove-competency-btn');
-    if (removeBtn) { removeBtn.setAttribute('data-index', newIndex); }
-    newIndex++;
-  });
-  const container = document.getElementById('edit_competencies_container');
-  if (newIndex === 0) { container.innerHTML = '<p><em>No competencies defined</em></p>'; }
-}
+function removeCompetency(index) {}
+function reindexCompetencies() {}
 
 function submitEditCourseForm(form) {
   const formData = new FormData(form);

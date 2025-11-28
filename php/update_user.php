@@ -72,7 +72,13 @@ try {
     if ($userRole === 'trainer') {
         // Handle trainer-specific updates
         $courseCodes = $_POST['trainer_courses'] ?? [];
-        $trainerBatchesStr = isset($_POST['trainer_batches']) ? trim($_POST['trainer_batches']) : '';
+        $trainerBatchesStr = isset($_POST['trainer_batches']) ? trim((string)$_POST['trainer_batches']) : '';
+        $trainerBatchesByCourseJson = $_POST['trainer_batches_by_course'] ?? '';
+        $trainerBatchesByCourse = [];
+        if (!empty($trainerBatchesByCourseJson)) {
+            $decoded = json_decode($trainerBatchesByCourseJson, true);
+            if (is_array($decoded)) { $trainerBatchesByCourse = $decoded; }
+        }
         $hasBatchColumn = false;
         try {
             $colCheck = $pdo->query("SHOW COLUMNS FROM course_assignments LIKE 'batch_name'");
@@ -85,41 +91,46 @@ try {
 
         // 2. Insert new assignments
         if (!empty($courseCodes) && is_array($courseCodes)) {
-            // Insert course assignments
+            // Insert course assignments with per-course batch list when available
             if ($hasBatchColumn) {
                 $assignStmt = $pdo->prepare("INSERT INTO course_assignments (trainer_id, course_code, batch_name, assigned_by, date_assigned) VALUES (?, ?, ?, ?, NOW())");
                 foreach ($courseCodes as $courseCode) {
-                    if (!empty(trim($courseCode))) { $assignStmt->execute([$userId, $courseCode, $trainerBatchesStr, $_SESSION['user']['user_id']]); }
+                    $courseCode = trim((string)$courseCode);
+                    if ($courseCode === '') continue;
+                    $batchesForCourse = isset($trainerBatchesByCourse[$courseCode]) && is_array($trainerBatchesByCourse[$courseCode])
+                        ? array_filter(array_map('trim', $trainerBatchesByCourse[$courseCode]))
+                        : array_filter(array_map('trim', explode(',', $trainerBatchesStr)));
+                    $assignStmt->execute([$userId, $courseCode, implode(', ', $batchesForCourse), $_SESSION['user']['user_id']]);
                 }
             } else {
                 $assignStmt = $pdo->prepare("INSERT INTO course_assignments (trainer_id, course_code, assigned_by, date_assigned) VALUES (?, ?, ?, NOW())");
                 foreach ($courseCodes as $courseCode) {
-                    if (!empty(trim($courseCode))) { $assignStmt->execute([$userId, $courseCode, $_SESSION['user']['user_id']]); }
+                    $courseCode = trim((string)$courseCode);
+                    if ($courseCode === '') continue;
+                    $assignStmt->execute([$userId, $courseCode, $_SESSION['user']['user_id']]);
                 }
             }
 
-            // Update course_batches.trainer_id for selected batches (primary selected course only)
-            $primaryCourseCode = $courseCodes[0] ?? '';
-            $trainerBatches = array_filter(array_map('trim', explode(',', $trainerBatchesStr)));
-            
+            // Update course_batches.trainer_id for selected batches per course
             $hasCBTrainerCol = false;
             try {
                 $cbColCheck = $pdo->query("SHOW COLUMNS FROM course_batches LIKE 'trainer_id'");
                 if ($cbColCheck && $cbColCheck->rowCount() > 0) { $hasCBTrainerCol = true; }
             } catch (Exception $___) {}
-            
             if ($hasCBTrainerCol) {
-                // First, remove this trainer from ALL batches for the primary course
                 $clearStmt = $pdo->prepare("UPDATE course_batches SET trainer_id = NULL WHERE course_code = ? AND trainer_id = ?");
-                $clearStmt->execute([$primaryCourseCode, $userId]);
-                
-                // Then, assign this trainer only to the selected batches
-                if (!empty($primaryCourseCode) && !empty($trainerBatches)) {
-                    $upd = $pdo->prepare("UPDATE course_batches SET trainer_id = ? WHERE course_code = ? AND batch_name = ?");
-                    foreach ($trainerBatches as $bn) { 
-                        if ($bn !== '') { 
-                            $upd->execute([$userId, $primaryCourseCode, $bn]); 
-                        }
+                $upd = $pdo->prepare("UPDATE course_batches SET trainer_id = ? WHERE course_code = ? AND batch_name = ?");
+                foreach ($courseCodes as $courseCode) {
+                    $courseCode = trim((string)$courseCode);
+                    if ($courseCode === '') continue;
+                    // Clear previous trainer assignment for this course
+                    $clearStmt->execute([$courseCode, $userId]);
+                    // Assign selected batches
+                    $batchesForCourse = isset($trainerBatchesByCourse[$courseCode]) && is_array($trainerBatchesByCourse[$courseCode])
+                        ? array_filter(array_map('trim', $trainerBatchesByCourse[$courseCode]))
+                        : array_filter(array_map('trim', explode(',', $trainerBatchesStr)));
+                    foreach ($batchesForCourse as $bn) {
+                        if ($bn !== '') { $upd->execute([$userId, $courseCode, $bn]); }
                     }
                 }
             }
