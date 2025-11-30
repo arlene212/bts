@@ -21,23 +21,39 @@ if (empty($activityId)) {
     exit;
 }
 
-$trainerId = $_SESSION['user']['user_id'];
+  $trainerId = $_SESSION['user']['user_id'];
 
 try {
     $database = new DatabaseConnection();
     $pdo = $database->getConnection();
 
     // Verify trainer owns the course that the activity belongs to and fetch attachment path
+    $ctx = $pdo->prepare("SELECT ta.created_by, ct.course_code FROM topic_activities ta JOIN course_topics ct ON ta.topic_id = ct.id WHERE ta.id = ?");
+    $ctx->execute([$activityId]);
+    $ctxRow = $ctx->fetch(PDO::FETCH_ASSOC) ?: [];
+
     $verifyStmt = $pdo->prepare("SELECT ta.id as activity_id, ta.attachment_path, ta.topic_id
         FROM topic_activities ta
         JOIN course_topics ct ON ta.topic_id = ct.id
-        JOIN course_assignments ca ON ct.course_code = ca.course_code
-        WHERE ta.id = ? AND ca.trainer_id = ?");
-    $verifyStmt->execute([$activityId, $trainerId]);
+        LEFT JOIN course_assignments ca ON ct.course_code = ca.course_code AND ca.trainer_id = ?
+        LEFT JOIN course_batches cb ON ct.course_code = cb.course_code AND cb.trainer_id = ?
+        WHERE ta.id = ? AND (ta.created_by = ? OR ca.trainer_id IS NOT NULL OR cb.trainer_id IS NOT NULL)");
+    $verifyStmt->execute([$trainerId, $trainerId, $activityId, $trainerId]);
     $row = $verifyStmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$row) {
-        echo json_encode(['success' => false, 'message' => 'Activity not found or access denied']);
+        $courseCode = $ctxRow['course_code'] ?? null;
+        $createdBy = $ctxRow['created_by'] ?? null;
+        $assignCnt = 0; $batchCnt = 0;
+        if ($courseCode) {
+            $ac = $pdo->prepare("SELECT COUNT(*) FROM course_assignments WHERE course_code = ? AND trainer_id = ?");
+            $ac->execute([$courseCode, $trainerId]);
+            $assignCnt = (int)$ac->fetchColumn();
+            $bc = $pdo->prepare("SELECT COUNT(*) FROM course_batches WHERE course_code = ? AND trainer_id = ?");
+            $bc->execute([$courseCode, $trainerId]);
+            $batchCnt = (int)$bc->fetchColumn();
+        }
+        echo json_encode(['success' => false, 'message' => 'Activity not found or access denied', 'debug' => ['trainer_id' => $trainerId, 'activity_id' => $activityId, 'course_code' => $courseCode, 'created_by' => $createdBy, 'assignment_match' => $assignCnt, 'batch_match' => $batchCnt]]);
         exit;
     }
 
@@ -82,7 +98,7 @@ try {
         }
     }
 
-    echo json_encode(['success' => true, 'message' => 'Activity and associated submissions deleted successfully']);
+    echo json_encode(['success' => true, 'message' => 'Activity and associated submissions deleted successfully', 'debug' => ['trainer_id' => $trainerId, 'activity_id' => $activityId]]);
 
 } catch (Exception $e) {
     if ($pdo && $pdo->inTransaction()) {

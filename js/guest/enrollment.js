@@ -194,9 +194,10 @@ if (document.readyState === 'loading') {
 function setupEnrollmentButtons() {
   console.log('Setting up enrollment button listeners...');
   document.addEventListener('click', function(e) {
-    console.log('Document click detected in guest section');
-    console.log('Clicked element:', e.target);
-    console.log('Element classes:', e.target.classList);
+    const viewCard = e.target.closest('.view-course-content-btn');
+    if (viewCard && !e.target.classList.contains('enroll-btn') && !e.target.classList.contains('unenroll-btn')) {
+      return;
+    }
     
     if (e.target.classList.contains('enroll-btn') && !e.target.disabled) {
       console.log('✅ GUEST ENROLL BUTTON CLICKED!');
@@ -209,8 +210,6 @@ function setupEnrollmentButtons() {
           openEnrollModal(courseCode, courseName);
         }
       }
-    } else {
-      console.log('❌ Not a guest enroll button or button is disabled');
     }
     if (e.target.classList.contains('unenroll-btn') && !e.target.disabled) {
       let courseCode = e.target.getAttribute('data-course-code');

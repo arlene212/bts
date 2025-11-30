@@ -16,7 +16,6 @@
   <link rel="stylesheet" href="../css/utils.css">
 </head>
 <body>
-  <style>*{ -webkit-user-select: none; -ms-user-select: none; user-select: none; }</style>
   <div class="container">
     <?php include __DIR__ . '/partials/sidebar.php'; ?>
     <main class="main">

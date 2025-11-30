@@ -11,7 +11,7 @@ if (SessionManager::isLoggedIn()) {
         $role = $user['role'] ?? '';
         $mustChange = in_array($role, ['trainer', 'trainee']) && isset($user['password_changed_at']) && $user['password_changed_at'] === null;
         if ($mustChange) {
-            header('Location: /bts/html/force_change_password.php');
+            header('Location: /bts/force_change_password.php');
             exit;
         }
         switch ($role) {
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
                         $role = $newUser['role'] ?? 'guest';
                         $mustChange = in_array($role, ['trainer', 'trainee']) && isset($newUser['password_changed_at']) && $newUser['password_changed_at'] === null;
                         if ($mustChange) {
-                            header('Location: /bts/html/force_change_password.php');
+                            header('Location: /bts/force_change_password.php');
                             exit();
                         }
                         switch ($role) {
@@ -144,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/v4-shims.min.css">
 
     <!-- Critical CSS -->
+    <link rel="stylesheet" href="css/utils.css" />
     <link rel="stylesheet" href="css/landingpage-modern.css" />
     <link rel="icon" type="image/png" href="images/school.png">
 

@@ -11,9 +11,9 @@ function enrollGuest($db, $userId, $courseCode)
   $cstmt->execute([$courseCode]);
   $c = $cstmt->fetch(PDO::FETCH_ASSOC);
   if (!$c) { return ['success' => false, 'message' => 'Course not found']; }
-  $stmt = $db->prepare("INSERT INTO enrollments (trainee_id, course_code, course_name, status, date_requested) VALUES (?, ?, ?, 'pending', NOW())");
+  $stmt = $db->prepare("INSERT INTO enrollments (trainee_id, course_code, course_name, status, date_requested) VALUES (?, ?, ?, 'approved', NOW())");
   $stmt->execute([$userId, $courseCode, $c['course_name']]);
-  return ['success' => true, 'message' => 'Enrollment request sent'];
+  return ['success' => true, 'message' => 'Enrolled successfully for basic competencies'];
 }
 
 function unenrollGuest($db, $userId, $courseCode)
@@ -34,10 +34,101 @@ function getCourseDetailsForGuest($db, $courseCode, $userId)
   if (!$course) {
     return ['error' => 'Course not found'];
   }
-  $competenciesStmt = $db->prepare("SELECT type, name, description FROM course_competencies WHERE course_code = ? ORDER BY id ASC");
-  $competenciesStmt->execute([$courseCode]);
-  $competencies = $competenciesStmt->fetchAll(PDO::FETCH_ASSOC);
-  return ['course' => $course, 'competencies' => $competencies, 'batches' => []];
+
+  // Build competencies and topics/materials/activities from existing structures, limited to basic competencies
+  // 1) Get distinct competency codes referenced by this course's topics
+  $codesStmt = $db->prepare("SELECT DISTINCT competency_id FROM course_topics WHERE course_code = ?");
+  $codesStmt->execute([$courseCode]);
+  $codeRows = $codesStmt->fetchAll(PDO::FETCH_ASSOC);
+  $codes = array_map(function($r){ return $r['competency_id']; }, $codeRows);
+
+  $competencies = [];
+
+  if (!empty($codes)) {
+    // 2) Fetch only basic competencies from competencies table
+    $placeholders = implode(',', array_fill(0, count($codes), '?'));
+    $cstmt = $db->prepare("SELECT competency_code, competency_name, competency_type, description FROM competencies WHERE competency_code IN ($placeholders) AND status = 'active' AND competency_type = 'basic'");
+    $cstmt->execute($codes);
+    foreach ($cstmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+      $competencies[$row['competency_code']] = [
+        'type' => $row['competency_type'],
+        'name' => $row['competency_name'],
+        'description' => $row['description'] ?? '',
+        'topics' => []
+      ];
+    }
+  }
+
+  // 3) Get topics, materials, activities for the course
+  $stmt = $db->prepare(
+    "SELECT 
+        ct.id as topic_id, ct.competency_id, ct.topic_name, ct.topic_description,
+        tm.id as material_id, tm.material_title, tm.material_description, tm.file_path as material_file_path,
+        ta.id as activity_id, ta.activity_title, ta.activity_description, ta.activity_type
+     FROM course_topics ct
+     LEFT JOIN topic_materials tm ON ct.id = tm.topic_id
+     LEFT JOIN topic_activities ta ON ct.id = ta.topic_id
+     WHERE ct.course_code = ?
+     ORDER BY ct.created_at ASC, tm.uploaded_at ASC, ta.created_at ASC"
+  );
+  $stmt->execute([$courseCode]);
+  $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+  // 4) Group into topics under basic competencies
+  $topics = [];
+  foreach ($rows as $row) {
+    // Skip non-basic competencies
+    if (!isset($competencies[$row['competency_id']])) {
+      continue;
+    }
+
+    // Create topic entry
+    if ($row['topic_id'] && !isset($topics[$row['topic_id']])) {
+      $topics[$row['topic_id']] = [
+        'id' => $row['topic_id'],
+        'name' => $row['topic_name'],
+        'description' => $row['topic_description'],
+        'competency_id' => $row['competency_id'],
+        'materials' => [],
+        'activities' => []
+      ];
+    }
+
+    // Add material to topic
+    if ($row['material_id'] && !isset($topics[$row['topic_id']]['materials'][$row['material_id']])) {
+      $topics[$row['topic_id']]['materials'][$row['material_id']] = [
+        'id' => $row['material_id'],
+        'title' => $row['material_title'],
+        'description' => $row['material_description'],
+        'file_path' => $row['material_file_path']
+      ];
+    }
+
+    // Add activity to topic
+    if ($row['activity_id'] && !isset($topics[$row['topic_id']]['activities'][$row['activity_id']])) {
+      $topics[$row['topic_id']]['activities'][$row['activity_id']] = [
+        'id' => $row['activity_id'],
+        'title' => $row['activity_title'],
+        'description' => $row['activity_description'],
+        'type' => $row['activity_type']
+      ];
+    }
+  }
+
+  // 5) Assign topics to competencies and normalize arrays
+  foreach ($topics as $topic) {
+    if (isset($competencies[$topic['competency_id']])) {
+      $topic['materials'] = array_values($topic['materials']);
+      $topic['activities'] = array_values($topic['activities']);
+      $competencies[$topic['competency_id']]['topics'][] = $topic;
+    }
+  }
+
+  return [
+    'course' => $course,
+    'competencies' => array_values($competencies),
+    'batches' => []
+  ];
 }
 
 function updateGuestProfile($db, $userId, $data)

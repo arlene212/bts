@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Nov 28, 2025 at 04:43 PM
+-- Generation Time: Nov 30, 2025 at 11:23 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -151,6 +151,7 @@ CREATE TABLE `competencies` (
   `competency_name` varchar(255) NOT NULL,
   `competency_type` enum('basic','common','core') NOT NULL,
   `description` text DEFAULT NULL,
+  `hours_per_session` int(11) NOT NULL,
   `status` enum('active','archived') DEFAULT 'active',
   `date_created` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

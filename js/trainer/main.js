@@ -88,18 +88,5 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  // Course card functionality
-  document.addEventListener('click', function (e) {
-    const card = e.target.closest('.batch-card');
-    if (card) {
-      const titleEl = document.getElementById('course-detail-title');
-      const codeEl = document.getElementById('course-code');
-      const hoursEl = document.getElementById('course-hours');
-      const detailEl = document.getElementById('course-detail');
-      if (titleEl) titleEl.textContent = card.getAttribute('data-course');
-      if (codeEl) codeEl.textContent = card.getAttribute('data-code');
-      if (hoursEl) hoursEl.textContent = card.getAttribute('data-hours') + ' Hours';
-      if (detailEl) detailEl.classList.remove('hidden');
-    }
-  });
+  // Course card functionality is handled in course_details.js
 });

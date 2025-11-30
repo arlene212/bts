@@ -6,48 +6,9 @@
 /* Import Inter Font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-/* ===========================
-   CSS Variables & Design Tokens
-=========================== */
+/* Trainer-Specific Variables */
 :root {
-  /* Primary Colors */
-  --primary-50: #f0f9ff;
-  --primary-100: #e0f2fe;
-  --primary-200: #bae6fd;
-  --primary-300: #7dd3fc;
-  --primary-400: #38bdf8;
-  --primary-500: #0ea5e9;
-  --primary-600: #0284c7;
-  --primary-700: #0369a1;
-  --primary-800: #075985;
-  --primary-900: #0c4a6e;
-
-  /* Secondary Colors */
-  --secondary-50: #f8fafc;
-  --secondary-100: #f1f5f9;
-  --secondary-200: #e2e8f0;
-  --secondary-300: #cbd5e1;
-  --secondary-400: #94a3b8;
-  --secondary-500: #64748b;
-  --secondary-600: #475569;
-  --secondary-700: #334155;
-  --secondary-800: #1e293b;
-  --secondary-900: #0f172a;
-
-  /* Accent Colors */
-  --success-500: #10b981;
-  --warning-500: #f59e0b;
-  --error-500: #ef4444;
-  --info-500: #3b82f6;
-
-  /* Gradients */
-  --gradient-primary: linear-gradient(135deg, var(--primary-600), var(--primary-800));
-  --gradient-secondary: linear-gradient(135deg, var(--secondary-600), var(--secondary-800));
-  --gradient-accent: linear-gradient(135deg, var(--success-500), var(--info-500));
-  --gradient-card: linear-gradient(135deg, #ffffff, #f8fafc);
-  --gradient-sidebar: linear-gradient(180deg, var(--primary-800), var(--primary-900));
-
-  /* Shadows */
+  /* Trainer-specific overrides */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -2141,13 +2102,45 @@ body::before {
   opacity: 1;
   visibility: visible;
   transition: all var(--transition-normal);
-  overflow: scroll;
+  overflow: auto;
 }
 
 .modal.hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+}
+
+#profileModal .modal-content {
+  max-width: 640px;
+}
+
+.profile-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+}
+
+.profile-wrapper img#profilePreview {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: var(--shadow-md);
+  border: 2px solid var(--secondary-200);
+}
+
+.email-preview-note {
+  color: var(--secondary-600);
+  font-size: var(--font-size-xs);
+}
+
+#profileModal .modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--spacing-6);
 }
 
 .modal-content {
@@ -2357,31 +2350,95 @@ body::before {
 }
 
 /* ===========================
-   Course Detail View
+   Course Detail Overlay & Panel
 =========================== */
-.course-detail {
+#courses #course-detail {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.35);
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+}
+
+/* Modal Button Styling (map legacy classes to modern .btn look) */
+.modal .primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-5);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: white;
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.modal .primary-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.modal .primary-btn:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+
+.modal .cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-5);
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--secondary-600);
+  background: transparent;
+  border: 2px solid var(--secondary-600);
+  box-shadow: var(--shadow-sm);
+}
+
+.modal .cancel-btn:hover { background: var(--secondary-600); color: white; transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.modal .cancel-btn:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+
+#courses #course-detail:not(.hidden) { display: flex; }
+
+.course-detail-panel {
+  margin: 40px auto;
+  width: 96%;
+  max-width: 1000px;
   background: white;
   border-radius: var(--radius-xl);
-  padding: var(--spacing-8);
   box-shadow: var(--shadow-lg);
   border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
-.detail-header {
+.course-detail-panel .detail-header {
+  position: sticky;
+  top: 0;
+  background: white;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--spacing-8);
-  padding-bottom: var(--spacing-6);
+  padding: var(--spacing-6) var(--spacing-8);
   border-bottom: 2px solid var(--primary-100);
+  z-index: 2;
 }
 
-.detail-header h2 {
-  font-size: var(--font-size-3xl);
+.course-detail-panel .detail-header h2 {
+  font-size: var(--font-size-2xl);
   color: var(--primary-800);
   font-weight: 700;
   margin: 0;
 }
+
+.detail-header .header-left { display:flex; align-items:center; gap: var(--spacing-4); }
+.detail-header .header-actions { display:flex; align-items:center; gap: var(--spacing-3); }
+
+.course-detail-panel .detail-body { padding: var(--spacing-8); }
 
 .course-basic-info {
   background: var(--primary-50);
@@ -2400,6 +2457,8 @@ body::before {
 .course-basic-info strong {
   color: var(--primary-800);
 }
+
+body.modal-open { overflow: hidden; }
 
 /* ===========================
    Competencies & Topics
@@ -2960,4 +3019,107 @@ body::before {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+.materials-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.material-item {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
+  border: 1px solid var(--secondary-200);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+
+.material-item:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.material-details {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+}
+
+.material-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--primary-50);
+  color: var(--primary-600);
+}
+
+.material-info strong {
+  color: var(--primary-800);
+}
+
+.material-info p {
+  margin: var(--spacing-2) 0 0;
+  color: var(--secondary-700);
+  font-size: var(--font-size-sm);
+}
+
+.material-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.content-divider {
+  margin: var(--spacing-4) 0;
+  padding-top: var(--spacing-2);
+  border-top: 2px solid var(--primary-100);
+  color: var(--secondary-700);
+  font-weight: 600;
+}
+
+.activity-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.activity-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.activity-type {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.activity-type.assignment { background: rgba(16, 185, 129, 0.12); color: var(--success-600); }
+.activity-type.quiz { background: rgba(59, 130, 246, 0.12); color: var(--primary-600); }
+.activity-type.project { background: rgba(245, 158, 11, 0.12); color: var(--warning-600); }
+.activity-type.discussion { background: rgba(107, 114, 128, 0.12); color: var(--secondary-700); }
+
+.activity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  color: var(--secondary-600);
+  font-size: var(--font-size-xs);
+}
+
+.attachment-link {
+  color: var(--primary-700);
+  text-decoration: none;
+}
+
+.attachment-link:hover {
+  text-decoration: underline;
 }

@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$trainerId = $_SESSION['user']['user_id'];
+  $trainerId = $_SESSION['user']['user_id'];
 
 try {
     $database = new DatabaseConnection();
@@ -27,18 +27,27 @@ try {
     $maxScore = $_POST['max_score'] ?? 100;
     
     // Verify trainer has access to this activity
-    $accessStmt = $pdo->prepare("
-        SELECT ta.id 
-        FROM topic_activities ta
-        JOIN course_topics ct ON ta.topic_id = ct.id
-        JOIN course_assignments ca ON ct.course_code = ca.course_code
-        WHERE ta.id = ? AND ca.trainer_id = ?
-    ");
-    $accessStmt->execute([$activityId, $trainerId]);
+    $ctx = $pdo->prepare("SELECT ta.created_by, ct.course_code FROM topic_activities ta JOIN course_topics ct ON ta.topic_id = ct.id WHERE ta.id = ?");
+    $ctx->execute([$activityId]);
+    $ctxRow = $ctx->fetch(PDO::FETCH_ASSOC) ?: [];
+
+    $accessStmt = $pdo->prepare("\n        SELECT ta.id \n        FROM topic_activities ta\n        JOIN course_topics ct ON ta.topic_id = ct.id\n        LEFT JOIN course_assignments ca ON ct.course_code = ca.course_code AND ca.trainer_id = ?\n        LEFT JOIN course_batches cb ON ct.course_code = cb.course_code AND cb.trainer_id = ?\n        WHERE ta.id = ? AND (ta.created_by = ? OR ca.trainer_id IS NOT NULL OR cb.trainer_id IS NOT NULL)\n    ");
+    $accessStmt->execute([$trainerId, $trainerId, $activityId, $trainerId]);
     $activity = $accessStmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$activity) {
-        echo json_encode(['success' => false, 'message' => 'Access denied to this activity']);
+        $courseCode = $ctxRow['course_code'] ?? null;
+        $createdBy = $ctxRow['created_by'] ?? null;
+        $assignCnt = 0; $batchCnt = 0;
+        if ($courseCode) {
+            $ac = $pdo->prepare("SELECT COUNT(*) FROM course_assignments WHERE course_code = ? AND trainer_id = ?");
+            $ac->execute([$courseCode, $trainerId]);
+            $assignCnt = (int)$ac->fetchColumn();
+            $bc = $pdo->prepare("SELECT COUNT(*) FROM course_batches WHERE course_code = ? AND trainer_id = ?");
+            $bc->execute([$courseCode, $trainerId]);
+            $batchCnt = (int)$bc->fetchColumn();
+        }
+        echo json_encode(['success' => false, 'message' => 'Access denied to this activity', 'debug' => ['trainer_id' => $trainerId, 'activity_id' => $activityId, 'course_code' => $courseCode, 'created_by' => $createdBy, 'assignment_match' => $assignCnt, 'batch_match' => $batchCnt]]);
         exit;
     }
     
@@ -50,7 +59,7 @@ try {
     ");
     $stmt->execute([$activityTitle, $activityDescription, $dueDate, $maxScore, $maxAttempts, $startDate, $activityId]);
     
-    echo json_encode(['success' => true, 'message' => 'Activity updated successfully']);
+    echo json_encode(['success' => true, 'message' => 'Activity updated successfully', 'debug' => ['trainer_id' => $trainerId, 'activity_id' => $activityId]]);
     
 } catch (PDOException $e) {
     error_log("Database error in update_activity: " . $e->getMessage());

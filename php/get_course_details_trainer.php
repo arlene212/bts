@@ -126,11 +126,23 @@ try {
     $compStmt->execute([(int)$course['id']]);
     $competencies = $compStmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $materialsStmt = $pdo->prepare("SELECT id, course_code, competency_id, title, content_type, file_path, content, date_created FROM course_materials WHERE course_code = ? ORDER BY date_created ASC");
+    $materialsStmt->execute([$courseCode]);
+    $materials = $materialsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $materialsByCompetency = [];
+    foreach ($materials as $m) {
+        $cid = $m['competency_id'];
+        if (!isset($materialsByCompetency[$cid])) $materialsByCompetency[$cid] = [];
+        $materialsByCompetency[$cid][] = $m;
+    }
+
     echo json_encode([
         'course' => $course,
         'batches' => $batches,
         'competencies' => $competencies,
-        'topicsByCompetency' => $topicsByCompetency
+        'topicsByCompetency' => $topicsByCompetency,
+        'materialsByCompetency' => $materialsByCompetency
     ]);
     
 } catch (PDOException $e) {

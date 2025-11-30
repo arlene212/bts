@@ -29,32 +29,10 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/v4-shims.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="../css/admin.css">
   <link rel="stylesheet" href="../css/utils.css">
+  <link rel="stylesheet" href="../css/admin.css">
   <link rel="icon" type="image/png" href="../images/school.png">
-  <style>
-    .alert-modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); animation: fadeIn 0.3s; }
-    .alert-modal-content { background-color: #fff; margin: 15% auto; padding: 0; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); animation: slideDown 0.3s; }
-    .alert-modal-header { padding: 20px; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; gap: 15px; }
-    .alert-modal-icon { font-size: 24px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-    .alert-modal-icon.success { background-color: #d4edda; color: #28a745; }
-    .alert-modal-icon.error { background-color: #f8d7da; color: #dc3545; }
-    .alert-modal-icon.warning { background-color: #fff3cd; color: #ffc107; }
-    .alert-modal-icon.info { background-color: #d1ecf1; color: #17a2b8; }
-    .alert-modal-title { margin: 0; font-size: 18px; font-weight: 600; }
-    .alert-modal-body { padding: 20px; }
-    .alert-modal-footer { padding: 15px 20px; border-top: 1px solid #e5e5e5; display: flex; justify-content: flex-end; gap: 10px; }
-    .alert-modal-btn { padding: 8px 20px; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; transition: all 0.3s; }
-    .alert-modal-btn-primary { background-color: #007bff; color: white; }
-    .alert-modal-btn-primary:hover { background-color: #0056b3; }
-    .alert-modal-btn-secondary { background-color: #6c757d; color: white; }
-    .alert-modal-btn-secondary:hover { background-color: #545b62; }
-    .alert-modal-btn-danger { background-color: #dc3545; color: white; }
-    .alert-modal-btn-danger:hover { background-color: #c82333; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    * { -webkit-user-select: none; -ms-user-select: none; user-select: none; }
-  </style>
+
 </head>
 <body>
   <div class="container">
@@ -313,8 +291,8 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
     (function(){
       function d(e){ e.preventDefault(); return false; }
       ['copy','cut','paste','selectstart','dragstart'].forEach(function(ev){ document.addEventListener(ev, d, {capture:true}); });
-      // Developer tools are allowed; context menu and devtools shortcuts are not blocked
     })();
   </script>
+  
 </body>
 </html>

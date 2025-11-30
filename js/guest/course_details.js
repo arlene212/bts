@@ -1,13 +1,24 @@
 function setupCourseDetailView() {
-  document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('view-course-btn')) {
-      const courseCard = e.target.closest('.enrolled-course');
-      if (courseCard) {
-        const courseCode = courseCard.getAttribute('data-course');
-        const courseName = courseCard.getAttribute('data-title');
-        viewCourseDetails(courseCode, courseName);
-      }
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('view-course-btn')) {
+    const courseCard = e.target.closest('.enrolled-course');
+    if (courseCard) {
+      const courseCode = courseCard.getAttribute('data-course');
+      const courseName = courseCard.getAttribute('data-title');
+      viewCourseDetails(courseCode, courseName, '', '');
     }
+  }
+  const contentBtn = e.target.closest('.view-course-content-btn');
+  if (contentBtn) {
+    const courseCode = contentBtn.getAttribute('data-course-code');
+    const courseName = contentBtn.getAttribute('data-course-name');
+    const courseHours = contentBtn.getAttribute('data-course-hours') || '';
+    const courseDescription = contentBtn.getAttribute('data-course-description') || '';
+    const credited = contentBtn.getAttribute('data-credited-hours') || '';
+    if (courseCode && courseName) {
+      viewCourseDetails(courseCode, courseName, courseHours, courseDescription, credited);
+    }
+  }
   });
   const backToCourses = document.getElementById('backToCourses');
   const backToEnrolledCourses = document.getElementById('backToEnrolledCourses');
@@ -15,23 +26,33 @@ function setupCourseDetailView() {
   if (backToEnrolledCourses) { backToEnrolledCourses.addEventListener('click', resetDetailViews); }
 }
 
-function viewCourseDetails(courseCode, courseName) {
-  const enrolledContainer = document.getElementById('enrolledCoursesContainer');
+function viewCourseDetails(courseCode, courseName, hours, description, credited) {
+  const activeCoursesContent = document.getElementById('enrolled-active-courses');
+  const completedCoursesContent = document.getElementById('enrolled-completed-courses');
+  const courseSwitchContainer = document.getElementById('courseSwitchContainer');
   const courseDetailView = document.getElementById('courseDetail');
   const backButton = document.getElementById('backToEnrolledCourses');
-  if (enrolledContainer) enrolledContainer.classList.add('hidden');
-  if (courseDetailView) courseDetailView.classList.remove('hidden');
+  if (activeCoursesContent) { activeCoursesContent.style.display = 'none'; activeCoursesContent.classList.remove('active'); }
+  if (completedCoursesContent) { completedCoursesContent.style.display = 'none'; completedCoursesContent.classList.remove('active'); }
+  if (courseSwitchContainer) courseSwitchContainer.style.display = 'none';
+  if (courseDetailView) { courseDetailView.classList.remove('hidden'); courseDetailView.style.display = 'block'; }
   if (backButton) backButton.classList.remove('hidden');
+  const titleEl = document.getElementById('course-detail-title');
+  const codeEl = document.getElementById('course-detail-code');
+  const hoursEl = document.getElementById('course-detail-hours');
+  const creditedEl = document.getElementById('course-detail-credited-hours');
+  if (titleEl) titleEl.textContent = courseName || '';
+  if (codeEl) codeEl.textContent = courseCode || '';
+  if (hoursEl) hoursEl.textContent = hours ? `${hours} hrs` : '';
+  if (creditedEl) creditedEl.textContent = credited ? `Credited: ${credited} hrs` : '';
   const courseContentContainer = document.getElementById('courseDetailContent');
   if (!courseContentContainer) return;
   courseContentContainer.innerHTML = '<div>Loading course content...</div>';
-  const unenrollBtn = document.getElementById('unenrollCourseBtn');
-  if (unenrollBtn) { unenrollBtn.setAttribute('data-course-code', courseCode); unenrollBtn.setAttribute('data-course-name', courseName); }
   fetch('../guest/handlers/ajax_handlers.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `action=get_course_details&course_code=${encodeURIComponent(courseCode)}` })
     .then(response => response.json())
     .then(data => {
       if (data.error) { courseContentContainer.innerHTML = `<div class="error-message">Error: ${data.error}</div>`; return; }
-      let contentHtml = `<h2>${data.course.course_name}</h2>`;
+      let contentHtml = `<h2>Basic Competencies</h2>`;
       contentHtml += `<p class="course-description-detail">${data.course.description}</p>`;
       const basicCompetencies = (data.competencies || []).filter(comp => comp.type === 'basic');
       if (basicCompetencies.length > 0) {
@@ -70,10 +91,23 @@ function viewCourseDetails(courseCode, courseName) {
 }
 
 function resetDetailViews() {
-  const enrolledContainer = document.getElementById('enrolledCoursesContainer');
+  const activeCoursesContent = document.getElementById('enrolled-active-courses');
+  const completedCoursesContent = document.getElementById('enrolled-completed-courses');
+  const courseSwitchContainer = document.getElementById('courseSwitchContainer');
   const courseDetailView = document.getElementById('courseDetail');
   const backButton = document.getElementById('backToEnrolledCourses');
-  if (enrolledContainer) enrolledContainer.classList.remove('hidden');
-  if (courseDetailView) courseDetailView.classList.add('hidden');
+  if (courseDetailView) { courseDetailView.classList.add('hidden'); courseDetailView.style.display = 'none'; }
   if (backButton) backButton.classList.add('hidden');
+  if (courseSwitchContainer) courseSwitchContainer.style.display = 'block';
+  if (activeCoursesContent) { activeCoursesContent.style.display = 'block'; activeCoursesContent.classList.add('active'); }
+  if (completedCoursesContent) { completedCoursesContent.style.display = 'none'; completedCoursesContent.classList.remove('active'); }
+}
+
+// Initialize listeners when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    setupCourseDetailView();
+  });
+} else {
+  setupCourseDetailView();
 }

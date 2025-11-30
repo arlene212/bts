@@ -88,15 +88,29 @@ try {
     
     if ($existing) {
         logEnrollmentDebug("Existing enrollment found - ID: " . $existing['id'] . ", Status: " . $existing['status']);
-        
+
         if ($existing['status'] === 'approved') {
             echo json_encode(['success' => false, 'message' => 'You are already enrolled in this course.']);
             exit;
         } elseif ($existing['status'] === 'pending') {
+            if ($user_role === 'guest') {
+                $stmt = $pdo->prepare("UPDATE enrollments SET status = 'approved', date_requested = NOW() WHERE id = ?");
+                $stmt->execute([$existing['id']]);
+                logEnrollmentDebug("✅ Converted pending to approved for guest");
+                echo json_encode(['success' => true, 'message' => 'Enrolled successfully for basic competencies.']);
+                exit;
+            }
             echo json_encode(['success' => false, 'message' => 'You already have a pending request for this course.']);
             exit;
         } elseif ($existing['status'] === 'rejected') {
-            // Resubmit rejected request
+            if ($user_role === 'guest') {
+                $stmt = $pdo->prepare("UPDATE enrollments SET status = 'approved', date_requested = NOW() WHERE id = ?");
+                $stmt->execute([$existing['id']]);
+                logEnrollmentDebug("✅ Converted rejected to approved for guest");
+                echo json_encode(['success' => true, 'message' => 'Enrolled successfully for basic competencies.']);
+                exit;
+            }
+            // Resubmit rejected request for trainees
             $stmt = $pdo->prepare("UPDATE enrollments SET status = 'pending', date_requested = NOW() WHERE id = ?");
             $stmt->execute([$existing['id']]);
             logEnrollmentDebug("✅ Resubmitted rejected request");
@@ -116,12 +130,13 @@ try {
         date_requested,
         student_id_verification,
         email_verification
-    ) VALUES (?, ?, ?, 'pending', NOW(), ?, ?)";
+    ) VALUES (?, ?, ?, ?, NOW(), ?, ?)";
     
     $values = [
         $trainee_id,
         $course_code,
         $course['course_name'], // CRITICAL: course_name is NOT NULL
+        ($user_role === 'guest' ? 'approved' : 'pending'),
         $_POST['student_id'] ?? null,
         $_POST['email_verification'] ?? null
     ];

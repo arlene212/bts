@@ -43,96 +43,8 @@
       font-size: .9rem;
     }
 
-    #courses .course-detail {
-      padding: 12px;
-    }
-
-    #courses .course-basic-info p {
-      margin: 4px 0;
-    }
-
-    #courses .course-detail .section-header h3 {
-      margin: 0;
-    }
-
-    #courses .detail-view {
-      display: none;
-    }
-
-    #courses .detail-view.active {
-      display: block;
-    }
-
-    #courses .switch-oval {
-      position: relative;
-      display: flex;
-      background: #f8f9fa;
-      border: 1px solid #e2e6ea;
-      border-radius: 20px;
-      overflow: hidden;
-    }
-
-    #courses .switch-oval .switch-inner {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 50%;
-      height: 100%;
-      background: #e9f5ff;
-      transition: transform .2s ease;
-      z-index: 0;
-    }
-
-    #courses .switch-oval .switch-btn {
-      position: relative;
-      z-index: 1;
-      flex: 1;
-      padding: 8px 12px;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      font-size: .9rem;
-    }
-
-    #courses .news-active .switch-inner {
-      background: #ffe3e3;
-    }
-
-    #courses #course-detail {
-      position: fixed;
-      inset: 0;
-      z-index: 1000;
-      background: rgba(0, 0, 0, 0.35);
-      display: none;
-      align-items: flex-start;
-      justify-content: center;
-      overflow: auto;
-    }
-
-    #courses #course-detail:not(.hidden) {
-      display: flex;
-    }
-
-    #courses .course-detail-panel {
-      margin: 40px auto;
-      width: 96%;
-      max-width: 1000px;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
-    }
-
-    #courses .course-detail .detail-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 18px;
-      border-bottom: 1px solid #e2e6ea;
-    }
-
-    #courses .course-detail .detail-body {
-      padding: 16px 18px;
-    }
+    #courses .detail-view { display: none; }
+    #courses .detail-view.active { display: block; }
   </style>
   <div id="enrolled" class="tab-inner active">
     <h2 class="section-header">My Assigned Courses</h2>
@@ -158,10 +70,11 @@
   <div id="course-detail" class="course-detail hidden">
     <div class="course-detail-panel">
       <div class="detail-header">
-        <h2 class="course-title" id="course-detail-title">Course Name</h2>
-        <button class="back-btn btn-ripple">
-          <i class="fas fa-arrow-left"></i> Back to Courses
-        </button>
+        <div class="header-left">
+          <button class="back-btn btn btn-outline-secondary btn-sm btn-ripple"><i class="fas fa-arrow-left"></i> Back</button>
+          <h2 class="course-title" id="course-detail-title">Course Name</h2>
+        </div>
+        <div class="header-actions"></div>
       </div>
       <div class="detail-body">
         <div class="course-basic-info">
@@ -190,10 +103,10 @@
               <h3>Activity Submissions</h3>
             </div>
             <div id="submissions-list"></div>
-          </div>
-        </div>
       </div>
     </div>
+  </div>
+</div>
   </div>
 </section>
 <script>

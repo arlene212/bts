@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
       loadCourseDetails(courseCode, courseName, courseHours);
       enrolledTab && enrolledTab.classList.add('hidden');
       courseDetail && courseDetail.classList.remove('hidden');
+      document.body.classList.add('modal-open');
     });
   });
 
@@ -42,6 +43,23 @@ document.addEventListener('DOMContentLoaded', () => {
   courseBackBtn && courseBackBtn.addEventListener('click', () => {
     courseDetail && courseDetail.classList.add('hidden');
     enrolledTab && enrolledTab.classList.remove('hidden');
+    document.body.classList.remove('modal-open');
+  });
+
+  courseDetail && courseDetail.addEventListener('click', (e) => {
+    if (e.target === courseDetail) {
+      courseDetail.classList.add('hidden');
+      enrolledTab && enrolledTab.classList.remove('hidden');
+      document.body.classList.remove('modal-open');
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && courseDetail && !courseDetail.classList.contains('hidden')) {
+      courseDetail.classList.add('hidden');
+      enrolledTab && enrolledTab.classList.remove('hidden');
+      document.body.classList.remove('modal-open');
+    }
   });
 
   function loadCourseDetails(courseCode, courseName, courseHours) {
@@ -57,7 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(r => r.json())
       .then(data => {
         if (data.error) throw new Error(data.error);
-        document.getElementById('course-description')?.textContent = data.course?.description || 'No description available';
+        const cd = document.getElementById('course-description');
+        if (cd) cd.textContent = (data.course && data.course.description) ? data.course.description : 'No description available';
         const competencies = (data.competencies || []).map(c => ({
           id: c.id,
           code: c.competency_code,
@@ -66,17 +85,21 @@ document.addEventListener('DOMContentLoaded', () => {
           description: c.description,
           topics: (data.topicsByCompetency && data.topicsByCompetency[c.competency_code]) ? data.topicsByCompetency[c.competency_code] : (c.topics || [])
         }));
-        renderCompetencies(competencies);
+        const materialsByComp = data.materialsByCompetency || {};
+        renderCompetencies(competencies, materialsByComp);
         renderSubmissionsView(data.topicsByCompetency || {});
       })
       .catch(err => {
-        document.getElementById('course-description')?.textContent = 'Error loading course details';
+        const cde = document.getElementById('course-description');
+        if (cde) cde.textContent = 'Error loading course details';
         if (comps) comps.innerHTML = `<div class="error-message">${err.message}</div>`;
         if (subs) subs.innerHTML = `<div class="error-message">${err.message}</div>`;
       });
   }
+  // expose for callbacks defined outside this scope
+  window.loadCourseDetails = loadCourseDetails;
 
-  function renderCompetencies(competencies) {
+  function renderCompetencies(competencies, materialsByComp) {
     const container = document.getElementById('competencies-list');
     if (!container) return;
     container.innerHTML = '';
@@ -92,15 +115,40 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="competency-title">
             <h4><span class="competency-type ${comp.type}">${String(comp.type).toUpperCase()}</span> ${comp.name}</h4>
             <div class="competency-actions">
-              <button class="add-topic-btn" data-competency-id="${comp.id || comp.name}" data-competency-name="${comp.name}"><i class="fas fa-plus"></i> Add Topic</button>
+              <button class="btn btn-outline-primary btn-sm add-topic-btn" data-competency-id="${comp.code}" data-competency-name="${comp.name}"><i class="fas fa-plus"></i> Add Topic</button>
             </div>
           </div>
           ${comp.description ? `<p class="competency-description">${comp.description}</p>` : ''}
+        </div>
+        <div class="competency-materials">
+          <h6 class="content-divider">Competency Materials</h6>
+          ${renderCompMaterials(materialsByComp[comp.id] || [])}
         </div>
         <div class="topics-list">${renderTopics(comp.topics || [])}</div>
       `;
       container.appendChild(el);
     });
+  }
+
+  function renderCompMaterials(materials) {
+    if (!materials.length) return '<p class="no-materials">No competency-level materials.</p>';
+    return `<div class="materials-list">${materials.map(m => {
+      const href = m.file_path && (String(m.file_path).startsWith('http') ? m.file_path : ('../uploads/courses/' + m.file_path));
+      return `
+        <div class="material-item">
+          <div class="material-details">
+            <div class="material-info">
+              <strong>${m.title}</strong>
+              <p>${m.content || ''}</p>
+              ${href ? `<small><a href="${href}" target="_blank">View Material</a></small>` : ''}
+            </div>
+            <div class="material-actions">
+              <button class="icon-btn edit-comp-material-btn" data-material-id="${m.id}" data-material-title="${m.title}" data-material-description="${m.content || ''}" data-material-path="${m.file_path || ''}"><i class="fas fa-edit"></i></button>
+              <button class="icon-btn delete-comp-material-btn" data-material-id="${m.id}" data-material-title="${m.title}"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        </div>`;
+    }).join('')}</div>`;
   }
 
   function renderTopics(topics) {
@@ -116,9 +164,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ${topic.learning_objectives ? `<p class="learning-objectives"><strong>Learning Objectives:</strong> ${topic.learning_objectives}</p>` : ''}
           </div>
           <div class="topic-actions">
-            <button class="add-material-btn" data-topic-id="${topic.id}"><i class="fas fa-plus-circle"></i> Add Material</button>
-            <button class="add-activity-btn" data-topic-id="${topic.id}"><i class="fas fa-tasks"></i> Add Activity</button>
-            <button class="toggle-materials-btn" title="Show/Hide"><i class="fas fa-chevron-down"></i></button>
+            <button class="btn btn-outline-primary btn-sm add-material-btn" data-topic-id="${topic.id}"><i class="fas fa-plus-circle"></i> Add Material</button>
+            <button class="btn btn-outline-primary btn-sm add-activity-btn" data-topic-id="${topic.id}"><i class="fas fa-tasks"></i> Add Activity</button>
+            <button class="btn btn-icon toggle-materials-btn" title="Show/Hide"><i class="fas fa-chevron-down"></i></button>
           </div>
         </div>
         <div class="materials-container hidden">
@@ -135,14 +183,17 @@ document.addEventListener('DOMContentLoaded', () => {
     return `<div class="materials-list">${materials.map(m => `
       <div class="material-item">
         <div class="material-details">
-          <div class="material-info">
-            <strong>${m.material_title}</strong>
-            <p>${m.material_description || ''}</p>
-            <small><a href="${m.material_file_path && String(m.material_file_path).startsWith('http') ? m.material_file_path : ('../uploads/courses/' + m.material_file_path)}" target="_blank">View Material</a></small>
+          <div style="display:flex;align-items:flex-start;gap:12px;flex:1">
+            <div class="material-icon"><i class="fas fa-file"></i></div>
+            <div class="material-info">
+              <strong>${m.material_title}</strong>
+              <p>${m.material_description || ''}</p>
+              <small><a class="attachment-link" href="${m.material_file_path && String(m.material_file_path).startsWith('http') ? m.material_file_path : ('../uploads/courses/' + m.material_file_path)}" target="_blank">View Material</a></small>
+            </div>
           </div>
           <div class="material-actions">
-            <button class="icon-btn edit-material-btn" data-material-id="${m.id}"><i class="fas fa-edit"></i></button>
-            <button class="icon-btn delete-material-btn" data-material-id="${m.id}" data-material-title="${m.material_title}"><i class="fas fa-trash"></i></button>
+            <button class="icon-btn edit-material-btn" data-material-id="${m.id || m.material_id}" data-material-title="${m.material_title}" data-material-description="${m.material_description || ''}" data-material-path="${m.material_file_path || ''}"><i class="fas fa-edit"></i></button>
+            <button class="icon-btn delete-material-btn" data-material-id="${m.id || m.material_id}" data-material-title="${m.material_title}"><i class="fas fa-trash"></i></button>
           </div>
         </div>
       </div>`).join('')}</div>`;
@@ -153,14 +204,20 @@ document.addEventListener('DOMContentLoaded', () => {
     return activities.map(a => `
       <div class="activity-item">
         <div class="activity-header">
-          <div class="activity-info-main">
-            <div class="activity-info"><strong>${a.activity_title}</strong><span class="activity-type ${a.activity_type}">${a.activity_type}</span></div>
-            <div class="activity-actions">
-              <button class="icon-btn edit-activity-btn" data-activity-id="${a.id}"><i class="fas fa-edit"></i></button>
-              <button class="icon-btn delete-activity-btn" data-activity-id="${a.id}" data-activity-title="${a.activity_title}"><i class="fas fa-trash"></i></button>
-            </div>
+          <div class="activity-info">
+            <strong>${a.activity_title}</strong>
+            <span class="activity-type ${a.activity_type}">${a.activity_type}</span>
           </div>
-          <div class="activity-meta"><small>Due: ${new Date(a.due_date).toLocaleString()}</small><small>Max Score: ${a.max_score}</small>${a.attachment_path ? `<small><a href="${String(a.attachment_path).startsWith('http') ? a.attachment_path : ('../uploads/activities/' + a.attachment_path)}" target="_blank" class="attachment-link"><i class="fas fa-paperclip"></i> View Attachment</a></small>` : ''}</div>
+          <div class="activity-meta">
+            <small>Due: ${new Date(a.due_date).toLocaleString()}</small>
+            <small>Max Score: ${a.max_score}</small>
+            ${a.attachment_path ? `<small><a href="${String(a.attachment_path).startsWith('http') ? a.attachment_path : ('../uploads/activities/' + a.attachment_path)}" target="_blank" class="attachment-link"><i class="fas fa-paperclip"></i> View Attachment</a></small>` : ''}
+          </div>
+        </div>
+        <div class="activity-actions">
+          ${a.activity_type === 'quiz' ? `<button class="btn btn-outline-primary btn-sm manage-quiz-btn" title="Manage in Activities"><i class="fas fa-list"></i> Manage</button>` : ''}
+          <button class="icon-btn edit-activity-btn" data-activity-id="${a.id || a.activity_id}" data-activity-title="${a.activity_title}" data-activity-description="${a.activity_description || ''}" data-due-date="${a.due_date || ''}" data-max-score="${a.max_score || 100}"><i class="fas fa-edit"></i></button>
+          <button class="icon-btn delete-activity-btn" data-activity-id="${a.id || a.activity_id}" data-activity-title="${a.activity_title}"><i class="fas fa-trash"></i></button>
         </div>
       </div>
     `).join('');
@@ -218,6 +275,110 @@ document.addEventListener('DOMContentLoaded', () => {
     if (addMaterialBtn) openAddMaterialModal(addMaterialBtn.dataset.topicId);
     const addActivityBtn = e.target.closest('.add-activity-btn');
     if (addActivityBtn) openAddActivityModal(addActivityBtn.dataset.topicId);
+    const editCompMatBtn = e.target.closest('.edit-comp-material-btn');
+    if (editCompMatBtn) {
+      openEditMaterialModal({
+        id: editCompMatBtn.dataset.materialId,
+        title: editCompMatBtn.dataset.materialTitle,
+        description: editCompMatBtn.dataset.materialDescription,
+        path: editCompMatBtn.dataset.materialPath,
+      }, 'course');
+    }
+    const deleteCompMatBtn = e.target.closest('.delete-comp-material-btn');
+    if (deleteCompMatBtn) {
+      const id = deleteCompMatBtn.dataset.materialId;
+      openConfirm('Confirm Delete', 'Delete course material: ' + (deleteCompMatBtn.dataset.materialTitle || '') + '?', () => {
+        fetch('../php/delete_course_material.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ material_id: id })
+        })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            openConfirm('Confirm Action', 'Course material deleted.', () => {
+              const code = document.getElementById('course-code')?.textContent || '';
+              const name = document.getElementById('course-detail-title')?.textContent || '';
+              const hours = document.getElementById('course-hours')?.textContent || '';
+              loadCourseDetails(code, name, hours);
+            }, { confirmText: 'Confirm' });
+          } else {
+            openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+          }
+        })
+        .catch(() => openConfirm('Error', 'Network error while deleting course material', () => {}, { confirmText: 'OK', showCancel: false }));
+      }, { confirmText: 'Delete' });
+    }
+    const editMaterialBtn = e.target.closest('.edit-material-btn');
+    if (editMaterialBtn) {
+      openEditMaterialModal({
+        id: editMaterialBtn.dataset.materialId,
+        title: editMaterialBtn.dataset.materialTitle,
+        description: editMaterialBtn.dataset.materialDescription,
+        path: editMaterialBtn.dataset.materialPath,
+      });
+    }
+    const deleteMaterialBtn = e.target.closest('.delete-material-btn');
+    if (deleteMaterialBtn) {
+      const id = deleteMaterialBtn.dataset.materialId;
+      openConfirm('Confirm Delete', 'Delete material: ' + (deleteMaterialBtn.dataset.materialTitle || '') + '?', () => {
+        fetch('../php/delete_material.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ material_id: id })
+        })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            openConfirm('Confirm Action', 'Material deleted.', () => {
+              const code = document.getElementById('course-code')?.textContent || '';
+              const name = document.getElementById('course-detail-title')?.textContent || '';
+              const hours = document.getElementById('course-hours')?.textContent || '';
+              loadCourseDetails(code, name, hours);
+            }, { confirmText: 'Confirm' });
+          } else {
+            openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+          }
+        })
+        .catch(() => openConfirm('Error', 'Network error while deleting material', () => {}, { confirmText: 'OK', showCancel: false }));
+      }, { confirmText: 'Delete' });
+    }
+    const editActivityBtn = e.target.closest('.edit-activity-btn');
+    if (editActivityBtn) {
+      openEditActivityModal({
+        id: editActivityBtn.dataset.activityId,
+        title: editActivityBtn.dataset.activityTitle,
+        description: editActivityBtn.dataset.activityDescription,
+        due: editActivityBtn.dataset.dueDate,
+        max: editActivityBtn.dataset.maxScore,
+      });
+    }
+    const deleteActivityBtn = e.target.closest('.delete-activity-btn');
+    if (deleteActivityBtn) {
+      const id = deleteActivityBtn.dataset.activityId;
+      openConfirm('Confirm Delete', 'Delete activity: ' + (deleteActivityBtn.dataset.activityTitle || '') + '?', () => {
+        fetch('../php/delete_activity.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ activity_id: id })
+        })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            openConfirm('Confirm Action', 'Activity deleted.', () => {
+              const code = document.getElementById('course-code')?.textContent || '';
+              const name = document.getElementById('course-detail-title')?.textContent || '';
+              const hours = document.getElementById('course-hours')?.textContent || '';
+              loadCourseDetails(code, name, hours);
+            }, { confirmText: 'Confirm' });
+          } else {
+            openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+          }
+        })
+        .catch(() => openConfirm('Error', 'Network error while deleting activity', () => {}, { confirmText: 'OK', showCancel: false }));
+      }, { confirmText: 'Delete' });
+    }
+    // per-competency Upload Module removed; use global header button
   });
 
   function openAddTopicModal(courseCode, courseName, competencyId, competencyName) {
@@ -256,6 +417,121 @@ document.addEventListener('DOMContentLoaded', () => {
     modal.classList.remove('hidden');
   }
 
+  // Add Material modal interactions
+  const addMaterialForm = document.getElementById('addMaterialForm');
+  const materialTypeSel = document.getElementById('material_type');
+  const fileGroup = document.getElementById('file_input_group');
+  const linkGroup = document.getElementById('link_input_group');
+  document.getElementById('cancelMaterial')?.addEventListener('click', () => {
+    document.getElementById('addMaterialModal')?.classList.add('hidden');
+  });
+  document.getElementById('closeMaterialModal')?.addEventListener('click', () => {
+    document.getElementById('addMaterialModal')?.classList.add('hidden');
+  });
+  materialTypeSel?.addEventListener('change', function() {
+    const type = this.value;
+    if (type === 'file') {
+      fileGroup?.classList.remove('hidden');
+      linkGroup?.classList.add('hidden');
+    } else if (type === 'link') {
+      linkGroup?.classList.remove('hidden');
+      fileGroup?.classList.add('hidden');
+    }
+  });
+  addMaterialForm?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(addMaterialForm);
+    const submitBtn = addMaterialForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true; submitBtn.textContent = 'Adding...';
+    fetch('../php/add_materials.php', { method: 'POST', body: formData })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          document.getElementById('addMaterialModal')?.classList.add('hidden');
+          openConfirm('Confirm Action', 'Material added successfully.', () => {
+            const code = document.getElementById('course-code')?.textContent || '';
+            const name = document.getElementById('course-detail-title')?.textContent || '';
+            const hours = document.getElementById('course-hours')?.textContent || '';
+            loadCourseDetails(code, name, hours);
+          }, { confirmText: 'Confirm' });
+        } else {
+          openConfirm('Error', 'Add material failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+        }
+      })
+      .catch(() => { openConfirm('Error', 'Network error while adding material', () => {}, { confirmText: 'OK', showCancel: false }); })
+      .finally(() => { submitBtn.disabled = false; submitBtn.textContent = 'Add Material'; addMaterialForm.reset(); });
+  });
+
+  // Add Activity modal interactions
+  const addActivityForm = document.getElementById('addActivityForm');
+  const activityAttachmentSel = document.getElementById('activity_attachment_type');
+  const activityFileGroup = document.getElementById('activity_file_input_group');
+  const activityLinkGroup = document.getElementById('activity_link_input_group');
+  document.getElementById('cancelActivity')?.addEventListener('click', () => {
+    document.getElementById('addActivityModal')?.classList.add('hidden');
+  });
+  document.getElementById('closeActivityModal')?.addEventListener('click', () => {
+    document.getElementById('addActivityModal')?.classList.add('hidden');
+  });
+  activityAttachmentSel?.addEventListener('change', function() {
+    const type = this.value;
+    if (type === 'file') {
+      activityFileGroup?.classList.remove('hidden');
+      activityLinkGroup?.classList.add('hidden');
+    } else if (type === 'link') {
+      activityLinkGroup?.classList.remove('hidden');
+      activityFileGroup?.classList.add('hidden');
+    } else {
+      activityFileGroup?.classList.add('hidden');
+      activityLinkGroup?.classList.add('hidden');
+    }
+  });
+  addActivityForm?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const startDateDate = document.getElementById('start_date_date')?.value || '';
+    const startDateTime = document.getElementById('start_date_time')?.value || '';
+    const dueDateDate = document.getElementById('due_date_date')?.value || '';
+    const dueDateTime = document.getElementById('due_date_time')?.value || '';
+    const startHidden = document.getElementById('start_date');
+    const dueHidden = document.getElementById('due_date');
+    if (startHidden) startHidden.value = (startDateDate && startDateTime) ? `${startDateDate} ${startDateTime}:00` : '';
+    if (dueHidden) dueHidden.value = (dueDateDate && dueDateTime) ? `${dueDateDate} ${dueDateTime}:00` : '';
+    const formData = new FormData(addActivityForm);
+    const submitBtn = addActivityForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true; submitBtn.textContent = 'Adding...';
+    fetch('../php/add_activity.php', { method: 'POST', body: formData })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          document.getElementById('addActivityModal')?.classList.add('hidden');
+          openConfirm('Confirm Action', 'Activity added successfully.', () => {
+            const code = document.getElementById('course-code')?.textContent || '';
+            const name = document.getElementById('course-detail-title')?.textContent || '';
+            const hours = document.getElementById('course-hours')?.textContent || '';
+            loadCourseDetails(code, name, hours);
+          }, { confirmText: 'Confirm' });
+        } else {
+          openConfirm('Error', 'Add activity failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+        }
+      })
+      .catch(() => { openConfirm('Error', 'Network error while adding activity', () => {}, { confirmText: 'OK', showCancel: false }); })
+      .finally(() => { submitBtn.disabled = false; submitBtn.textContent = 'Add Activity'; addActivityForm.reset(); });
+  });
+
+  // Connect quiz-type activities to Quizzes management tab
+  document.getElementById('competencies-list')?.addEventListener('click', function(e) {
+    const manageBtn = e.target.closest('.manage-quiz-btn');
+    if (manageBtn) {
+      if (typeof switchToTab === 'function') {
+        switchToTab('quizzes');
+      } else {
+        const url = new URL(window.location.href);
+        url.searchParams.set('current_tab', 'quizzes');
+        window.location.href = url.toString();
+      }
+    }
+  });
+
   const gradeModal = document.getElementById('gradeSubmissionModal');
   const gradeForm = document.getElementById('gradeSubmissionForm');
   function openGradeModal(submissionId, currentScore, maxScore, feedback) {
@@ -282,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(r => r.json())
       .then(d => {
         if (d.success) {
-          alert('Grade saved successfully!');
+          openConfirm('Success', 'Grade saved successfully!', () => {}, { confirmText: 'OK', showCancel: false });
           gradeModal.classList.add('hidden');
           const row = document.querySelector(`tr[data-submission-id="${submissionId}"]`);
           if (row) {
@@ -294,10 +570,150 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.dataset.feedback = formData.get('feedback');
           }
         } else {
-          alert('Error saving grade: ' + (d.message || 'Unknown'));
+          openConfirm('Error', 'Error saving grade: ' + (d.message || 'Unknown'), () => {}, { confirmText: 'OK', showCancel: false });
         }
       })
-      .catch(() => {})
+      .catch(() => { openConfirm('Error', 'Network error while saving grade', () => {}, { confirmText: 'OK', showCancel: false }); })
       .finally(() => { submitBtn.disabled = false; submitBtn.textContent = 'Save Grade'; });
   });
 });
+  // Universal module uploader removed; modules are added per topic via Add Material
+  const addTopicForm = document.getElementById('addTopicForm');
+  document.getElementById('cancelTopic')?.addEventListener('click', () => {
+    document.getElementById('addTopicModal')?.classList.add('hidden');
+  });
+  document.getElementById('closeTopicModal')?.addEventListener('click', () => {
+    document.getElementById('addTopicModal')?.classList.add('hidden');
+  });
+  addTopicForm?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(addTopicForm);
+    const submitBtn = addTopicForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true; submitBtn.textContent = 'Adding...';
+    fetch('../php/add_topic.php', { method: 'POST', body: formData })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          document.getElementById('addTopicModal')?.classList.add('hidden');
+          openConfirm('Confirm Action', 'Topic added successfully.', () => {
+            const code = document.getElementById('course-code')?.textContent || '';
+            const name = document.getElementById('course-detail-title')?.textContent || '';
+            const hours = document.getElementById('course-hours')?.textContent || '';
+            loadCourseDetails(code, name, hours);
+          }, { confirmText: 'Confirm' });
+        } else {
+          openConfirm('Error', 'Add topic failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+        }
+      })
+      .catch(() => { openConfirm('Error', 'Network error while adding topic', () => {}, { confirmText: 'OK', showCancel: false }); })
+      .finally(() => { submitBtn.disabled = false; submitBtn.textContent = 'Add Topic'; addTopicForm.reset(); });
+  });
+
+  // Modal confirm helper
+  const confirmModal = document.getElementById('confirmationModal');
+  const confirmTitleEl = document.getElementById('confirmationTitle');
+  const confirmMsgEl = document.getElementById('confirmationMessage');
+  const confirmBtn = document.getElementById('confirmActionBtn');
+  const cancelBtn = document.getElementById('cancelConfirmation');
+  let confirmCallback = null;
+  function openConfirm(title, message, onConfirm, opts = {}) {
+    if (confirmTitleEl) confirmTitleEl.textContent = title || 'Confirm';
+    if (confirmMsgEl) confirmMsgEl.textContent = message || '';
+    const confirmText = opts.confirmText || 'Confirm';
+    if (confirmBtn) confirmBtn.textContent = confirmText;
+    if (cancelBtn) cancelBtn.style.display = opts.showCancel === false ? 'none' : '';
+    confirmCallback = typeof onConfirm === 'function' ? onConfirm : null;
+    confirmModal && confirmModal.classList.remove('hidden');
+  }
+  confirmBtn?.addEventListener('click', () => {
+    confirmModal?.classList.add('hidden');
+    const cb = confirmCallback; confirmCallback = null;
+    if (cb) cb();
+  });
+  cancelBtn?.addEventListener('click', () => {
+    confirmModal?.classList.add('hidden');
+    confirmCallback = null;
+  });
+  let editMaterialScope = 'topic';
+  function openEditMaterialModal(material, scope = 'topic') {
+    editMaterialScope = scope;
+    const modal = document.getElementById('editMaterialModal');
+    const idEl = document.getElementById('edit_material_id');
+    const titleEl = document.getElementById('edit_material_title');
+    const descEl = document.getElementById('edit_material_description');
+    const infoEl = document.getElementById('edit_material_file_info');
+    if (idEl) idEl.value = material.id || '';
+    if (titleEl) titleEl.value = material.title || '';
+    if (descEl) descEl.value = material.description || '';
+    if (infoEl) {
+      infoEl.innerHTML = material.path ? `<small>Current file: ${material.path}</small>` : '<small>No file attached</small>';
+    }
+    modal && modal.classList.remove('hidden');
+  }
+
+  document.getElementById('cancelEditMaterial')?.addEventListener('click', () => document.getElementById('editMaterialModal')?.classList.add('hidden'));
+  document.getElementById('closeEditMaterialModal')?.addEventListener('click', () => document.getElementById('editMaterialModal')?.classList.add('hidden'));
+
+  const editMaterialForm = document.getElementById('editMaterialForm');
+  editMaterialForm?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(editMaterialForm);
+    const submitBtn = editMaterialForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true; submitBtn.textContent = 'Saving...';
+    const endpoint = editMaterialScope === 'course' ? '../php/update_course_material.php' : '../php/update_material.php';
+    fetch(endpoint, { method: 'POST', body: formData })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          document.getElementById('editMaterialModal')?.classList.add('hidden');
+          openConfirm('Confirm Action', 'Material updated.', () => {
+            const code = document.getElementById('course-code')?.textContent || '';
+            const name = document.getElementById('course-detail-title')?.textContent || '';
+            const hours = document.getElementById('course-hours')?.textContent || '';
+            loadCourseDetails(code, name, hours);
+          }, { confirmText: 'Confirm' });
+        } else {
+          openConfirm('Error', 'Update failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+        }
+      })
+      .catch(() => openConfirm('Error', 'Network error during material update', () => {}, { confirmText: 'OK', showCancel: false }))
+      .finally(() => { submitBtn.disabled = false; submitBtn.textContent = 'Save Changes'; });
+  });
+
+  function openEditActivityModal(activity) {
+    const modal = document.getElementById('editActivityModal');
+    document.getElementById('edit_activity_id').value = activity.id || '';
+    document.getElementById('edit_activity_title').value = activity.title || '';
+    document.getElementById('edit_activity_description').value = activity.description || '';
+    document.getElementById('edit_due_date').value = activity.due ? new Date(activity.due).toISOString().slice(0,16) : '';
+    document.getElementById('edit_max_score').value = activity.max || 100;
+    modal && modal.classList.remove('hidden');
+  }
+
+  document.getElementById('cancelEditActivity')?.addEventListener('click', () => document.getElementById('editActivityModal')?.classList.add('hidden'));
+  document.getElementById('closeEditActivityModal')?.addEventListener('click', () => document.getElementById('editActivityModal')?.classList.add('hidden'));
+
+  const editActivityForm = document.getElementById('editActivityForm');
+  editActivityForm?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(editActivityForm);
+    const submitBtn = editActivityForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true; submitBtn.textContent = 'Saving...';
+    fetch('../php/update_activity.php', { method: 'POST', body: formData })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          document.getElementById('editActivityModal')?.classList.add('hidden');
+          openConfirm('Confirm Action', 'Activity updated.', () => {
+            const code = document.getElementById('course-code')?.textContent || '';
+            const name = document.getElementById('course-detail-title')?.textContent || '';
+            const hours = document.getElementById('course-hours')?.textContent || '';
+            loadCourseDetails(code, name, hours);
+          }, { confirmText: 'Confirm' });
+        } else {
+          openConfirm('Error', 'Update failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+        }
+      })
+      .catch(() => openConfirm('Error', 'Network error during activity update', () => {}, { confirmText: 'OK', showCancel: false }))
+      .finally(() => { submitBtn.disabled = false; submitBtn.textContent = 'Save Changes'; });
+  });

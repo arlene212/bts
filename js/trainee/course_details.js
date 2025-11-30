@@ -1,19 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
   const courseDetail = document.getElementById('courseDetail') || document.getElementById('course-detail');
   const backBtn = courseDetail ? courseDetail.querySelector('.back-btn') : null;
-  const modulesView = document.getElementById('modules-view');
-  const activitiesView = document.getElementById('activities-view');
+  const modulesPane = document.getElementById('modules-pane') || document.getElementById('modules-view');
+  const activitiesPane = document.getElementById('activities-pane') || document.getElementById('activities-view');
 
   function openCourseDetail(card) {
     const courseCode = card.getAttribute('data-course-code') || card.getAttribute('data-course');
     const courseName = card.getAttribute('data-course-name') || card.getAttribute('data-title');
     const courseHours = card.getAttribute('data-course-hours');
     const courseDescription = card.getAttribute('data-course-description');
+    const creditedHours = card.getAttribute('data-credited-hours');
 
     if (document.getElementById('course-detail-title')) document.getElementById('course-detail-title').textContent = courseName || 'Course Details';
     if (document.getElementById('course-detail-code')) document.getElementById('course-detail-code').textContent = `Code: ${courseCode || 'N/A'}`;
     if (document.getElementById('course-detail-hours')) document.getElementById('course-detail-hours').textContent = `Hours: ${courseHours || 'N/A'} hrs`;
     if (document.getElementById('course-detail-description')) document.getElementById('course-detail-description').textContent = courseDescription || '';
+    if (document.getElementById('course-detail-credited-hours')) document.getElementById('course-detail-credited-hours').textContent = `Credited: ${creditedHours || '0'} hrs`;
 
     if (courseDetail) {
       courseDetail.classList.remove('hidden');
@@ -43,27 +45,36 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function resetCourseDetailView() {
-    const switchInner = courseDetail?.querySelector('.course-switch .switch-inner');
-    const buttons = courseDetail?.querySelectorAll('.course-switch .switch-btn');
-    if (switchInner && buttons && buttons.length) {
-      switchInner.style.transform = 'translateX(0%)';
-      modulesView?.classList.add('active');
-      activitiesView?.classList.remove('active');
-      modulesView && (modulesView.style.display = 'block');
-      activitiesView && (activitiesView.style.display = 'none');
-      buttons[0].classList.add('active');
-      buttons[1].classList.remove('active');
+    if (modulesPane && activitiesPane) {
+      modulesPane.classList.add('active');
+      activitiesPane.classList.remove('active');
+    }
+    const tabs = document.getElementById('detailTabs');
+    if (tabs) {
+      const btns = tabs.querySelectorAll('.tab-btn');
+      btns.forEach(b => b.classList.remove('active'));
+      const first = btns[0];
+      if (first) {
+        first.classList.add('active');
+        const indicator = tabs.querySelector('.tab-indicator');
+        if (indicator) {
+          const rect = first.getBoundingClientRect();
+          const tabsRect = tabs.getBoundingClientRect();
+          indicator.style.transform = `translateX(${rect.left - tabsRect.left}px)`;
+          indicator.style.width = `${rect.width}px`;
+        }
+      }
     }
   }
 
   function loadCourseDetails(courseCode) {
     const competenciesCard = document.getElementById('competencies-card');
     const modulesList = document.getElementById('modules-list');
-    const activitiesContainer = document.getElementById('activities-view');
-    if (!competenciesCard || !modulesList || !activitiesContainer) return;
+    const activitiesList = document.getElementById('activities-list');
+    if (!competenciesCard || !modulesList || !activitiesList) return;
     competenciesCard.innerHTML = '<div>Loading competencies...</div>';
-    modulesList.innerHTML = '<div>Loading modules...</div>';
-    activitiesContainer.innerHTML = '<div>Loading activities...</div>';
+    modulesList.innerHTML = '<div class="skeleton"></div>';
+    activitiesList.innerHTML = '<div class="skeleton"></div>';
 
     fetch(`../php/get_course_details_trainee.php?course_code=${encodeURIComponent(courseCode)}`)
       .then(r => r.json())
@@ -76,7 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         renderCompetenciesSummary(data.competencies || [], competenciesCard);
         renderModulesFromCompetencies(data.competencies || [], modulesList);
-        renderActivitiesInteractive(data.activities || [], activitiesContainer);
+        renderActivitiesInteractive(data.activities || [], activitiesList);
+        // update counts in tabs
+        const modulesCountEl = document.getElementById('modules-count');
+        const activitiesCountEl = document.getElementById('activities-count');
+        modulesCountEl && (modulesCountEl.textContent = modulesList.querySelectorAll('.module-item').length);
+        activitiesCountEl && (activitiesCountEl.textContent = activitiesList.querySelectorAll('.activity-item, .topic-activity-item').length);
       })
       .catch(() => {
         competenciesCard.innerHTML = '<div class="error-message">Failed to load competencies.</div>';

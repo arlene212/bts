@@ -133,9 +133,12 @@ document.addEventListener('DOMContentLoaded', function () {
       const code = card.getAttribute('data-course-code');
       const hours = card.getAttribute('data-course-hours');
       const desc = card.getAttribute('data-course-description');
+      const credited = card.getAttribute('data-credited-hours');
       document.getElementById('course-detail-title').textContent = name;
       document.getElementById('course-detail-code').textContent = code;
       document.getElementById('course-detail-hours').textContent = hours + ' hrs';
+      const ch = document.getElementById('course-detail-credited-hours');
+      if (ch) ch.textContent = 'Credited: ' + (credited || '0') + ' hrs';
       document.getElementById('course-detail-description').textContent = desc;
       document.getElementById('courseDetail').classList.remove('hidden');
     }

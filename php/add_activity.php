@@ -66,12 +66,33 @@ try {
         $filePath = filter_var($_POST['activity_link'], FILTER_SANITIZE_URL);
     }
 
-    // Insert activity into the database
-    $stmt = $pdo->prepare("
-        INSERT INTO topic_activities (topic_id, activity_title, activity_description, activity_type, due_date, max_score, attachment_path, created_by, start_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ");
-    $stmt->execute([$topicId, $activityTitle, $activityDescription, $activityType, $dueDate, $maxScore, $filePath, $trainerId, $_POST['start_date'] ?: null]);
+    // For quiz-type activities, create a corresponding record in quizzes and link via parent_activity_id
+    $parentQuizId = null;
+    if (strtolower($activityType) === 'quiz') {
+        // Get topic context: course_code and competency_code
+        $ctxStmt = $pdo->prepare("SELECT ct.course_code, ct.competency_id AS comp_code, c.id AS course_id FROM course_topics ct JOIN courses c ON ct.course_code = c.course_code WHERE ct.id = ?");
+        $ctxStmt->execute([$topicId]);
+        $ctx = $ctxStmt->fetch(PDO::FETCH_ASSOC);
+        if ($ctx) {
+            // Resolve numeric competency_id from competencies by competency_code and course_id
+            $compStmt = $pdo->prepare("SELECT id FROM competencies WHERE course_id = ? AND competency_code = ? LIMIT 1");
+            $compStmt->execute([$ctx['course_id'], $ctx['comp_code']]);
+            $compId = $compStmt->fetchColumn();
+            // Insert minimal quiz row
+            $qStmt = $pdo->prepare("INSERT INTO quizzes (course_code, competency_id, title, description, time_limit, max_attempts, passing_score, is_randomized, show_correct_answers, status, created_by) VALUES (?, ?, ?, ?, NULL, 1, 70.00, 0, 1, 'draft', ?)");
+            $qStmt->execute([$ctx['course_code'], $compId ?: null, $activityTitle, $activityDescription, $trainerId]);
+            $parentQuizId = $pdo->lastInsertId();
+            // Store due_date for quizzes display if provided
+            if (!empty($dueDate)) {
+                $qs = $pdo->prepare("INSERT INTO quiz_settings (quiz_id, setting_key, setting_value) VALUES (?, 'due_date', ?)");
+                $qs->execute([$parentQuizId, $dueDate]);
+            }
+        }
+    }
+
+    // Insert activity into the database (link to quiz if created)
+    $stmt = $pdo->prepare("INSERT INTO topic_activities (topic_id, activity_title, activity_description, activity_type, due_date, max_score, attachment_path, created_by, start_date, parent_activity_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$topicId, $activityTitle, $activityDescription, $activityType, $dueDate, $maxScore, $filePath, $trainerId, $_POST['start_date'] ?: null, $parentQuizId]);
 
     echo json_encode(['success' => true, 'message' => 'Activity added successfully.']);
 
