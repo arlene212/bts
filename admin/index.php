@@ -333,7 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $courseCode = $_POST['course_code'];
     $courseHours = $_POST['course_hours'];
     $courseDescription = $_POST['course_description'] ?? '';
-    $learningOutcomes = $_POST['course_learning_outcomes'] ?? '';
+    $learningOutcomes = '';
     $courseStatus = $_POST['course_status'] ?? 'published';
     $allowPreview = $_POST['allow_preview'] ?? 0;
     $previewContent = $_POST['course_preview_content'] ?? '';
@@ -359,44 +359,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $courseImage = $fileName;
       }
     }
-    $stmt = $pdo->prepare("INSERT INTO courses (course_name, course_code, hours, description, learning_outcomes, course_status, allow_preview, preview_content, require_verification, verification_type, image, schedule_days_per_week, schedule_days, session_hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO courses (course_name, competency_name, module_title, course_code, hours, nominal_hours, description, learning_outcomes, course_status, allow_preview, preview_content, require_verification, verification_type, image, schedule_days_per_week, schedule_days, session_hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     try {
-      $stmt->execute([$courseName, $courseCode, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, $courseImage, $scheduleDaysPerWeek, $scheduleDays, $sessionHours]);
+      $stmt->execute([$courseName, $courseName, $courseName, $courseCode, $courseHours, 0, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, $courseImage, $scheduleDaysPerWeek, $scheduleDays, $sessionHours]);
       // Insert competencies linked to this course
       $cidStmt = $pdo->prepare("SELECT id FROM courses WHERE course_code = ?");
       $cidStmt->execute([$courseCode]);
       $courseRow = $cidStmt->fetch(PDO::FETCH_ASSOC);
       $courseId = $courseRow ? (int)$courseRow['id'] : 0;
       if ($courseId > 0) {
-        $insComp = $pdo->prepare("INSERT INTO competencies (course_id, competency_code, competency_name, competency_type, description, status, date_created) VALUES (?, ?, ?, ?, ?, 'active', NOW())");
+        $insComp = $pdo->prepare("INSERT INTO competencies (course_id, unit_order, competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes, status, date_created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW())");
         $makeCode = function($courseCode, $type, $num) { return $courseCode . '-' . ucfirst($type) . '-' . $num; };
         // basic
         foreach ((array)$basicList as $idx => $name) {
           $name = trim((string)$name);
-          if ($name !== '') {
-            $desc = trim((string)($basicDesc[$idx] ?? ''));
+          $mod = trim((string)($_POST['basic_module_title'][$idx] ?? ''));
+          $hrs = isset($_POST['basic_nominal_hours'][$idx]) ? (int)$_POST['basic_nominal_hours'][$idx] : 0;
+          $lo = (string)($_POST['basic_learning_outcomes'][$idx] ?? '');
+          $desc = trim((string)($basicDesc[$idx] ?? ''));
+          if ($name !== '' && $mod !== '' && $hrs > 0) {
             $code = $makeCode($courseCode, 'basic', $idx + 1);
-            $insComp->execute([$courseId, $code, $name, 'basic', $desc]);
+            $insComp->execute([$courseId, ($idx + 1), $code, $name, $mod, 'basic', $hrs, $desc, $lo]);
           }
         }
         // common
         foreach ((array)$commonList as $idx => $name) {
           $name = trim((string)$name);
-          if ($name !== '') {
-            $desc = trim((string)($commonDesc[$idx] ?? ''));
+          $mod = trim((string)($_POST['common_module_title'][$idx] ?? ''));
+          $hrs = isset($_POST['common_nominal_hours'][$idx]) ? (int)$_POST['common_nominal_hours'][$idx] : 0;
+          $lo = (string)($_POST['common_learning_outcomes'][$idx] ?? '');
+          $desc = trim((string)($commonDesc[$idx] ?? ''));
+          if ($name !== '' && $mod !== '' && $hrs > 0) {
             $code = $makeCode($courseCode, 'common', $idx + 1);
-            $insComp->execute([$courseId, $code, $name, 'common', $desc]);
+            $insComp->execute([$courseId, ($idx + 1), $code, $name, $mod, 'common', $hrs, $desc, $lo]);
           }
         }
         // core
         foreach ((array)$coreList as $idx => $name) {
           $name = trim((string)$name);
-          if ($name !== '') {
-            $desc = trim((string)($coreDesc[$idx] ?? ''));
+          $mod = trim((string)($_POST['core_module_title'][$idx] ?? ''));
+          $hrs = isset($_POST['core_nominal_hours'][$idx]) ? (int)$_POST['core_nominal_hours'][$idx] : 0;
+          $lo = (string)($_POST['core_learning_outcomes'][$idx] ?? '');
+          $desc = trim((string)($coreDesc[$idx] ?? ''));
+          if ($name !== '' && $mod !== '' && $hrs > 0) {
             $code = $makeCode($courseCode, 'core', $idx + 1);
-            $insComp->execute([$courseId, $code, $name, 'core', $desc]);
+            $insComp->execute([$courseId, ($idx + 1), $code, $name, $mod, 'core', $hrs, $desc, $lo]);
           }
         }
+        try {
+          $sumStmt = $pdo->prepare("UPDATE courses SET nominal_hours = (SELECT COALESCE(SUM(nominal_hours),0) FROM competencies WHERE course_id = ? AND status = 'active') WHERE id = ?");
+          $sumStmt->execute([$courseId, $courseId]);
+        } catch (Exception $__) {}
       }
     } catch (PDOException $e) {
       $_SESSION['error_message'] = "Error adding course: " . $e->getMessage();
@@ -508,6 +521,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           $deleteStmt = $pdo->prepare("DELETE FROM $table WHERE $column = ?");
           $deleteStmt->execute([$userId]);
         }
+        try {
+          $sumStmt = $pdo->prepare("UPDATE courses SET nominal_hours = (SELECT COALESCE(SUM(nominal_hours),0) FROM competencies WHERE course_id = ? AND status = 'active') WHERE id = ?");
+          $sumStmt->execute([$courseId, $courseId]);
+        } catch (Exception $__) {}
       }
       $stmt = $pdo->prepare("DELETE FROM users WHERE user_id = ?");
       $stmt->execute([$userId]);
@@ -579,15 +596,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $courseName = $_POST['course_name'];
     $courseHours = $_POST['course_hours'];
     $courseDescription = $_POST['course_description'] ?? '';
-    $learningOutcomes = $_POST['course_learning_outcomes'] ?? '';
+    $learningOutcomes = '';
     $courseStatus = $_POST['course_status'] ?? 'published';
     $allowPreview = $_POST['allow_preview'] ?? 0;
     $previewContent = $_POST['course_preview_content'] ?? '';
     $requireVerification = $_POST['require_verification'] ?? 0;
     $verificationType = $_POST['verification_type'] ?? 'email';
     try {
-      $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, learning_outcomes = ?, course_status = ?, allow_preview = ?, preview_content = ?, require_verification = ?, verification_type = ? WHERE course_code = ?");
-      $stmt->execute([$courseName, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, $courseCode]);
+      $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, course_status = ?, allow_preview = ?, preview_content = ?, require_verification = ?, verification_type = ? WHERE course_code = ?");
+      $stmt->execute([$courseName, $courseHours, $courseDescription, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, $courseCode]);
       // Safely update scheduling only if columns exist
       try {
         $scheduleDaysPerWeek = $_POST['schedule_days_per_week'] ?? null;

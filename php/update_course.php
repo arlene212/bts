@@ -38,6 +38,7 @@ try {
     
     // Handle file upload
     $courseImage = null;
+    
     if (isset($_FILES['course_image']) && $_FILES['course_image']['error'] === 0) {
         // Validate file type
         $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
@@ -68,11 +69,44 @@ try {
     
     // Build update query
     if ($courseImage) {
-        $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, learning_outcomes = ?, course_status = ?, allow_preview = ?, preview_content = ?, image = ?, schedule_days_per_week = ?, schedule_days = ?, session_hours = ? WHERE course_code = ?");
-        $stmt->execute([$courseName, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $courseImage, $scheduleDaysPerWeek, $scheduleDays, $sessionHours, $courseCode]);
+        $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, course_status = ?, allow_preview = ?, preview_content = ?, image = ?, schedule_days_per_week = ?, schedule_days = ?, session_hours = ? WHERE course_code = ?");
+        $stmt->execute([$courseName, $courseHours, $courseDescription, $courseStatus, $allowPreview, $previewContent, $courseImage, $scheduleDaysPerWeek, $scheduleDays, $sessionHours, $courseCode]);
     } else {
-        $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, learning_outcomes = ?, course_status = ?, allow_preview = ?, preview_content = ?, schedule_days_per_week = ?, schedule_days = ?, session_hours = ? WHERE course_code = ?");
-        $stmt->execute([$courseName, $courseHours, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $scheduleDaysPerWeek, $scheduleDays, $sessionHours, $courseCode]);
+        $stmt = $pdo->prepare("UPDATE courses SET course_name = ?, hours = ?, description = ?, course_status = ?, allow_preview = ?, preview_content = ?, schedule_days_per_week = ?, schedule_days = ?, session_hours = ? WHERE course_code = ?");
+        $stmt->execute([$courseName, $courseHours, $courseDescription, $courseStatus, $allowPreview, $previewContent, $scheduleDaysPerWeek, $scheduleDays, $sessionHours, $courseCode]);
+    }
+
+    // Bulk update competencies if provided
+    if (!empty($_POST['competencies_json'])) {
+        $list = json_decode($_POST['competencies_json'], true);
+        if (is_array($list)) {
+            $upd = $pdo->prepare("UPDATE competencies SET competency_code = ?, competency_name = ?, module_title = ?, competency_type = ?, nominal_hours = ?, description = ?, learning_outcomes = ?, status = ? WHERE id = ?");
+            foreach ($list as $comp) {
+                $id = (int)($comp['id'] ?? 0);
+                if ($id <= 0) { continue; }
+                $upd->execute([
+                    (string)($comp['competency_code'] ?? ''),
+                    (string)($comp['competency_name'] ?? ''),
+                    (string)($comp['module_title'] ?? ''),
+                    (string)($comp['competency_type'] ?? 'basic'),
+                    (int)($comp['nominal_hours'] ?? 0),
+                    (string)($comp['description'] ?? ''),
+                    (string)($comp['learning_outcomes'] ?? ''),
+                    (string)($comp['status'] ?? 'active'),
+                    $id
+                ]);
+            }
+            // Recompute aggregate nominal hours
+            try {
+                $cidStmt = $pdo->prepare("SELECT id FROM courses WHERE course_code = ?");
+                $cidStmt->execute([$courseCode]);
+                $courseId = (int)($cidStmt->fetchColumn() ?: 0);
+                if ($courseId > 0) {
+                    $sumStmt = $pdo->prepare("UPDATE courses SET nominal_hours = (SELECT COALESCE(SUM(nominal_hours),0) FROM competencies WHERE course_id = ? AND status = 'active') WHERE id = ?");
+                    $sumStmt->execute([$courseId, $courseId]);
+                }
+            } catch (Exception $__) {}
+        }
     }
     
     if ($stmt->rowCount() > 0) {

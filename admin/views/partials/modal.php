@@ -99,6 +99,7 @@
           <div class="form-group"><label for="course_name">Course Name:</label><input type="text" id="course_name" name="course_name" required></div>
           <div class="form-group"><label for="course_code">Course Code:</label><input type="text" id="course_code" name="course_code" required></div>
           <div class="form-group"><label for="course_hours">Course Hours:</label><input type="number" id="course_hours" name="course_hours" required min="1"></div>
+          
           <div class="form-group">
             <label for="course_image">Course Image:</label>
             <div class="file-input-wrapper">
@@ -109,7 +110,7 @@
             <div id="add_course_image_preview" class="image-preview-section"></div>
           </div>
           <div class="form-group form-group-full"><label for="course_description">Description:</label><textarea id="course_description" name="course_description" rows="3"></textarea></div>
-          <div class="form-group form-group-full"><label for="course_learning_outcomes">Learning Outcomes:</label><textarea id="course_learning_outcomes" name="course_learning_outcomes" rows="4" placeholder="Enter learning outcomes for this course (what students will be able to do after completing this course)"></textarea></div>
+          <div class="form-group form-group-full"><label>Learning Outcomes:</label><small class="form-text">Add learning outcomes per competency unit below.</small></div>
           <div class="form-row">
             <div class="form-group">
               <label for="course_status">Course Status:</label>
@@ -183,9 +184,9 @@
         </div>
         <div class="competencies-section">
           <h3>Course Competencies</h3>
-          <div class="competency-group" id="basicCompetenciesGroup"><div class="competency-header"><h4>Basic Competencies</h4><button type="button" class="add-competency-btn" data-type="basic">+ Add Another</button></div><div class="competency-fields"><div class="competency-field-group"><div class="form-group"><label>Name:</label><input type="text" name="basic_competency[]" placeholder="Enter basic competency name"></div><div class="form-group"><label>Description:</label><textarea name="basic_competency_desc[]" rows="2" placeholder="Enter description (optional)"></textarea></div><div class="form-group"><label>Generated Code:</label><input type="text" class="generated-comp-code" readonly placeholder="Auto-generated"></div></div></div></div>
-          <div class="competency-group" id="commonCompetenciesGroup"><div class="competency-header"><h4>Common Competencies</h4><button type="button" class="add-competency-btn" data-type="common">+ Add Another</button></div><div class="competency-fields"><div class="competency-field-group"><div class="form-group"><label>Name:</label><input type="text" name="common_competency[]" placeholder="Enter common competency name"></div><div class="form-group"><label>Description:</label><textarea name="common_competency_desc[]" rows="2" placeholder="Enter description (optional)"></textarea></div><div class="form-group"><label>Generated Code:</label><input type="text" class="generated-comp-code" readonly placeholder="Auto-generated"></div></div></div></div>
-          <div class="competency-group" id="coreCompetenciesGroup"><div class="competency-header"><h4>Core Competencies</h4><button type="button" class="add-competency-btn" data-type="core">+ Add Another</button></div><div class="competency-fields"><div class="competency-field-group"><div class="form-group"><label>Name:</label><input type="text" name="core_competency[]" placeholder="Enter core competency name"></div><div class="form-group"><label>Description:</label><textarea name="core_competency_desc[]" rows="2" placeholder="Enter description (optional)"></textarea></div><div class="form-group"><label>Generated Code:</label><input type="text" class="generated-comp-code" readonly placeholder="Auto-generated"></div></div></div></div>
+          <div class="competency-group" id="basicCompetenciesGroup"><div class="competency-header"><h4>Basic Competencies</h4><button type="button" class="add-competency-btn" data-type="basic">+ Add Another</button></div><div class="competency-fields"><div class="competency-field-group"><div class="form-group"><label>Name:</label><input type="text" name="basic_competency[]" placeholder="Enter basic competency name"></div><div class="form-group"><label>Module Title:</label><input type="text" name="basic_module_title[]" placeholder="Enter module title"></div><div class="form-group"><label>Nominal Hours:</label><input type="number" name="basic_nominal_hours[]" min="1" placeholder="e.g., 8"></div><div class="form-group"><label>Learning Outcomes:</label><textarea name="basic_learning_outcomes[]" rows="3" placeholder="Enter learning outcomes"></textarea></div><div class="form-group"><label>Description:</label><textarea name="basic_competency_desc[]" rows="2" placeholder="Enter description (optional)"></textarea></div><div class="form-group"><label>Generated Code:</label><input type="text" class="generated-comp-code" readonly placeholder="Auto-generated"></div></div></div></div>
+          <div class="competency-group" id="commonCompetenciesGroup"><div class="competency-header"><h4>Common Competencies</h4><button type="button" class="add-competency-btn" data-type="common">+ Add Another</button></div><div class="competency-fields"><div class="competency-field-group"><div class="form-group"><label>Name:</label><input type="text" name="common_competency[]" placeholder="Enter common competency name"></div><div class="form-group"><label>Module Title:</label><input type="text" name="common_module_title[]" placeholder="Enter module title"></div><div class="form-group"><label>Nominal Hours:</label><input type="number" name="common_nominal_hours[]" min="1" placeholder="e.g., 12"></div><div class="form-group"><label>Learning Outcomes:</label><textarea name="common_learning_outcomes[]" rows="3" placeholder="Enter learning outcomes"></textarea></div><div class="form-group"><label>Description:</label><textarea name="common_competency_desc[]" rows="2" placeholder="Enter description (optional)"></textarea></div><div class="form-group"><label>Generated Code:</label><input type="text" class="generated-comp-code" readonly placeholder="Auto-generated"></div></div></div></div>
+          <div class="competency-group" id="coreCompetenciesGroup"><div class="competency-header"><h4>Core Competencies</h4><button type="button" class="add-competency-btn" data-type="core">+ Add Another</button></div><div class="competency-fields"><div class="competency-field-group"><div class="form-group"><label>Name:</label><input type="text" name="core_competency[]" placeholder="Enter core competency name"></div><div class="form-group"><label>Module Title:</label><input type="text" name="core_module_title[]" placeholder="Enter module title"></div><div class="form-group"><label>Nominal Hours:</label><input type="number" name="core_nominal_hours[]" min="1" placeholder="e.g., 30"></div><div class="form-group"><label>Learning Outcomes:</label><textarea name="core_learning_outcomes[]" rows="3" placeholder="Enter learning outcomes"></textarea></div><div class="form-group"><label>Description:</label><textarea name="core_competency_desc[]" rows="2" placeholder="Enter description (optional)"></textarea></div><div class="form-group"><label>Generated Code:</label><input type="text" class="generated-comp-code" readonly placeholder="Auto-generated"></div></div></div></div>
         </div>
       </div>
       <div class="modal-footer"><button type="button" class="cancel-btn">Cancel</button><button type="submit" name="add_course" class="submit-btn">Add Course</button></div>
@@ -205,7 +206,7 @@
             <option value="">Select a course</option>
             <?php foreach ($courses as $course): ?>
               <option value="<?php echo $course['course_code']; ?>"
-                data-hours="<?php echo (int)($course['hours'] ?? 0); ?>"
+                data-hours="<?php echo (int)($course['nominal_hours'] ?? ($course['hours'] ?? 0)); ?>"
                 data-days-per-week="<?php echo (int)($course['schedule_days_per_week'] ?? 0); ?>"
                 data-session-hours="<?php echo htmlspecialchars($course['session_hours'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                 <?php echo htmlspecialchars($course['course_name'] . ' (' . $course['course_code'] . ')'); ?>
@@ -297,9 +298,8 @@
             <small class="form-text">Provide a detailed description of the course</small>
           </div>
           <div class="form-group">
-            <label for="edit_course_learning_outcomes">Learning Outcomes</label>
-            <textarea id="edit_course_learning_outcomes" name="course_learning_outcomes" rows="4" class="form-control" placeholder="What students will be able to do after completing this course..."></textarea>
-            <small class="form-text">List the learning outcomes students will achieve</small>
+            <label>Learning Outcomes</label>
+            <small class="form-text">Manage learning outcomes per competency unit below.</small>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -455,3 +455,15 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="modal-footer"><button type="button" class="submit-btn" onclick="closeModal('resetPasswordConfirmationModal')">OK</button></div>
   </div>
 </div>
+            <div class="form-group">
+              <label for="edit_competency_name">Competency Name <span class="required">*</span></label>
+              <input type="text" id="edit_competency_name" name="competency_name" required pattern="^[A-Za-z0-9 _-]+$" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="edit_module_title">Module Title <span class="required">*</span></label>
+              <input type="text" id="edit_module_title" name="module_title" required maxlength="100" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="edit_nominal_hours">Nominal Hours <span class="required">*</span></label>
+              <input type="number" id="edit_nominal_hours" name="nominal_hours" required min="1" class="form-control">
+            </div>

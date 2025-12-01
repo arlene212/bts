@@ -50,6 +50,9 @@ function renderCourseDetails(content, data) {
       .competency-content { display:none; padding:10px 12px; }
       .competency-content.active { display:block; }
       .toggle-icon { font-size:0.9em; color:#6c757d; }
+      .comp-meta { display:flex; flex-wrap:wrap; gap:12px; padding:8px; background:#f9fafb; border:1px solid #e9ecef; border-radius:6px; margin-bottom:10px; }
+      .comp-meta .meta-item { min-width:240px; }
+      .comp-meta .lo-content { padding:6px 8px; background:#fff; border:1px dashed #e2e6ea; border-radius:6px; }
       .topics-section .topic-item { border-top:1px dashed #e2e6ea; padding:10px 0; }
       .materials-section, .activities-section { margin-top:8px; }
       .submissions-section { margin-top:8px; }
@@ -84,6 +87,14 @@ function renderCourseDetails(content, data) {
       const code = comp.competency_code || comp.code;
       if (type && name) {
         html += `<div class="competency-item" id="comp-${code}"><div class="competency-header"><strong>${String(type).toUpperCase()}:</strong> ${name}${desc ? ` - ${desc}` : ''}<span class="toggle-icon">▼</span></div><div class="competency-content">`;
+        const mt = comp.module_title || '';
+        const nh = comp.nominal_hours != null ? comp.nominal_hours : '';
+        const lo = comp.learning_outcomes || '';
+        html += `<div class="comp-meta">
+          <div class="meta-item"><strong>Module Title:</strong> ${mt || '—'}</div>
+          <div class="meta-item"><strong>Hours:</strong> ${nh || '—'}</div>
+          <div class="meta-item" style="flex:1 1 100%"><strong>Learning Outcomes:</strong><div class="lo-content">${lo}</div></div>
+        </div>`;
         const modules = (data.materialsByCompetency && data.materialsByCompetency[code]) ? data.materialsByCompetency[code] : [];
         if (modules.length) {
           html += `<div class="materials-section"><h6>📚 Modules:</h6><ul class="materials-list">`;

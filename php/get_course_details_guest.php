@@ -38,7 +38,7 @@ try {
 
     // Get 'basic' competencies for this course from competencies table via course_topics
     // Fetch basic competencies by course_id
-    $cstmt = $pdo->prepare("SELECT competency_code, competency_name, competency_type, description FROM competencies WHERE course_id = (SELECT id FROM courses WHERE course_code = ?) AND status = 'active' AND competency_type = 'basic' ORDER BY competency_name");
+  $cstmt = $pdo->prepare("SELECT competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes FROM competencies WHERE course_id = (SELECT id FROM courses WHERE course_code = ?) AND status = 'active' AND competency_type = 'basic' ORDER BY unit_order, competency_name");
     $cstmt->execute([$courseCode]);
     $basicCompetencies = $cstmt->fetchAll(PDO::FETCH_ASSOC);
 

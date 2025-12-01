@@ -25,18 +25,22 @@ $today = date('Y-m-d');
 $dayAbbr = date('D');
 
 $coursesStmt = $pdo->prepare(
-    "SELECT course_code, hours, schedule_days, session_hours
-     FROM courses
-     WHERE course_status = 'published'
-       AND schedule_days IS NOT NULL AND TRIM(schedule_days) <> ''
-       AND session_hours IS NOT NULL AND session_hours > 0"
+    "SELECT c.course_code,
+            COALESCE((SELECT SUM(nominal_hours)
+                      FROM competencies comp
+                      WHERE comp.course_id = c.id AND comp.status = 'active'), c.nominal_hours, c.hours) AS total_hours,
+            c.schedule_days, c.session_hours
+     FROM courses c
+     WHERE c.course_status = 'published'
+       AND c.schedule_days IS NOT NULL AND TRIM(c.schedule_days) <> ''
+       AND c.session_hours IS NOT NULL AND c.session_hours > 0"
 );
 $coursesStmt->execute();
 $courses = $coursesStmt->fetchAll();
 
 foreach ($courses as $course) {
     $code = $course['course_code'];
-    $totalHours = (int)$course['hours'];
+    $totalHours = (int)$course['total_hours'];
     $sessionHours = (int)$course['session_hours'];
     $daysStr = (string)$course['schedule_days'];
     $days = array_filter(array_map(function ($d) { return strtoupper(trim($d)); }, explode(',', $daysStr)));

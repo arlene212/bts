@@ -28,6 +28,18 @@ function addCompetencyField(type) {
       <input type="text" name="${type}_competency[]" placeholder="Enter ${type} competency name">
     </div>
     <div class="form-group">
+      <label>Module Title:</label>
+      <input type="text" name="${type}_module_title[]" placeholder="Enter module title">
+    </div>
+    <div class="form-group">
+      <label>Nominal Hours:</label>
+      <input type="number" name="${type}_nominal_hours[]" min="1" placeholder="e.g., 8">
+    </div>
+    <div class="form-group">
+      <label>Learning Outcomes:</label>
+      <textarea name="${type}_learning_outcomes[]" rows="3" placeholder="Enter learning outcomes"></textarea>
+    </div>
+    <div class="form-group">
       <label>Description:</label>
       <textarea name="${type}_competency_desc[]" rows="2" placeholder="Enter description (optional)"></textarea>
     </div>

@@ -47,7 +47,7 @@ function getCourseDetailsForGuest($db, $courseCode, $userId)
   if (!empty($codes)) {
     // 2) Fetch only basic competencies from competencies table
     $placeholders = implode(',', array_fill(0, count($codes), '?'));
-    $cstmt = $db->prepare("SELECT competency_code, competency_name, competency_type, description FROM competencies WHERE competency_code IN ($placeholders) AND status = 'active' AND competency_type = 'basic'");
+    $cstmt = $db->prepare("SELECT competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes FROM competencies WHERE competency_code IN ($placeholders) AND status = 'active' AND competency_type = 'basic'");
     $cstmt->execute($codes);
     foreach ($cstmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
       $competencies[$row['competency_code']] = [

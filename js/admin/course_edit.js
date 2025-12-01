@@ -9,7 +9,10 @@ function setupCourseEditing() {
   });
   const editCourseForm = document.getElementById('editCourseForm');
   if (editCourseForm) {
-    editCourseForm.addEventListener('submit', function(e) { e.preventDefault(); submitEditCourseForm(this); });
+    editCourseForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      submitEditCourseForm(this);
+    });
   }
   
   // Handle preview toggle for edit form
@@ -105,7 +108,12 @@ function setupCourseEditing() {
           <div class="form-group"><label>Name</label><input type="text" id="new_comp_name" placeholder="Competency name"></div>
           <div class="form-group"><label>Type</label><select id="new_comp_type"><option value="basic">Basic</option><option value="common">Common</option><option value="core">Core</option></select></div>
         </div>
+        <div class="form-row">
+          <div class="form-group"><label>Module Title</label><input type="text" id="new_comp_module_title" placeholder="Module title"></div>
+          <div class="form-group"><label>Nominal Hours</label><input type="number" id="new_comp_nominal_hours" min="1" placeholder="e.g., 8"></div>
+        </div>
         <div class="form-row"><div class="form-group" style="flex:1"><label>Description</label><textarea id="new_comp_desc" rows="2"></textarea></div></div>
+        <div class="form-row"><div class="form-group" style="flex:1"><label>Learning Outcomes</label><textarea id="new_comp_learning_outcomes" rows="3"></textarea></div></div>
         <div style="text-align:right"><button type="button" id="create_comp_btn">Create</button></div>
         <hr>`;
       container.prepend(form);
@@ -114,9 +122,15 @@ function setupCourseEditing() {
         const nameVal = document.getElementById('new_comp_name').value.trim();
         const typeVal = document.getElementById('new_comp_type').value;
         const descVal = document.getElementById('new_comp_desc').value.trim();
+        const moduleVal = document.getElementById('new_comp_module_title').value.trim();
+        const hoursVal = parseInt(document.getElementById('new_comp_nominal_hours').value || '0', 10) || 0;
+        const loVal = document.getElementById('new_comp_learning_outcomes').value;
         fd.append('competency_name', nameVal);
         fd.append('competency_type', typeVal);
         fd.append('description', descVal);
+        fd.append('module_title', moduleVal);
+        fd.append('nominal_hours', String(hoursVal));
+        fd.append('learning_outcomes', loVal);
         const refresh = () => {
           const code = document.getElementById('edit_course_code').value;
           fetch('../php/get_competencies.php?course_code=' + encodeURIComponent(code))
@@ -146,7 +160,6 @@ function openEditCourseModal(courseData) {
       document.getElementById('edit_course_name').value = c.course_name || courseData.course_name || '';
       document.getElementById('edit_course_hours').value = c.hours || courseData.hours || '';
       document.getElementById('edit_course_description').value = c.description || courseData.description || '';
-      document.getElementById('edit_course_learning_outcomes').value = c.learning_outcomes || courseData.learning_outcomes || '';
       document.getElementById('edit_course_status').value = c.course_status ?? courseData.course_status ?? 'published';
       document.getElementById('edit_allow_preview').value = c.allow_preview ?? courseData.allow_preview ?? 0;
       document.getElementById('edit_course_preview_content').value = c.preview_content ?? courseData.preview_content ?? '';
@@ -193,7 +206,6 @@ function openEditCourseModal(courseData) {
       document.getElementById('edit_course_name').value = courseData.course_name || '';
       document.getElementById('edit_course_hours').value = courseData.hours || '';
       document.getElementById('edit_course_description').value = courseData.description || '';
-      document.getElementById('edit_course_learning_outcomes').value = courseData.learning_outcomes || '';
       document.getElementById('edit_course_status').value = courseData.course_status || 'published';
       document.getElementById('edit_allow_preview').value = courseData.allow_preview || 0;
       document.getElementById('edit_course_preview_content').value = courseData.preview_content || '';
@@ -245,75 +257,69 @@ function populateCompetencies(competencies) {
   const container = document.getElementById('edit_competencies_container');
   container.innerHTML = '';
   if (competencies.length === 0) { container.innerHTML = '<p><em>No competencies defined</em></p>'; return; }
-  competencies.forEach((comp) => {
-    const row = document.createElement('div');
-    row.className = 'competency-edit-row';
-    row.innerHTML = `
-      <div class="form-row">
-        <div class="form-group">
-          <label>Code</label>
-          <input type="text" class="comp-code" value="${comp.competency_code || ''}" placeholder="e.g., CMP-001">
+  const groups = { basic: [], common: [], core: [] };
+  competencies.forEach(c => { (groups[c.competency_type] || groups.basic).push(c); });
+  ['basic','common','core'].forEach(type => {
+    const list = groups[type];
+    if (!list || list.length === 0) return;
+    const section = document.createElement('div');
+    section.className = 'competency-group-section';
+    const title = type.charAt(0).toUpperCase() + type.slice(1) + ' Competencies';
+    section.innerHTML = `<div class="competency-group-header"><h5>${title}</h5></div>`;
+    const grid = document.createElement('div');
+    grid.className = 'competencies-grid';
+    list.sort((a,b)=> (a.unit_order||0) - (b.unit_order||0));
+    list.forEach(comp => {
+      const row = document.createElement('div');
+      row.className = 'competency-edit-row';
+      row.setAttribute('data-comp-id', comp.id);
+      row.setAttribute('data-comp-type', type);
+      row.innerHTML = `
+        <div class="form-row">
+          <div class="form-group">
+            <label>Code</label>
+            <input type="text" class="comp-code" value="${comp.competency_code || ''}" placeholder="e.g., CMP-001">
+          </div>
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" class="comp-name" value="${comp.competency_name || ''}" placeholder="Competency name">
+          </div>
         </div>
-        <div class="form-group">
-          <label>Name</label>
-          <input type="text" class="comp-name" value="${comp.competency_name || ''}" placeholder="Competency name">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Module Title</label>
+            <input type="text" class="comp-module" value="${comp.module_title || ''}" placeholder="Module title">
+          </div>
+          <div class="form-group">
+            <label>Nominal Hours</label>
+            <input type="number" class="comp-hours" min="1" value="${comp.nominal_hours || ''}" placeholder="e.g., 8">
+          </div>
         </div>
-        <div class="form-group">
-          <label>Type</label>
-          <select class="comp-type">
-            <option value="basic" ${comp.competency_type === 'basic' ? 'selected' : ''}>Basic</option>
-            <option value="common" ${comp.competency_type === 'common' ? 'selected' : ''}>Common</option>
-            <option value="core" ${comp.competency_type === 'core' ? 'selected' : ''}>Core</option>
-          </select>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Learning Outcomes</label>
+            <textarea class="comp-lo" rows="3">${comp.learning_outcomes || ''}</textarea>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea class="comp-desc" rows="2">${comp.description || ''}</textarea>
+          </div>
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group" style="flex:1">
-          <label>Description</label>
-          <textarea class="comp-desc" rows="2">${comp.description || ''}</textarea>
-        </div>
-        <div class="form-group">
-          <label>Status</label>
-          <select class="comp-status">
-            <option value="active" ${comp.status === 'active' ? 'selected' : ''}>Active</option>
-            <option value="archived" ${comp.status === 'archived' ? 'selected' : ''}>Archived</option>
-          </select>
-        </div>
-      </div>
-      <div class="competency-actions" style="text-align:right">
-        <button type="button" class="save-comp-btn" data-id="${comp.id}">Save</button>
-        <button type="button" class="archive-comp-btn" data-id="${comp.id}">Archive</button>
-      </div>
-      <hr>`;
-    container.appendChild(row);
+        <div class="form-row">
+          <div class="form-group">
+            <label>Status</label>
+            <select class="comp-status">
+              <option value="active" ${comp.status === 'active' ? 'selected' : ''}>Active</option>
+              <option value="archived" ${comp.status === 'archived' ? 'selected' : ''}>Archived</option>
+            </select>
+          </div>
+        </div>`;
+      grid.appendChild(row);
+    });
+    section.appendChild(grid);
+    container.appendChild(section);
   });
-  container.addEventListener('click', function(e){
-    const saveBtn = e.target.closest('.save-comp-btn');
-    const archBtn = e.target.closest('.archive-comp-btn');
-    if (saveBtn) {
-      const row = saveBtn.closest('.competency-edit-row');
-      const fd = new FormData();
-      fd.append('id', saveBtn.getAttribute('data-id'));
-      fd.append('competency_code', row.querySelector('.comp-code').value.trim());
-      fd.append('competency_name', row.querySelector('.comp-name').value.trim());
-      fd.append('competency_type', row.querySelector('.comp-type').value);
-      fd.append('description', row.querySelector('.comp-desc').value.trim());
-      fd.append('status', row.querySelector('.comp-status').value);
-      fetch('../php/competencies_update.php', { method: 'POST', body: fd })
-        .then(r => r.json()).then(d => { if (d.success) { alert('Saved'); } else { alert(d.message || 'Save failed'); } });
-    }
-    if (archBtn) {
-      const fd = new FormData();
-      fd.append('id', archBtn.getAttribute('data-id'));
-      fd.append('competency_code', '');
-      fd.append('competency_name', '');
-      fd.append('competency_type', 'basic');
-      fd.append('description', '');
-      fd.append('status', 'archived');
-      fetch('../php/competencies_update.php', { method: 'POST', body: fd })
-        .then(r => r.json()).then(d => { if (d.success) { alert('Archived'); } else { alert(d.message || 'Archive failed'); } });
-    }
-  });
+  // Buttons removed; saving handled on Update Course submit
 }
 
 function removeCompetency(index) {}
@@ -321,6 +327,20 @@ function reindexCompetencies() {}
 
 function submitEditCourseForm(form) {
   const formData = new FormData(form);
+  const compContainer = document.getElementById('edit_competencies_container');
+  const rows = compContainer ? Array.from(compContainer.querySelectorAll('.competency-edit-row')) : [];
+  const comps = rows.map(row => ({
+    id: row.getAttribute('data-comp-id'),
+    competency_code: row.querySelector('.comp-code')?.value?.trim() || '',
+    competency_name: row.querySelector('.comp-name')?.value?.trim() || '',
+    module_title: row.querySelector('.comp-module')?.value?.trim() || '',
+    competency_type: row.getAttribute('data-comp-type') || 'basic',
+    nominal_hours: parseInt(row.querySelector('.comp-hours')?.value || '0', 10) || 0,
+    description: row.querySelector('.comp-desc')?.value?.trim() || '',
+    learning_outcomes: row.querySelector('.comp-lo')?.value || '',
+    status: row.querySelector('.comp-status')?.value || 'active'
+  }));
+  formData.append('competencies_json', JSON.stringify(comps));
   const submitBtn = form.querySelector('.submit-btn');
   const originalText = submitBtn.textContent;
   submitBtn.textContent = 'Updating...';
@@ -384,3 +404,6 @@ function setupBatchScheduling() {
   // initial
   computeEnd();
 }
+document.addEventListener('DOMContentLoaded', function(){
+  setupCourseEditing();
+});

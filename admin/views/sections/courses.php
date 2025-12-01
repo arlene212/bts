@@ -23,7 +23,7 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
     .course-card.card.expanded .course-description { max-height: none; overflow: visible; }
     .course-card.card.collapsed .course-learning-outcomes { max-height: 96px; overflow: hidden; }
     .course-card.card.expanded .course-learning-outcomes { max-height: none; overflow: visible; }
-    .course-card.card.collapsed .course-description { max-width: 100px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; }
+    .course-card.card.collapsed .course-description { max-width: 90%; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; }
     .course-card.card.collapsed .course-learning-outcomes { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; line-clamp: 6; }
     .course-card.card.expanded .course-description, .course-card.card.expanded .course-learning-outcomes { display: block; }
     .competency-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
@@ -37,7 +37,7 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
         $courseSpecificBatches = is_array($courseBatches) ? array_filter($courseBatches, function ($batch) use ($course) { return $batch['course_code'] == $course['course_code']; }) : [];
         try {
           if (!isset($pdo) || !($pdo instanceof PDO)) { require_once __DIR__ . '/../../php/DatabaseConnection.php'; $database = new DatabaseConnection(); $pdo = $database->getConnection(); }
-          $competenciesStmt = $pdo->prepare("SELECT competency_code, competency_name, competency_type, description FROM competencies WHERE course_id = ? AND status = 'active' ORDER BY competency_type, competency_name");
+          $competenciesStmt = $pdo->prepare("SELECT competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes FROM competencies WHERE course_id = ? AND status = 'active' ORDER BY competency_type, unit_order, competency_name");
           $competenciesStmt->execute([(int)$course['id']]);
           $competencies = $competenciesStmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $__) { $competencies = []; }
@@ -156,6 +156,9 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
                     'course_code' => $course['course_code'], 
                     'course_id' => $course['id'],
                     'hours' => $course['hours'], 
+                    'nominal_hours' => $course['nominal_hours'] ?? null,
+                    'competency_name' => $course['competency_name'] ?? '',
+                    'module_title' => $course['module_title'] ?? '',
                     'description' => $course['description'], 
                     'learning_outcomes' => $course['learning_outcomes'] ?? '',
                     'course_status' => $course['course_status'] ?? 'published',
@@ -178,6 +181,9 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
                     'course_code' => $course['course_code'], 
                     'course_name' => $course['course_name'], 
                     'hours' => $course['hours'], 
+                    'nominal_hours' => $course['nominal_hours'] ?? null,
+                    'competency_name' => $course['competency_name'] ?? '',
+                    'module_title' => $course['module_title'] ?? '',
                     'description' => $course['description'], 
                     'learning_outcomes' => $course['learning_outcomes'] ?? '',
                     'course_status' => $course['course_status'] ?? 'published',

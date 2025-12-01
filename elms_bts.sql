@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Nov 30, 2025 at 11:23 AM
+-- Generation Time: Nov 30, 2025 at 05:23 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -141,16 +141,19 @@ CREATE TABLE `certificates` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `competencies`
 --
 
 CREATE TABLE `competencies` (
   `id` int(11) NOT NULL,
   `course_id` int(11) NOT NULL,
   `competency_code` varchar(50) NOT NULL,
+  `unit_order` int(11) UNSIGNED DEFAULT NULL,
   `competency_name` varchar(255) NOT NULL,
+  `module_title` varchar(255) NOT NULL,
   `competency_type` enum('basic','common','core') NOT NULL,
+  `nominal_hours` int(11) UNSIGNED DEFAULT NULL,
   `description` text DEFAULT NULL,
+  `learning_outcomes` mediumtext DEFAULT NULL,
   `hours_per_session` int(11) NOT NULL,
   `status` enum('active','archived') DEFAULT 'active',
   `date_created` datetime DEFAULT current_timestamp()
@@ -165,10 +168,13 @@ CREATE TABLE `competencies` (
 CREATE TABLE `courses` (
   `id` int(11) NOT NULL,
   `course_name` varchar(255) NOT NULL,
+  `competency_name` varchar(255) NOT NULL,
+  `module_title` varchar(100) NOT NULL,
   `course_code` varchar(50) NOT NULL,
   `hours` int(11) NOT NULL,
+  `nominal_hours` int(11) unsigned NOT NULL,
   `description` text DEFAULT NULL,
-  `learning_outcomes` text DEFAULT NULL,
+  `learning_outcomes` mediumtext NOT NULL,
   `image` varchar(255) DEFAULT NULL,
   `status` enum('active','archived') DEFAULT 'active',
   `course_status` enum('draft','published','archived') DEFAULT 'draft',
@@ -302,6 +308,22 @@ CREATE TABLE `grades` (
   `letter_grade` varchar(2) DEFAULT NULL,
   `graded_by` varchar(50) DEFAULT NULL,
   `graded_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hour_credits`
+--
+
+CREATE TABLE `hour_credits` (
+  `id` int(11) NOT NULL,
+  `trainee_id` varchar(20) NOT NULL,
+  `course_code` varchar(50) NOT NULL,
+  `credit_date` date NOT NULL,
+  `hours` int(11) NOT NULL,
+  `source` enum('schedule','manual') NOT NULL DEFAULT 'schedule',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -644,12 +666,12 @@ ALTER TABLE `certificates`
   ADD KEY `course_code` (`course_code`);
 
 --
--- Indexes for table `competencies`
 --
 ALTER TABLE `competencies`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `competency_code` (`competency_code`),
-  ADD KEY `competencies_ibfk_1` (`course_id`);
+  ADD KEY `competencies_ibfk_1` (`course_id`),
+  ADD KEY `idx_comp_course_type_order` (`course_id`,`competency_type`,`unit_order`);
 
 --
 -- Indexes for table `courses`
@@ -659,7 +681,10 @@ ALTER TABLE `courses`
   ADD UNIQUE KEY `course_code` (`course_code`),
   ADD KEY `idx_courses_verification` (`require_verification`,`verification_type`),
   ADD KEY `idx_courses_status` (`course_status`),
-  ADD KEY `idx_courses_branch` (`branch_id`);
+  ADD KEY `idx_courses_branch` (`branch_id`),
+  ADD KEY `idx_courses_module_title` (`module_title`),
+  ADD KEY `idx_courses_competency_name` (`competency_name`),
+  ADD KEY `idx_courses_nominal_hours` (`nominal_hours`);
 
 --
 -- Indexes for table `course_assignments`
@@ -717,6 +742,15 @@ ALTER TABLE `grades`
   ADD KEY `idx_grades_trainee_course` (`trainee_id`,`course_code`),
   ADD KEY `idx_grade_type` (`grade_type`),
   ADD KEY `idx_graded_date` (`graded_at`);
+
+--
+-- Indexes for table `hour_credits`
+--
+ALTER TABLE `hour_credits`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_credit` (`trainee_id`,`course_code`,`credit_date`),
+  ADD KEY `idx_credits_user_course_date` (`trainee_id`,`course_code`,`credit_date`),
+  ADD KEY `fk_hour_credits_course` (`course_code`);
 
 --
 -- Indexes for table `quizzes`
@@ -941,6 +975,12 @@ ALTER TABLE `grades`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `hour_credits`
+--
+ALTER TABLE `hour_credits`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `quizzes`
 --
 ALTER TABLE `quizzes`
@@ -1105,6 +1145,13 @@ ALTER TABLE `enrollments`
   ADD CONSTRAINT `enrollments_ibfk_1` FOREIGN KEY (`trainee_id`) REFERENCES `users` (`user_id`),
   ADD CONSTRAINT `enrollments_ibfk_2` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`),
   ADD CONSTRAINT `enrollments_ibfk_3` FOREIGN KEY (`processed_by`) REFERENCES `users` (`user_id`);
+
+--
+-- Constraints for table `hour_credits`
+--
+ALTER TABLE `hour_credits`
+  ADD CONSTRAINT `fk_hour_credits_course` FOREIGN KEY (`course_code`) REFERENCES `courses` (`course_code`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_hour_credits_user` FOREIGN KEY (`trainee_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `quizzes`

@@ -122,7 +122,7 @@ try {
     }
 
     // Fetch competencies for this course via course_id
-    $compStmt = $pdo->prepare("SELECT id, competency_code, competency_name, competency_type, description, status FROM competencies WHERE course_id = ? AND status = 'active' ORDER BY competency_type, competency_name");
+  $compStmt = $pdo->prepare("SELECT id, unit_order, competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes, status FROM competencies WHERE course_id = ? AND status = 'active' ORDER BY competency_type, unit_order, competency_name");
     $compStmt->execute([(int)$course['id']]);
     $competencies = $compStmt->fetchAll(PDO::FETCH_ASSOC);
 

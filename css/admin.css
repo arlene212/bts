@@ -2000,7 +2000,7 @@ body div.modal .modal-content .modal-footer button.submit-btn:hover {
 /* Flexible grid for competency items in Edit Course modal */
 #edit_competencies_container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: 1fr;
     gap: 1rem;
 }
 
@@ -5139,3 +5139,23 @@ input:invalid, textarea:invalid, select:invalid {
 #current_image_preview p { margin-bottom: 8px; color: #555; }
 .field-note { color: #6c757d; font-size: 12px; display: block; margin-top: 4px; }
 .competencies-section h3 { text-align: left; margin-bottom: 1rem; color: #297acc; }
+.rte-toolbar{display:flex;gap:8px;margin-bottom:6px}
+.rte-toolbar button{border:1px solid #ccc;background:#f7f7f7;padding:6px 8px;border-radius:4px;cursor:pointer}
+.rte{min-height:120px;border:1px solid #ccc;border-radius:6px;padding:8px;background:#fff}
+.competency-group-section{margin-bottom:16px}
+.competency-group-header{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;margin:8px 0}
+.competency-header{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;margin:8px 0}
+.competencies-grid{display:flex;flex-direction:row;gap:12px;flex-wrap:wrap}
+.competency-fields{display:flex;flex-direction:row;gap:12px;flex-wrap:wrap}
+.competency-edit-row{border:1px solid #ddd;border-radius:8px;padding:12px;background:#fff;display:flex;flex-wrap:wrap;gap:12px;min-width:300px;flex:1}
+.competency-field-group{border:1px solid #ddd;border-radius:8px;padding:12px;background:#fff;display:flex;flex-direction:row;flex-wrap:wrap;gap:12px;min-width:300px;flex:1}
+.competency-group-header h5{font-size:16px;margin:0 0 8px 0}
+.comp-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.save-comp-btn{background:#2563eb;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
+.archive-comp-btn{background:#ef4444;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
+.add-competency-btn{border:1px solid #2563eb;color:#2563eb;background:#f0f6ff;padding:6px 10px;border-radius:6px;cursor:pointer}
+.remove-competency-btn{background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer}
+.form-row{display:flex;flex-direction:row;gap:12px;flex-wrap:wrap;width:100%}
+.form-group{flex:1;min-width:200px}
+.form-group label{font-weight:600;margin-bottom:4px;display:block}
+.form-group input,.form-group select,.form-group textarea{width:100%}

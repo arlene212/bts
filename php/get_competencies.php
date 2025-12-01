@@ -18,7 +18,7 @@ try {
     $courseId = $row ? (int)$row['id'] : null;
   }
 
-  $sql = "SELECT id, course_id, competency_code, competency_name, competency_type, description, status, date_created FROM competencies";
+  $sql = "SELECT id, course_id, unit_order, competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes, status, date_created FROM competencies";
   $args = [];
   $where = [];
   if ($courseId !== null) { $where[] = "course_id = ?"; $args[] = $courseId; }

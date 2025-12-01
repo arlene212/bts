@@ -120,12 +120,19 @@ try {
             if ($hasCBTrainerCol) {
                 $clearStmt = $pdo->prepare("UPDATE course_batches SET trainer_id = NULL WHERE course_code = ? AND trainer_id = ?");
                 $upd = $pdo->prepare("UPDATE course_batches SET trainer_id = ? WHERE course_code = ? AND batch_name = ?");
+                $prevStmt = $pdo->prepare("SELECT DISTINCT course_code FROM course_batches WHERE trainer_id = ?");
+                $prevStmt->execute([$userId]);
+                $prevCourses = array_map(function($r){ return trim((string)$r['course_code']); }, $prevStmt->fetchAll(PDO::FETCH_ASSOC));
+                $selectedSet = array_map(function($c){ return trim((string)$c); }, $courseCodes ?? []);
+                foreach ($prevCourses as $pc) {
+                    if ($pc !== '' && !in_array($pc, $selectedSet, true)) {
+                        $clearStmt->execute([$pc, $userId]);
+                    }
+                }
                 foreach ($courseCodes as $courseCode) {
                     $courseCode = trim((string)$courseCode);
                     if ($courseCode === '') continue;
-                    // Clear previous trainer assignment for this course
                     $clearStmt->execute([$courseCode, $userId]);
-                    // Assign selected batches
                     $batchesForCourse = isset($trainerBatchesByCourse[$courseCode]) && is_array($trainerBatchesByCourse[$courseCode])
                         ? array_filter(array_map('trim', $trainerBatchesByCourse[$courseCode]))
                         : array_filter(array_map('trim', explode(',', $trainerBatchesStr)));

@@ -29,7 +29,7 @@ try {
     }
 
     // 2. Fetch competencies for this course using course_id
-    $competenciesStmt = $pdo->prepare("SELECT id, competency_code, competency_name, competency_type, description, status FROM competencies WHERE course_id = ? AND status = 'active' ORDER BY competency_type, competency_name");
+  $competenciesStmt = $pdo->prepare("SELECT id, unit_order, competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes, status FROM competencies WHERE course_id = ? AND status = 'active' ORDER BY competency_type, unit_order, competency_name");
     $competenciesStmt->execute([(int)$course['id']]);
     $competencies = $competenciesStmt->fetchAll(PDO::FETCH_ASSOC);
 

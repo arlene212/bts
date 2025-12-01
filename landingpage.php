@@ -380,7 +380,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
                     <div class="form-links">
                         <a href="#" id="forgotPassword" class="form-link">Forgot Password?</a>
                         <span class="form-link-separator">•</span>
-                        <a href="#" id="openRegister" class="form-link">Create Account</a>
+                        <a href="#" id="openRegisterLink" class="form-link" data-modal-trigger="registerModal" role="button">Create Account</a>
                     </div>
                 </form>
             </div>
