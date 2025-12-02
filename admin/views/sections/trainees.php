@@ -57,7 +57,7 @@ $graduatedTraineesCount = is_array($graduatedTrainees) ? count($graduatedTrainee
               <td class="table-actions">
                 <button class="action-btn edit edit-trainee-btn btn btn-sm btn-outline-primary" title="Edit" data-user-id="<?php echo $trainee['user_id']; ?>" data-user-data='<?php echo htmlspecialchars(json_encode($trainee), ENT_QUOTES, 'UTF-8'); ?>'><i class="fas fa-edit"></i><span class="btn-text">Edit</span></button>
                 <button class="action-btn reset reset-password-btn btn btn-sm btn-warning" title="Reset Password" data-user-id="<?php echo $trainee['user_id']; ?>" data-user-name="<?php echo htmlspecialchars($trainee['first_name'] . ' ' . $trainee['last_name'], ENT_QUOTES, 'UTF-8'); ?>"><i class="fa-solid fa-key"></i><span class="btn-text">Reset</span></button>
-                <form method="POST" onsubmit="return confirm('Are you sure you want to archive this trainee?');" class="archive-form"><input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>"><input type="hidden" name="current_tab" value="trainees"><button type="submit" name="archive_user" class="action-btn archive btn btn-sm btn-outline-secondary" title="Archive"><i class="fas fa-archive"></i><span class="btn-text">Archive</span></button></form>
+                <form method="POST" onsubmit="return false;" class="archive-form"><input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>"><input type="hidden" name="current_tab" value="trainees"><button type="submit" name="archive_user" class="action-btn archive btn btn-sm btn-outline-secondary" title="Archive"><i class="fas fa-archive"></i><span class="btn-text">Archive</span></button></form>
               </td>
             </tr>
           <?php endforeach; ?>
@@ -107,7 +107,7 @@ $graduatedTraineesCount = is_array($graduatedTrainees) ? count($graduatedTrainee
               </td>
               <td><?php echo date('Y-m-d', strtotime($trainee['date_created'])); ?></td>
               <td class="table-actions">
-                <form method="POST" onsubmit="return confirm('Are you sure you want to restore this trainee?');" class="unarchive-form"><input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>"><input type="hidden" name="current_tab" value="trainees"><button type="submit" name="unarchive_user" class="action-btn unarchive btn btn-sm btn-success" title="Restore"><i class="fas fa-box-open"></i><span class="btn-text">Restore</span></button></form>
+                <form method="POST" onsubmit="return false;" class="unarchive-form"><input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>"><input type="hidden" name="current_tab" value="trainees"><button type="submit" name="unarchive_user" class="action-btn unarchive btn btn-sm btn-success" title="Restore"><i class="fas fa-box-open"></i><span class="btn-text">Restore</span></button></form>
               </td>
             </tr>
           <?php endforeach; ?>

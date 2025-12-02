@@ -55,8 +55,16 @@ try {
     $currentPath = $row['file_path'];
     $newPath = $currentPath;
 
-    // Optional new file
-    if (isset($_FILES['material_file']) && $_FILES['material_file']['error'] === UPLOAD_ERR_OK) {
+    $materialType = $_POST['material_type'] ?? '';
+    $materialLink = trim($_POST['material_link'] ?? '');
+
+    if ($materialType === 'link' && $materialLink !== '') {
+        $newPath = filter_var($materialLink, FILTER_SANITIZE_URL);
+        if (!empty($currentPath) && !filter_var($currentPath, FILTER_VALIDATE_URL)) {
+            $oldFull = __DIR__ . '/../uploads/courses/' . $currentPath;
+            if (file_exists($oldFull)) { @unlink($oldFull); }
+        }
+    } elseif (isset($_FILES['material_file']) && $_FILES['material_file']['error'] === UPLOAD_ERR_OK) {
         if ($_FILES['material_file']['size'] > 200 * 1024 * 1024) {
             echo json_encode(['success' => false, 'message' => 'File size must be less than 200MB']);
             exit;

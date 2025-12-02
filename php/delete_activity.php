@@ -84,9 +84,15 @@ try {
     $delSubsStmt = $pdo->prepare("DELETE FROM activity_submissions WHERE activity_id = ?");
     $delSubsStmt->execute([$activityId]);
 
-    // Delete batch mapping and the activity itself
-    $pdo->prepare("DELETE FROM batch_resources WHERE resource_type = 'activity' AND resource_id = ? AND course_code = ? AND batch_name = ?")
-        ->execute([$activityId, $courseCode, $batchName]);
+    // Delete batch mapping only if batch_resources exists
+    try {
+        $tchk = $pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'batch_resources'");
+        $tchk->execute();
+        if ((int)$tchk->fetchColumn() > 0) {
+            $pdo->prepare("DELETE FROM batch_resources WHERE resource_type = 'activity' AND resource_id = ? AND course_code = ? AND batch_name = ?")
+                ->execute([$activityId, $courseCode, $batchName]);
+        }
+    } catch (Exception $__) {}
     $pdo->prepare("DELETE FROM topic_activities WHERE id = ?")
         ->execute([$activityId]);
 

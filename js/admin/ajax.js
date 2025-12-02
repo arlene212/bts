@@ -32,3 +32,31 @@ document.querySelectorAll('.reset-password-btn').forEach(btn => {
     });
   });
 });
+
+// Course archive/restore confirmation using modal instead of browser prompt
+document.querySelectorAll('form.course-archive-form').forEach(form => {
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    showConfirm('Archive Course', 'Are you sure you want to archive this course?', function(){ form.submit(); });
+  });
+});
+
+document.querySelectorAll('form.course-restore-form').forEach(form => {
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    showConfirm('Restore Course', 'Restore this course?', function(){ form.submit(); });
+  });
+});
+
+// Restore user confirmation
+document.querySelectorAll('form.unarchive-form').forEach(form => {
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    const userId = form.querySelector('input[name="user_id"]').value;
+    showConfirm('Restore User', 'Restore this user account?', async function(){
+      const result = await ajaxRequest('unarchive_user', { user_id: userId });
+      if (result.success) { showAlert('success', 'Success', result.message); }
+      else { showAlert('error', 'Error', result.message); }
+    });
+  });
+});

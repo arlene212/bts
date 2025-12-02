@@ -3074,6 +3074,18 @@ body.modal-open { overflow: hidden; }
   align-items: center;
   gap: var(--spacing-2);
 }
+.material-actions .icon-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: var(--spacing-2);
+  border-radius: var(--radius-md);
+  pointer-events: auto;
+}
+.material-actions .icon-btn i {
+  pointer-events: auto;
+}
+.material-actions .icon-btn:hover { background: var(--primary-50); }
 
 .content-divider {
   margin: var(--spacing-4) 0;

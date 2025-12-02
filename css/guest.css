@@ -2137,6 +2137,11 @@ body::after {
   color: #92400e;
   border-color: #f59e0b;
 }
+.status-badge.status-pending {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border-color: #f59e0b;
+}
 
 .status-badge.approved {
   background: linear-gradient(135deg, #d1fae5, #a7f3d0);
@@ -2148,6 +2153,15 @@ body::after {
   background: linear-gradient(135deg, #fee2e2, #fecaca);
   color: #991b1b;
   border-color: #ef4444;
+}
+
+.status-badge.status-completed {
+  background: linear-gradient(135deg, var(--success-500), #059669);
+  color: #ffffff;
+  border-color: var(--success-500);
+}
+.status-badge.status-completed i {
+  color: #ffffff;
 }
 
 /* ===========================
@@ -2166,15 +2180,71 @@ body::after {
   animation: fadeInUp 0.4s ease-out;
 }
 
-/* Enrolled courses tab functionality */
-#enrolled-active,
-#enrolled-completed {
+#enrolledCoursesContainer .news-switch-wrapper {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: var(--spacing-4);
+}
+#enrolledCoursesContainer .switch-oval {
+  background: var(--secondary-100);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-1);
+  position: relative;
+  display: flex;
+  gap: var(--spacing-1);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--secondary-200);
+}
+#enrolledCoursesContainer .switch-oval .switch-inner {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  height: calc(100% - 8px);
+  background: var(--primary-600);
+  border-radius: 999px;
+  transition: transform var(--transition-normal), width var(--transition-normal);
+  z-index: 1;
+}
+#enrolledCoursesContainer .switch-btn {
+  background: transparent;
+  border: none;
+  padding: var(--spacing-3) var(--spacing-5);
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--secondary-600);
+  transition: all var(--transition-normal);
+  position: relative;
+  z-index: 2;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+}
+#enrolledCoursesContainer .switch-btn.active {
+  color: #ffffff;
+  background: transparent !important;
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+#enrolledCoursesContainer .switch-btn:hover:not(.active) {
+  color: var(--primary-600);
+  background: var(--primary-100);
+  transform: translateY(-1px);
+}
+#enrolled-active-courses,
+#enrolled-completed-courses {
   display: none !important;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-#enrolled-active.active,
-#enrolled-completed.active {
+#enrolled-active-courses.active,
+#enrolled-completed-courses.active {
   display: block !important;
+  opacity: 1;
 }
 
 @keyframes fadeInUp {

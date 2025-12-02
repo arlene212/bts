@@ -14,12 +14,28 @@ class AccessControl {
     }
 
     public static function resourceIsMappedToBatch(PDO $pdo, string $courseCode, string $batchName, string $resourceType, int $resourceId): bool {
+        try {
+            $tchk = $pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'batch_resources'");
+            $tchk->execute();
+            if ((int)$tchk->fetchColumn() === 0) {
+                return true;
+            }
+        } catch (Exception $__) {
+            return true;
+        }
         $stmt = $pdo->prepare("SELECT 1 FROM batch_resources WHERE course_code = ? AND batch_name = ? AND resource_type = ? AND resource_id = ? LIMIT 1");
         $stmt->execute([$courseCode, $batchName, $resourceType, $resourceId]);
         return (bool)$stmt->fetchColumn();
     }
 
     public static function mapResourceToBatch(PDO $pdo, string $courseCode, string $batchName, string $resourceType, int $resourceId, string $trainerId): void {
+        try {
+            $tchk = $pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'batch_resources'");
+            $tchk->execute();
+            if ((int)$tchk->fetchColumn() === 0) {
+                return;
+            }
+        } catch (Exception $__) { return; }
         $stmt = $pdo->prepare("INSERT IGNORE INTO batch_resources (course_code, batch_name, resource_type, resource_id, created_by) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute([$courseCode, $batchName, $resourceType, $resourceId, $trainerId]);
     }

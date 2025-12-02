@@ -250,7 +250,7 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
                       </td>
                       <td><?php echo date('Y-m-d', strtotime($trainer['date_created'])); ?></td>
                       <td class="table-actions">
-                        <form method="POST" onsubmit="return true;" class="unarchive-form"><input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>"><input type="hidden" name="current_tab" value="trainers"><button type="submit" name="unarchive_user" class="action-btn unarchive" title="Restore"><i class="fas fa-box-open"></i><span class="btn-text">Restore</span></button></form>
+                        <form method="POST" onsubmit="return false;" class="unarchive-form"><input type="hidden" name="user_id" value="<?php echo $trainer['user_id']; ?>"><input type="hidden" name="current_tab" value="trainers"><button type="submit" name="unarchive_user" class="action-btn unarchive" title="Restore"><i class="fas fa-box-open"></i><span class="btn-text">Restore</span></button></form>
                     </td>
                   </tr>
                 <?php endforeach; endif; ?>

@@ -75,9 +75,15 @@ try {
     // Begin transaction
     $pdo->beginTransaction();
 
-    // Delete batch mapping and material record
-    $pdo->prepare("DELETE FROM batch_resources WHERE resource_type = 'material' AND resource_id = ? AND course_code = ? AND batch_name = ?")
-        ->execute([$materialId, $courseCode, $batchName]);
+    // Delete batch mapping (if table exists) and material record
+    try {
+        $tchk = $pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'batch_resources'");
+        $tchk->execute();
+        if ((int)$tchk->fetchColumn() > 0) {
+            $pdo->prepare("DELETE FROM batch_resources WHERE resource_type = 'material' AND resource_id = ? AND course_code = ? AND batch_name = ?")
+                ->execute([$materialId, $courseCode, $batchName]);
+        }
+    } catch (Exception $__) {}
     $pdo->prepare("DELETE FROM topic_materials WHERE id = ?")
         ->execute([$materialId]);
 

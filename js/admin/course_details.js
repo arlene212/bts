@@ -35,13 +35,15 @@ document.addEventListener('click', function(e) {
 function renderCourseDetails(content, data) {
   if (data.error) { content.innerHTML = `<div class="error">${data.error}</div>`; return; }
   let html = `
-    <button class="back-to-course-list-btn hidden">← Back to Course Details</button>
+    <button class="back-to-course-list-btn hidden">← Back to Courses</button>
     <div class="course-details"><style>
       .course-details { padding: 12px; }
       .course-header { display:flex; gap:16px; align-items:flex-start; }
       .course-detail-image { width:160px; height:120px; object-fit:cover; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
       .course-basic-info h3 { margin:0 0 6px 0; }
       .detail-section { margin-top:16px; }
+      .back-to-course-list-btn { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:6px; background:#f1f3f5; color:#343a40; border:1px solid #dee2e6; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.08); margin-bottom:12px; }
+      .back-to-course-list-btn:hover { background:#e9ecef; }
       #batch-selection-section .batches-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
       .batch-item { display:flex; align-items:center; justify-content:space-between; padding:10px; border:1px solid #e2e6ea; border-radius:8px; background:#fafafa; cursor:pointer; }
       .competency-index { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px; }

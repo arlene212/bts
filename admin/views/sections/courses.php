@@ -217,7 +217,7 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
             <i class="fas fa-eye"></i> View Details
           </button>
           <?php if (($course['status'] ?? 'active') === 'archived' || ($course['course_status'] ?? '') === 'archived'): ?>
-            <form method="POST" style="display:inline-block;" onsubmit="return confirm('Restore this course?');">
+            <form method="POST" style="display:inline-block;" class="course-restore-form">
               <input type="hidden" name="current_tab" value="courses">
               <input type="hidden" name="course_code" value="<?php echo htmlspecialchars($course['course_code']); ?>">
               <button type="submit" name="restore_course" class="btn btn-success">
@@ -225,7 +225,7 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
               </button>
             </form>
           <?php else: ?>
-            <form method="POST" style="display:inline-block;" onsubmit="return confirm('Archive this course?');">
+            <form method="POST" style="display:inline-block;" class="course-archive-form">
               <input type="hidden" name="current_tab" value="courses">
               <input type="hidden" name="course_code" value="<?php echo htmlspecialchars($course['course_code']); ?>">
               <button type="submit" name="archive_course" class="btn btn-outline-danger">
@@ -278,7 +278,7 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
           <?php endif; ?>
         </div>
         <div class="course-actions card-footer">
-          <form method="POST" style="display:inline-block;" onsubmit="return confirm('Restore this course?');">
+          <form method="POST" style="display:inline-block;" class="course-restore-form">
             <input type="hidden" name="current_tab" value="courses">
             <input type="hidden" name="course_code" value="<?php echo htmlspecialchars($course['course_code']); ?>">
             <button type="submit" name="restore_course" class="btn btn-success">

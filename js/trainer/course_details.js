@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (subs) subs.innerHTML = '<div class="error-message">No batches assigned to you for this course</div>';
       return;
     }
-    fetch(`../php/get_course_details_trainer.php?course_code=${encodeURIComponent(courseCode)}&batch_name=${encodeURIComponent(bn)}`)
+    fetch(`../php/get_course_details_trainer.php?course_code=${encodeURIComponent(courseCode)}&batch_name=${encodeURIComponent(bn)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(r => r.json())
       .then(data => {
         if (data.error) throw new Error(data.error);
@@ -114,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
         const materialsByComp = data.materialsByCompetency || {};
         renderCompetencies(competencies, materialsByComp);
+        bindActionButtons();
         renderSubmissionsView(data.topicsByCompetency || {});
       })
       .catch(err => {
@@ -125,6 +126,104 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   // expose for callbacks defined outside this scope
   window.loadCourseDetails = loadCourseDetails;
+
+  function bindActionButtons() {
+    const root = document.getElementById('competencies-list');
+    if (!root) return;
+    root.querySelectorAll('.edit-comp-material-btn').forEach(btn => {
+      if (btn.__boundEditComp) return; btn.__boundEditComp = true;
+      btn.addEventListener('click', () => {
+        openEditMaterialModal({ id: btn.dataset.materialId, title: btn.dataset.materialTitle, description: btn.dataset.materialDescription, path: btn.dataset.materialPath }, 'course');
+      });
+    });
+    root.querySelectorAll('.delete-comp-material-btn').forEach(btn => {
+      if (btn.__boundDeleteComp) return; btn.__boundDeleteComp = true;
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.materialId;
+        openConfirm('Confirm Delete', 'Delete course material: ' + (btn.dataset.materialTitle || '') + '?', () => {
+          const bn = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+          if (!bn) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+          fetch('../php/delete_course_material.php', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ material_id: id, batch_name: bn }) })
+            .then(r => r.json())
+            .then(d => {
+              if (d.success) {
+                openConfirm('Confirm Action', 'Course material deleted.', () => {
+                  const code = document.getElementById('course-code')?.textContent || '';
+                  const name = document.getElementById('course-detail-title')?.textContent || '';
+                  const hours = document.getElementById('course-hours')?.textContent || '';
+                  loadCourseDetails(code, name, hours);
+                }, { confirmText: 'Confirm' });
+              } else {
+                openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+              }
+            })
+            .catch(() => openConfirm('Error', 'Network error while deleting course material', () => {}, { confirmText: 'OK', showCancel: false }));
+        }, { confirmText: 'Delete' });
+      });
+    });
+    root.querySelectorAll('.edit-material-btn').forEach(btn => {
+      if (btn.__boundEdit) return; btn.__boundEdit = true;
+      btn.addEventListener('click', () => {
+        openEditMaterialModal({ id: btn.dataset.materialId, title: btn.dataset.materialTitle, description: btn.dataset.materialDescription, path: btn.dataset.materialPath });
+      });
+    });
+    root.querySelectorAll('.delete-material-btn').forEach(btn => {
+      if (btn.__boundDelete) return; btn.__boundDelete = true;
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.materialId;
+        openConfirm('Confirm Delete', 'Delete material: ' + (btn.dataset.materialTitle || '') + '?', () => {
+          const bn = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+          if (!bn) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+          fetch('../php/delete_material.php', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ material_id: id, batch_name: bn }) })
+            .then(r => r.json())
+            .then(d => {
+              if (d.success) {
+                openConfirm('Confirm Action', 'Material deleted.', () => {
+                  const code = document.getElementById('course-code')?.textContent || '';
+                  const name = document.getElementById('course-detail-title')?.textContent || '';
+                  const hours = document.getElementById('course-hours')?.textContent || '';
+                  loadCourseDetails(code, name, hours);
+                }, { confirmText: 'Confirm' });
+              } else {
+                openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+              }
+            })
+            .catch(() => openConfirm('Error', 'Network error while deleting material', () => {}, { confirmText: 'OK', showCancel: false }));
+        }, { confirmText: 'Delete' });
+      });
+    });
+    root.querySelectorAll('.edit-activity-btn').forEach(btn => {
+      if (btn.__boundEditA) return; btn.__boundEditA = true;
+      btn.addEventListener('click', () => {
+        openEditActivityModal({ id: btn.dataset.activityId, title: btn.dataset.activityTitle, description: btn.dataset.activityDescription, due: btn.dataset.dueDate, max: btn.dataset.maxScore });
+      });
+    });
+    root.querySelectorAll('.delete-activity-btn').forEach(btn => {
+      if (btn.__boundDeleteA) return; btn.__boundDeleteA = true;
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.activityId;
+        openConfirm('Confirm Delete', 'Delete activity: ' + (btn.dataset.activityTitle || '') + '?', () => {
+          const bn = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+          if (!bn) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+          fetch('../php/delete_activity.php', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ activity_id: id, batch_name: bn }) })
+            .then(r => r.json())
+            .then(d => {
+              if (d.success) {
+                openConfirm('Confirm Action', 'Activity deleted.', () => {
+                  const code = document.getElementById('course-code')?.textContent || '';
+                  const name = document.getElementById('course-detail-title')?.textContent || '';
+                  const hours = document.getElementById('course-hours')?.textContent || '';
+                  loadCourseDetails(code, name, hours);
+                }, { confirmText: 'Confirm' });
+              } else {
+                openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+              }
+            })
+            .catch(() => openConfirm('Error', 'Network error while deleting activity', () => {}, { confirmText: 'OK', showCancel: false }));
+        }, { confirmText: 'Delete' });
+      });
+    });
+  }
 
   function renderCompetencies(competencies, materialsByComp) {
     const container = document.getElementById('competencies-list');
@@ -170,8 +269,8 @@ document.addEventListener('DOMContentLoaded', () => {
               ${href ? `<small><a href="${href}" target="_blank">View Material</a></small>` : ''}
             </div>
             <div class="material-actions">
-              <button class="icon-btn edit-comp-material-btn" data-material-id="${m.id}" data-material-title="${m.title}" data-material-description="${m.content || ''}" data-material-path="${m.file_path || ''}"><i class="fas fa-edit"></i></button>
-              <button class="icon-btn delete-comp-material-btn" data-material-id="${m.id}" data-material-title="${m.title}"><i class="fas fa-trash"></i></button>
+            <button type="button" class="icon-btn edit-comp-material-btn" data-material-id="${m.id}" data-material-title="${m.title}" data-material-description="${m.content || ''}" data-material-path="${m.file_path || ''}" onclick="window.__editCompMaterial(this)"><i class="fas fa-edit"></i></button>
+              <button type="button" class="icon-btn delete-comp-material-btn" data-material-id="${m.id}" data-material-title="${m.title}" onclick="window.__deleteCompMaterial(this)"><i class="fas fa-trash"></i></button>
             </div>
           </div>
         </div>`;
@@ -219,8 +318,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
           <div class="material-actions">
-            <button class="icon-btn edit-material-btn" data-material-id="${m.id || m.material_id}" data-material-title="${m.material_title}" data-material-description="${m.material_description || ''}" data-material-path="${m.material_file_path || ''}"><i class="fas fa-edit"></i></button>
-            <button class="icon-btn delete-material-btn" data-material-id="${m.id || m.material_id}" data-material-title="${m.material_title}"><i class="fas fa-trash"></i></button>
+            <button type="button" class="icon-btn edit-material-btn" data-material-id="${m.material_id}" data-material-title="${m.material_title}" data-material-description="${m.material_description || ''}" data-material-path="${m.material_file_path || ''}" onclick="window.__editTopicMaterial(this)"><i class="fas fa-edit"></i></button>
+            <button type="button" class="icon-btn delete-material-btn" data-material-id="${m.material_id}" data-material-title="${m.material_title}" onclick="window.__deleteTopicMaterial(this)"><i class="fas fa-trash"></i></button>
           </div>
         </div>
       </div>`).join('')}</div>`;
@@ -242,9 +341,9 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
         <div class="activity-actions">
-          ${a.activity_type === 'quiz' ? `<button class="btn btn-outline-primary btn-sm manage-quiz-btn" title="Manage in Activities"><i class="fas fa-list"></i> Manage</button>` : ''}
-          <button class="icon-btn edit-activity-btn" data-activity-id="${a.id || a.activity_id}" data-activity-title="${a.activity_title}" data-activity-description="${a.activity_description || ''}" data-due-date="${a.due_date || ''}" data-max-score="${a.max_score || 100}"><i class="fas fa-edit"></i></button>
-          <button class="icon-btn delete-activity-btn" data-activity-id="${a.id || a.activity_id}" data-activity-title="${a.activity_title}"><i class="fas fa-trash"></i></button>
+          ${a.activity_type === 'quiz' ? `<button type="button" class="btn btn-outline-primary btn-sm manage-quiz-btn" title="Manage in Activities"><i class="fas fa-list"></i> Manage</button>` : ''}
+          <button type="button" class="icon-btn edit-activity-btn" data-activity-id="${a.activity_id}" data-activity-title="${a.activity_title}" data-activity-description="${a.activity_description || ''}" data-due-date="${a.due_date || ''}" data-max-score="${a.max_score || 100}"><i class="fas fa-edit"></i></button>
+          <button type="button" class="icon-btn delete-activity-btn" data-activity-id="${a.activity_id}" data-activity-title="${a.activity_title}"><i class="fas fa-trash"></i></button>
         </div>
       </div>
     `).join('');
@@ -316,9 +415,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const id = deleteCompMatBtn.dataset.materialId;
       openConfirm('Confirm Delete', 'Delete course material: ' + (deleteCompMatBtn.dataset.materialTitle || '') + '?', () => {
         const bnA = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+        if (!bnA) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
         fetch('../php/delete_course_material.php', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
           body: JSON.stringify({ material_id: id, batch_name: bnA })
         })
         .then(r => r.json())
@@ -351,9 +451,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const id = deleteMaterialBtn.dataset.materialId;
       openConfirm('Confirm Delete', 'Delete material: ' + (deleteMaterialBtn.dataset.materialTitle || '') + '?', () => {
         const bnB = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+        if (!bnB) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
         fetch('../php/delete_material.php', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
           body: JSON.stringify({ material_id: id, batch_name: bnB })
         })
         .then(r => r.json())
@@ -387,9 +488,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const id = deleteActivityBtn.dataset.activityId;
       openConfirm('Confirm Delete', 'Delete activity: ' + (deleteActivityBtn.dataset.activityTitle || '') + '?', () => {
         const bnC = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+        if (!bnC) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
         fetch('../php/delete_activity.php', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
           body: JSON.stringify({ activity_id: id, batch_name: bnC })
         })
         .then(r => r.json())
@@ -411,6 +513,211 @@ document.addEventListener('DOMContentLoaded', () => {
     // per-competency Upload Module removed; use global header button
   });
 
+  document.addEventListener('click', function(e) {
+    const icon = e.target.closest('.material-actions .icon-btn i');
+    if (icon) {
+      const btn = icon.closest('button');
+      if (btn && btn.classList.contains('edit-material-btn')) {
+        openEditMaterialModal({ id: btn.dataset.materialId, title: btn.dataset.materialTitle, description: btn.dataset.materialDescription, path: btn.dataset.materialPath });
+        return;
+      }
+      if (btn && btn.classList.contains('edit-comp-material-btn')) {
+        openEditMaterialModal({ id: btn.dataset.materialId, title: btn.dataset.materialTitle, description: btn.dataset.materialDescription, path: btn.dataset.materialPath }, 'course');
+        return;
+      }
+      if (btn && btn.classList.contains('edit-activity-btn')) {
+        openEditActivityModal({ id: btn.dataset.activityId, title: btn.dataset.activityTitle, description: btn.dataset.activityDescription, due: btn.dataset.dueDate, max: btn.dataset.maxScore });
+        return;
+      }
+    }
+    const editCompMatBtn = e.target.closest('.edit-comp-material-btn');
+    if (editCompMatBtn) {
+      openEditMaterialModal({
+        id: editCompMatBtn.dataset.materialId,
+        title: editCompMatBtn.dataset.materialTitle,
+        description: editCompMatBtn.dataset.materialDescription,
+        path: editCompMatBtn.dataset.materialPath,
+      }, 'course');
+      return;
+    }
+    const deleteCompMatBtn = e.target.closest('.delete-comp-material-btn');
+    if (deleteCompMatBtn) {
+      const id = deleteCompMatBtn.dataset.materialId;
+      openConfirm('Confirm Delete', 'Delete course material: ' + (deleteCompMatBtn.dataset.materialTitle || '') + '?', () => {
+        const bnA = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+        if (!bnA) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+        fetch('../php/delete_course_material.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: JSON.stringify({ material_id: id, batch_name: bnA })
+        })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            openConfirm('Confirm Action', 'Course material deleted.', () => {
+              const code = document.getElementById('course-code')?.textContent || '';
+              const name = document.getElementById('course-detail-title')?.textContent || '';
+              const hours = document.getElementById('course-hours')?.textContent || '';
+              loadCourseDetails(code, name, hours);
+            }, { confirmText: 'Confirm' });
+          } else {
+            openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+          }
+        })
+        .catch(() => openConfirm('Error', 'Network error while deleting course material', () => {}, { confirmText: 'OK', showCancel: false }));
+      }, { confirmText: 'Delete' });
+      return;
+    }
+    const editMaterialBtn = e.target.closest('.edit-material-btn');
+    if (editMaterialBtn) {
+      openEditMaterialModal({
+        id: editMaterialBtn.dataset.materialId,
+        title: editMaterialBtn.dataset.materialTitle,
+        description: editMaterialBtn.dataset.materialDescription,
+        path: editMaterialBtn.dataset.materialPath,
+      });
+      return;
+    }
+    const deleteMaterialBtn = e.target.closest('.delete-material-btn');
+    if (deleteMaterialBtn) {
+      const id = deleteMaterialBtn.dataset.materialId;
+      openConfirm('Confirm Delete', 'Delete material: ' + (deleteMaterialBtn.dataset.materialTitle || '') + '?', () => {
+        const bnB = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+        if (!bnB) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+        fetch('../php/delete_material.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: JSON.stringify({ material_id: id, batch_name: bnB })
+        })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            openConfirm('Confirm Action', 'Material deleted.', () => {
+              const code = document.getElementById('course-code')?.textContent || '';
+              const name = document.getElementById('course-detail-title')?.textContent || '';
+              const hours = document.getElementById('course-hours')?.textContent || '';
+              loadCourseDetails(code, name, hours);
+            }, { confirmText: 'Confirm' });
+          } else {
+            openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+          }
+        })
+        .catch(() => openConfirm('Error', 'Network error while deleting material', () => {}, { confirmText: 'OK', showCancel: false }));
+      }, { confirmText: 'Delete' });
+    }
+  });
+
+  window.__editCompMaterial = function(el){
+    const btn = el.closest('.edit-comp-material-btn');
+    if (!btn) return;
+    if (typeof openEditMaterialModal === 'function') {
+      openEditMaterialModal({ id: btn.dataset.materialId, title: btn.dataset.materialTitle, description: btn.dataset.materialDescription, path: btn.dataset.materialPath }, 'course');
+    } else if (typeof window.__openEditMaterialModal === 'function') {
+      window.__openEditMaterialModal({ id: btn.dataset.materialId, title: btn.dataset.materialTitle, description: btn.dataset.materialDescription, path: btn.dataset.materialPath }, 'course');
+    }
+  };
+  window.__deleteCompMaterial = function(el){
+    const btn = el.closest('.delete-comp-material-btn');
+    if (!btn) return;
+    const id = btn.dataset.materialId;
+    (typeof window.__openConfirm === 'function' ? window.__openConfirm : openConfirm)('Confirm Delete', 'Delete course material: ' + (btn.dataset.materialTitle || '') + '?', () => {
+      const bnA = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+      if (!bnA) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+      fetch('../php/delete_course_material.php', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ material_id: id, batch_name: bnA }) })
+        .then(r => r.json())
+        .then(d => { if (d.success) { (typeof window.__openConfirm === 'function' ? window.__openConfirm : openConfirm)('Confirm Action', 'Course material deleted.', () => { const code = document.getElementById('course-code')?.textContent || ''; const name = document.getElementById('course-detail-title')?.textContent || ''; const hours = document.getElementById('course-hours')?.textContent || ''; if (typeof loadCourseDetails === 'function') { loadCourseDetails(code, name, hours); } else { window.location.reload(); } }, { confirmText: 'Confirm' }); } else { (typeof window.__openConfirm === 'function' ? window.__openConfirm : openConfirm)('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false }); } })
+        .catch(() => openConfirm('Error', 'Network error while deleting course material', () => {}, { confirmText: 'OK', showCancel: false }));
+    }, { confirmText: 'Delete' });
+  };
+  window.__editTopicMaterial = function(el){
+    const btn = el.closest('.edit-material-btn');
+    if (!btn) return;
+    if (typeof openEditMaterialModal === 'function') {
+      openEditMaterialModal({ id: btn.dataset.materialId, title: btn.dataset.materialTitle, description: btn.dataset.materialDescription, path: btn.dataset.materialPath });
+    } else if (typeof window.__openEditMaterialModal === 'function') {
+      window.__openEditMaterialModal({ id: btn.dataset.materialId, title: btn.dataset.materialTitle, description: btn.dataset.materialDescription, path: btn.dataset.materialPath });
+    }
+  };
+  window.__deleteTopicMaterial = function(el){
+    const btn = el.closest('.delete-material-btn');
+    if (!btn) return;
+    const id = btn.dataset.materialId;
+    (typeof window.__openConfirm === 'function' ? window.__openConfirm : openConfirm)('Confirm Delete', 'Delete material: ' + (btn.dataset.materialTitle || '') + '?', () => {
+      const bnB = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+      if (!bnB) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+      fetch('../php/delete_material.php', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ material_id: id, batch_name: bnB }) })
+        .then(r => r.json())
+        .then(d => { if (d.success) { (typeof window.__openConfirm === 'function' ? window.__openConfirm : openConfirm)('Confirm Action', 'Material deleted.', () => { const code = document.getElementById('course-code')?.textContent || ''; const name = document.getElementById('course-detail-title')?.textContent || ''; const hours = document.getElementById('course-hours')?.textContent || ''; if (typeof loadCourseDetails === 'function') { loadCourseDetails(code, name, hours); } else { window.location.reload(); } }, { confirmText: 'Confirm' }); } else { (typeof window.__openConfirm === 'function' ? window.__openConfirm : openConfirm)('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false }); } })
+        .catch(() => openConfirm('Error', 'Network error while deleting material', () => {}, { confirmText: 'OK', showCancel: false }));
+    }, { confirmText: 'Delete' });
+  };
+
+  (function ensureInit(){
+    if (typeof window.loadCourseDetails === 'function') return;
+    window.__openConfirm = function(title, message, onConfirm, opts){
+      const modal = document.getElementById('confirmationModal');
+      const tEl = document.getElementById('confirmationTitle');
+      const mEl = document.getElementById('confirmationMessage');
+      const cBtn = document.getElementById('confirmActionBtn');
+      const xBtn = document.getElementById('cancelConfirmation');
+      if (tEl) tEl.textContent = title || 'Confirm';
+      if (mEl) mEl.textContent = message || '';
+      if (cBtn) cBtn.textContent = (opts && opts.confirmText) ? opts.confirmText : 'Confirm';
+      if (xBtn) xBtn.style.display = (opts && opts.showCancel === false) ? 'none' : '';
+      const cb = (typeof onConfirm === 'function') ? onConfirm : null;
+      cBtn && cBtn.addEventListener('click', function handler(){ cBtn.removeEventListener('click', handler); modal && modal.classList.add('hidden'); cb && cb(); });
+      xBtn && xBtn.addEventListener('click', function handler(){ xBtn.removeEventListener('click', handler); modal && modal.classList.add('hidden'); });
+      modal && modal.classList.remove('hidden');
+    };
+    window.__editMaterialScope = 'topic';
+    window.__openEditMaterialModal = function(material, scope){
+      window.__editMaterialScope = scope || 'topic';
+      const modal = document.getElementById('editMaterialModal');
+      const idEl = document.getElementById('edit_material_id');
+      const titleEl = document.getElementById('edit_material_title');
+      const descEl = document.getElementById('edit_material_description');
+      const infoEl = document.getElementById('edit_material_file_info');
+      const typeSel = document.getElementById('edit_material_type');
+      const fileGrp = document.getElementById('edit_file_input_group');
+      const linkGrp = document.getElementById('edit_link_input_group');
+      if (idEl) idEl.value = material.id || '';
+      if (titleEl) titleEl.value = material.title || '';
+      if (descEl) descEl.value = material.description || '';
+      if (infoEl) infoEl.innerHTML = material.path ? `<small>Current file: ${material.path}</small>` : '<small>No file attached</small>';
+      if (typeSel) typeSel.value = '';
+      fileGrp && fileGrp.classList.add('hidden');
+      linkGrp && linkGrp.classList.add('hidden');
+      modal && modal.classList.remove('hidden');
+    };
+    const editForm = document.getElementById('editMaterialForm');
+    const typeSel = document.getElementById('edit_material_type');
+    editForm && editForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      const fd = new FormData(editForm);
+      const btn = editForm.querySelector('button[type="submit"]');
+      btn && (btn.disabled = true, btn.textContent = 'Saving...');
+      const t = typeSel ? typeSel.value : '';
+      if (t === 'file') {
+        const f = document.querySelector('#edit_file_input_group input[type="file"]');
+        if (!f || !f.files || f.files.length === 0) { window.__openConfirm('Error','Please select a file to upload',()=>{}, {confirmText:'OK', showCancel:false}); btn && (btn.disabled=false, btn.textContent='Save Changes'); return; }
+      } else if (t === 'link') {
+        const l = document.querySelector('#edit_link_input_group input[name="material_link"]');
+        if (!l || !l.value.trim()) { window.__openConfirm('Error','Please provide a link URL',()=>{}, {confirmText:'OK', showCancel:false}); btn && (btn.disabled=false, btn.textContent='Save Changes'); return; }
+        fd.append('material_link', l.value);
+      }
+      const bn = document.getElementById('trainer-batch-select')?.value || '';
+      if (!bn) { window.__openConfirm('Error','Please select a batch first',()=>{}, {confirmText:'OK', showCancel:false}); btn && (btn.disabled=false, btn.textContent='Save Changes'); return; }
+      fd.append('batch_name', bn);
+      if (t) fd.append('material_type', t);
+      const endpoint = (window.__editMaterialScope === 'course') ? '../php/update_course_material.php' : '../php/update_material.php';
+      fetch(endpoint, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: fd })
+        .then(r => r.json())
+        .then(d => { if (d.success) { document.getElementById('editMaterialModal')?.classList.add('hidden'); window.__openConfirm('Confirm Action','Material updated.', ()=>{ const code = document.getElementById('course-code')?.textContent || ''; const name = document.getElementById('course-detail-title')?.textContent || ''; const hours = document.getElementById('course-hours')?.textContent || ''; if (typeof loadCourseDetails === 'function') { loadCourseDetails(code, name, hours); } else { window.location.reload(); } }, {confirmText:'Confirm'}); } else { window.__openConfirm('Error', 'Update failed: ' + (d.message || 'Unknown error'), ()=>{}, {confirmText:'OK', showCancel:false}); } })
+        .catch(() => window.__openConfirm('Error','Network error during material update', ()=>{}, {confirmText:'OK', showCancel:false}))
+        .finally(() => { btn && (btn.disabled=false, btn.textContent='Save Changes'); });
+    });
+  })();
+
   function openAddTopicModal(courseCode, courseName, competencyId, competencyName) {
     const modal = document.getElementById('addTopicModal');
     const codeEl = document.getElementById('topic_course_code');
@@ -424,9 +731,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (compIdEl) compIdEl.value = competencyId || '';
     if (compNameEl) compNameEl.textContent = competencyName || '';
     if (courseNameEl) courseNameEl.textContent = courseName || '';
-    if (typeSel) typeSel.value = 'file';
-    if (fileGroup) fileGroup.classList.remove('hidden');
-    if (linkGroup) linkGroup.classList.add('hidden');
+    // Hide and disable the initial material inputs in Add Topic modal
+    const form = document.getElementById('addTopicForm');
+    if (form) {
+      const hideGroup = (input) => {
+        if (!input) return;
+        input.value = '';
+        input.disabled = true;
+        const grp = input.closest('.form-group');
+        if (grp) grp.style.display = 'none';
+      };
+      hideGroup(form.querySelector('[name="material_title"]'));
+      hideGroup(form.querySelector('[name="material_description"]'));
+      hideGroup(form.querySelector('[name="material_type"]'));
+      hideGroup(form.querySelector('[name="material_file"]'));
+      hideGroup(form.querySelector('[name="material_link"]'));
+      const divider = modal ? modal.querySelector('.content-divider') : null;
+      if (divider) divider.style.display = 'none';
+    }
+    if (typeSel) { typeSel.value = ''; typeSel.disabled = true; }
+    if (fileGroup) { fileGroup.classList.add('hidden'); fileGroup.style.display = 'none'; }
+    if (linkGroup) { linkGroup.classList.add('hidden'); linkGroup.style.display = 'none'; }
     if (typeof openModal === 'function') { openModal(modal); } else { modal && modal.classList.remove('hidden'); modal && (modal.style.display = 'flex'); }
   }
 
@@ -494,7 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = addMaterialForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true; submitBtn.textContent = 'Adding...';
     formData.append('batch_name', document.getElementById('trainer-batch-select')?.value || currentBatchName);
-    fetch('../php/add_materials.php', { method: 'POST', body: formData })
+    fetch('../php/add_materials.php', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData })
       .then(r => r.json())
       .then(d => {
         if (d.success) {
@@ -551,7 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = addActivityForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true; submitBtn.textContent = 'Adding...';
     formData.append('batch_name', document.getElementById('trainer-batch-select')?.value || currentBatchName);
-    fetch('../php/add_activity.php', { method: 'POST', body: formData })
+    fetch('../php/add_activity.php', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData })
       .then(r => r.json())
       .then(d => {
         if (d.success) {
@@ -607,7 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = this.querySelector('button[type="submit"]');
     submitBtn.disabled = true; submitBtn.textContent = 'Saving...';
     formData.append('batch_name', document.getElementById('trainer-batch-select')?.value || currentBatchName);
-    fetch('../php/grade_submission.php', { method: 'POST', body: formData })
+    fetch('../php/grade_submission.php', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData })
       .then(r => r.json())
       .then(d => {
         if (d.success) {
@@ -630,6 +955,92 @@ document.addEventListener('DOMContentLoaded', () => {
       .finally(() => { submitBtn.disabled = false; submitBtn.textContent = 'Save Grade'; });
   });
 });
+document.addEventListener('click', function(e){
+  const b = e.target.closest('.edit-material-btn,.edit-comp-material-btn,.edit-activity-btn,.delete-material-btn,.delete-comp-material-btn,.delete-activity-btn');
+  if (!b) return;
+  e.preventDefault();
+  const cls = b.className || '';
+  if (cls.includes('edit-material-btn')) {
+    openEditMaterialModal({ id: b.dataset.materialId, title: b.dataset.materialTitle, description: b.dataset.materialDescription, path: b.dataset.materialPath });
+    return;
+  }
+  if (cls.includes('edit-comp-material-btn')) {
+    openEditMaterialModal({ id: b.dataset.materialId, title: b.dataset.materialTitle, description: b.dataset.materialDescription, path: b.dataset.materialPath }, 'course');
+    return;
+  }
+  if (cls.includes('edit-activity-btn')) {
+    openEditActivityModal({ id: b.dataset.activityId, title: b.dataset.activityTitle, description: b.dataset.activityDescription, due: b.dataset.dueDate, max: b.dataset.maxScore });
+    return;
+  }
+  if (cls.includes('delete-material-btn')) {
+    const id = b.dataset.materialId;
+    openConfirm('Confirm Delete', 'Delete material: ' + (b.dataset.materialTitle || '') + '?', () => {
+      const bn = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+      if (!bn) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+      fetch('../php/delete_material.php', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ material_id: id, batch_name: bn }) })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            openConfirm('Confirm Action', 'Material deleted.', () => {
+              const code = document.getElementById('course-code')?.textContent || '';
+              const name = document.getElementById('course-detail-title')?.textContent || '';
+              const hours = document.getElementById('course-hours')?.textContent || '';
+              if (typeof loadCourseDetails === 'function') loadCourseDetails(code, name, hours);
+            }, { confirmText: 'Confirm' });
+          } else {
+            openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+          }
+        })
+        .catch(() => openConfirm('Error', 'Network error while deleting material', () => {}, { confirmText: 'OK', showCancel: false }));
+    }, { confirmText: 'Delete' });
+    return;
+  }
+  if (cls.includes('delete-comp-material-btn')) {
+    const id = b.dataset.materialId;
+    openConfirm('Confirm Delete', 'Delete course material: ' + (b.dataset.materialTitle || '') + '?', () => {
+      const bn = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+      if (!bn) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+      fetch('../php/delete_course_material.php', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ material_id: id, batch_name: bn }) })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            openConfirm('Confirm Action', 'Course material deleted.', () => {
+              const code = document.getElementById('course-code')?.textContent || '';
+              const name = document.getElementById('course-detail-title')?.textContent || '';
+              const hours = document.getElementById('course-hours')?.textContent || '';
+              if (typeof loadCourseDetails === 'function') loadCourseDetails(code, name, hours);
+            }, { confirmText: 'Confirm' });
+          } else {
+            openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+          }
+        })
+        .catch(() => openConfirm('Error', 'Network error while deleting course material', () => {}, { confirmText: 'OK', showCancel: false }));
+    }, { confirmText: 'Delete' });
+    return;
+  }
+  if (cls.includes('delete-activity-btn')) {
+    const id = b.dataset.activityId;
+    openConfirm('Confirm Delete', 'Delete activity: ' + (b.dataset.activityTitle || '') + '?', () => {
+      const bn = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+      if (!bn) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+      fetch('../php/delete_activity.php', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ activity_id: id, batch_name: bn }) })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            openConfirm('Confirm Action', 'Activity deleted.', () => {
+              const code = document.getElementById('course-code')?.textContent || '';
+              const name = document.getElementById('course-detail-title')?.textContent || '';
+              const hours = document.getElementById('course-hours')?.textContent || '';
+              if (typeof loadCourseDetails === 'function') loadCourseDetails(code, name, hours);
+            }, { confirmText: 'Confirm' });
+          } else {
+            openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+          }
+        })
+        .catch(() => openConfirm('Error', 'Network error while deleting activity', () => {}, { confirmText: 'OK', showCancel: false }));
+    }, { confirmText: 'Delete' });
+  }
+}, true);
   // Universal module uploader removed; modules are added per topic via Add Material
   const addTopicForm = document.getElementById('addTopicForm');
   document.getElementById('cancelTopic')?.addEventListener('click', () => {
@@ -645,7 +1056,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const formData = new FormData(addTopicForm);
     const submitBtn = addTopicForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true; submitBtn.textContent = 'Adding...';
-    fetch('../php/add_topic.php', { method: 'POST', body: formData })
+    fetch('../php/add_topic.php', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData })
       .then(r => r.json())
       .then(d => {
         if (d.success) {
@@ -711,12 +1122,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const titleEl = document.getElementById('edit_material_title');
     const descEl = document.getElementById('edit_material_description');
     const infoEl = document.getElementById('edit_material_file_info');
+    const typeSel = document.getElementById('edit_material_type');
+    const fileGrp = document.getElementById('edit_file_input_group');
+    const linkGrp = document.getElementById('edit_link_input_group');
     if (idEl) idEl.value = material.id || '';
     if (titleEl) titleEl.value = material.title || '';
     if (descEl) descEl.value = material.description || '';
     if (infoEl) {
       infoEl.innerHTML = material.path ? `<small>Current file: ${material.path}</small>` : '<small>No file attached</small>';
     }
+    if (typeSel) typeSel.value = '';
+    if (fileGrp) fileGrp.classList.add('hidden');
+    if (linkGrp) linkGrp.classList.add('hidden');
     modal && modal.classList.remove('hidden');
   }
 
@@ -724,14 +1141,53 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('closeEditMaterialModal')?.addEventListener('click', () => document.getElementById('editMaterialModal')?.classList.add('hidden'));
 
   const editMaterialForm = document.getElementById('editMaterialForm');
+  const editMaterialTypeSel = document.getElementById('edit_material_type');
+  const editFileGroup = document.getElementById('edit_file_input_group');
+  const editLinkGroup = document.getElementById('edit_link_input_group');
+  editMaterialTypeSel?.addEventListener('change', function() {
+    const t = this.value;
+    if (t === 'file') {
+      editFileGroup?.classList.remove('hidden');
+      editLinkGroup?.classList.add('hidden');
+    } else if (t === 'link') {
+      editLinkGroup?.classList.remove('hidden');
+      editFileGroup?.classList.add('hidden');
+    } else {
+      editFileGroup?.classList.add('hidden');
+      editLinkGroup?.classList.add('hidden');
+    }
+  });
   editMaterialForm?.addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(editMaterialForm);
     const submitBtn = editMaterialForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true; submitBtn.textContent = 'Saving...';
+    const t = editMaterialTypeSel?.value || '';
+    if (t === 'file') {
+      const f = document.querySelector('#edit_file_input_group input[type="file"]');
+      if (!f || !f.files || f.files.length === 0) {
+        openConfirm('Error', 'Please select a file to upload', () => {}, { confirmText: 'OK', showCancel: false });
+        submitBtn.disabled = false; submitBtn.textContent = 'Save Changes';
+        return;
+      }
+    } else if (t === 'link') {
+      const l = document.querySelector('#edit_link_input_group input[name="material_link"]');
+      if (!l || !l.value.trim()) {
+        openConfirm('Error', 'Please provide a link URL', () => {}, { confirmText: 'OK', showCancel: false });
+        submitBtn.disabled = false; submitBtn.textContent = 'Save Changes';
+        return;
+      }
+    }
     const endpoint = editMaterialScope === 'course' ? '../php/update_course_material.php' : '../php/update_material.php';
-    formData.append('batch_name', document.getElementById('trainer-batch-select')?.value || currentBatchName);
-    fetch(endpoint, { method: 'POST', body: formData })
+    const bnE = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+    if (!bnE) { openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); submitBtn.disabled = false; submitBtn.textContent = 'Save Changes'; return; }
+    formData.append('batch_name', bnE);
+    if (t) formData.append('material_type', t);
+    if (t === 'link') {
+      const l = document.querySelector('#edit_link_input_group input[name="material_link"]');
+      if (l && l.value) formData.append('material_link', l.value);
+    }
+    fetch(endpoint, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData })
       .then(r => r.json())
       .then(d => {
         if (d.success) {
@@ -792,7 +1248,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sel = document.getElementById('trainer-batch-select');
     if (!sel) return Promise.resolve();
     sel.innerHTML = '<option value="" disabled selected>Loading...</option>';
-    return fetch(`../php/get_trainer_course_batches.php?course_code=${encodeURIComponent(courseCode)}`)
+    return fetch(`../php/get_trainer_course_batches.php?course_code=${encodeURIComponent(courseCode)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(r => r.json())
       .then(d => {
         if (!d.success) throw new Error(d.message || 'Failed to load batches');
@@ -803,6 +1259,7 @@ document.addEventListener('DOMContentLoaded', () => {
           opt.textContent = b.batch_name;
           sel.appendChild(opt);
         });
+        if (sel.options.length > 0) { sel.selectedIndex = 0; }
         currentBatchName = sel.value || '';
       })
       .catch(() => { sel.innerHTML = '<option value="" disabled selected>No batches</option>'; });
@@ -815,3 +1272,123 @@ document.addEventListener('DOMContentLoaded', () => {
     const hours = document.getElementById('course-hours')?.textContent || '';
     if (code) loadCourseDetails(code, name, hours);
   });
+
+// Fallback handlers to ensure clicks work even if DOMContentLoaded block didn't initialize
+(function(){
+  if (!window.__openConfirm) {
+    window.__openConfirm = function(title, message, onConfirm, opts){
+      const modal = document.getElementById('confirmationModal');
+      const tEl = document.getElementById('confirmationTitle');
+      const mEl = document.getElementById('confirmationMessage');
+      const cBtn = document.getElementById('confirmActionBtn');
+      const xBtn = document.getElementById('cancelConfirmation');
+      if (tEl) tEl.textContent = title || 'Confirm';
+      if (mEl) mEl.textContent = message || '';
+      if (cBtn) cBtn.textContent = (opts && opts.confirmText) ? opts.confirmText : 'Confirm';
+      if (xBtn) xBtn.style.display = (opts && opts.showCancel === false) ? 'none' : '';
+      const cb = (typeof onConfirm === 'function') ? onConfirm : null;
+      function onC(){ cBtn.removeEventListener('click', onC); modal && modal.classList.add('hidden'); cb && cb(); }
+      function onX(){ xBtn.removeEventListener('click', onX); modal && modal.classList.add('hidden'); }
+      cBtn && cBtn.addEventListener('click', onC);
+      xBtn && xBtn.addEventListener('click', onX);
+      modal && modal.classList.remove('hidden');
+    };
+  }
+  if (!window.__openEditMaterialModal) {
+    window.__openEditMaterialModal = function(material, scope){
+      window.__editMaterialScope = scope || 'topic';
+      const modal = document.getElementById('editMaterialModal');
+      const idEl = document.getElementById('edit_material_id');
+      const titleEl = document.getElementById('edit_material_title');
+      const descEl = document.getElementById('edit_material_description');
+      const infoEl = document.getElementById('edit_material_file_info');
+      const typeSel = document.getElementById('edit_material_type');
+      const fileGrp = document.getElementById('edit_file_input_group');
+      const linkGrp = document.getElementById('edit_link_input_group');
+      if (idEl) idEl.value = material.id || '';
+      if (titleEl) titleEl.value = material.title || '';
+      if (descEl) descEl.value = material.description || '';
+      if (infoEl) infoEl.innerHTML = material.path ? `<small>Current file: ${material.path}</small>` : '<small>No file attached</small>';
+      if (typeSel) typeSel.value = '';
+      fileGrp && fileGrp.classList.add('hidden');
+      linkGrp && linkGrp.classList.add('hidden');
+      modal && modal.classList.remove('hidden');
+    };
+  }
+  if (!window.__editCompMaterial) {
+    window.__editCompMaterial = function(el){
+      const btn = el.closest('.edit-comp-material-btn');
+      if (!btn) return;
+      window.__openEditMaterialModal({ id: btn.dataset.materialId, title: btn.dataset.materialTitle, description: btn.dataset.materialDescription, path: btn.dataset.materialPath }, 'course');
+    };
+  }
+  if (!window.__deleteCompMaterial) {
+    window.__deleteCompMaterial = function(el){
+      const btn = el.closest('.delete-comp-material-btn');
+      if (!btn) return;
+      const id = btn.dataset.materialId;
+      window.__openConfirm('Confirm Delete', 'Delete course material: ' + (btn.dataset.materialTitle || '') + '?', () => {
+        const bnA = document.getElementById('trainer-batch-select')?.value || '';
+        if (!bnA) { window.__openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+        fetch('../php/delete_course_material.php', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ material_id: id, batch_name: bnA }) })
+          .then(r => r.json())
+          .then(d => { if (d.success) { window.__openConfirm('Confirm Action', 'Course material deleted.', () => { const code = document.getElementById('course-code')?.textContent || ''; const name = document.getElementById('course-detail-title')?.textContent || ''; const hours = document.getElementById('course-hours')?.textContent || ''; if (typeof window.loadCourseDetails === 'function') { window.loadCourseDetails(code, name, hours); } else { window.location.reload(); } }, { confirmText: 'Confirm' }); } else { window.__openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false }); } })
+          .catch(() => window.__openConfirm('Error', 'Network error while deleting course material', () => {}, { confirmText: 'OK', showCancel: false }));
+      }, { confirmText: 'Delete' });
+    };
+  }
+  if (!window.__editTopicMaterial) {
+    window.__editTopicMaterial = function(el){
+      const btn = el.closest('.edit-material-btn');
+      if (!btn) return;
+      window.__openEditMaterialModal({ id: btn.dataset.materialId, title: btn.dataset.materialTitle, description: btn.dataset.materialDescription, path: btn.dataset.materialPath });
+    };
+  }
+  if (!window.__deleteTopicMaterial) {
+    window.__deleteTopicMaterial = function(el){
+      const btn = el.closest('.delete-material-btn');
+      if (!btn) return;
+      const id = btn.dataset.materialId;
+      window.__openConfirm('Confirm Delete', 'Delete material: ' + (btn.dataset.materialTitle || '') + '?', () => {
+        const bnB = document.getElementById('trainer-batch-select')?.value || '';
+        if (!bnB) { window.__openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+        fetch('../php/delete_material.php', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ material_id: id, batch_name: bnB }) })
+          .then(r => r.json())
+          .then(d => { if (d.success) { window.__openConfirm('Confirm Action', 'Material deleted.', () => { const code = document.getElementById('course-code')?.textContent || ''; const name = document.getElementById('course-detail-title')?.textContent || ''; const hours = document.getElementById('course-hours')?.textContent || ''; if (typeof window.loadCourseDetails === 'function') { window.loadCourseDetails(code, name, hours); } else { window.location.reload(); } }, { confirmText: 'Confirm' }); } else { window.__openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false }); } })
+          .catch(() => window.__openConfirm('Error', 'Network error while deleting material', () => {}, { confirmText: 'OK', showCancel: false }));
+      }, { confirmText: 'Delete' });
+    };
+  }
+  // Ensure edit form submission works even if initial listeners didn't attach
+  (function attachEditForm(){
+    const editForm = document.getElementById('editMaterialForm');
+    if (!editForm) return;
+    if (editForm.__fallbackBound) return; editForm.__fallbackBound = true;
+    const typeSel = document.getElementById('edit_material_type');
+    editForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      const fd = new FormData(editForm);
+      const btn = editForm.querySelector('button[type="submit"]');
+      btn && (btn.disabled = true, btn.textContent = 'Saving...');
+      const t = typeSel ? typeSel.value : '';
+      if (t === 'file') {
+        const f = document.querySelector('#edit_file_input_group input[type="file"]');
+        if (!f || !f.files || f.files.length === 0) { window.__openConfirm('Error','Please select a file to upload',()=>{}, {confirmText:'OK', showCancel:false}); btn && (btn.disabled=false, btn.textContent='Save Changes'); return; }
+      } else if (t === 'link') {
+        const l = document.querySelector('#edit_link_input_group input[name="material_link"]');
+        if (!l || !l.value.trim()) { window.__openConfirm('Error','Please provide a link URL',()=>{}, {confirmText:'OK', showCancel:false}); btn && (btn.disabled=false, btn.textContent='Save Changes'); return; }
+        fd.append('material_link', l.value);
+      }
+      const bn = document.getElementById('trainer-batch-select')?.value || '';
+      if (!bn) { window.__openConfirm('Error','Please select a batch first',()=>{}, {confirmText:'OK', showCancel:false}); btn && (btn.disabled=false, btn.textContent='Save Changes'); return; }
+      fd.append('batch_name', bn);
+      if (t) fd.append('material_type', t);
+      const endpoint = (window.__editMaterialScope === 'course') ? '../php/update_course_material.php' : '../php/update_material.php';
+      fetch(endpoint, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: fd })
+        .then(r => r.json())
+        .then(d => { if (d.success) { document.getElementById('editMaterialModal')?.classList.add('hidden'); window.__openConfirm('Confirm Action','Material updated.', ()=>{ const code = document.getElementById('course-code')?.textContent || ''; const name = document.getElementById('course-detail-title')?.textContent || ''; const hours = document.getElementById('course-hours')?.textContent || ''; if (typeof window.loadCourseDetails === 'function') { window.loadCourseDetails(code, name, hours); } else { window.location.reload(); } }, {confirmText:'Confirm'}); } else { window.__openConfirm('Error', 'Update failed: ' + (d.message || 'Unknown error'), ()=>{}, {confirmText:'OK', showCancel:false}); } })
+        .catch(() => window.__openConfirm('Error','Network error during material update', ()=>{}, {confirmText:'OK', showCancel:false}))
+        .finally(() => { btn && (btn.disabled=false, btn.textContent='Save Changes'); });
+    });
+  })();
+})();

@@ -465,12 +465,15 @@ function setupBatchScheduling() {
           if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Add Course'; }
         } else {
           if (submitBtn) { submitBtn.textContent = 'Adding...'; }
-          // proceed
           const fd = new FormData(addCourseForm);
-          fetch('../admin/index.php', { method: 'POST', body: fd })
-            .then(resp => resp.text())
-            .then(() => { window.location.href = window.location.pathname + '?current_tab=courses#courses'; })
-            .catch(() => { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Add Course'; } });
+          fetch('../php/add_course.php', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+              if (d && d.success) { alert('Course added successfully!'); closeModal('addCourseModal'); window.location.href = window.location.pathname + '?current_tab=courses#courses'; }
+              else { alert(d.message || 'Error adding course'); }
+            })
+            .catch(() => { alert('Error adding course. Please try again.'); })
+            .finally(() => { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Add Course'; } });
         }
       })
       .catch(() => { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Add Course'; } });

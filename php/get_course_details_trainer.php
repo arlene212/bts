@@ -44,31 +44,62 @@ try {
     $batchesStmt->execute([$courseCode, $trainerId]);
     $batches = $batchesStmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Determine if batch_resources table exists to scope resources per batch
+    $hasBatchResourcesTbl = false;
+    try {
+        $tchkBr = $pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'batch_resources'");
+        $tchkBr->execute();
+        $hasBatchResourcesTbl = ((int)$tchkBr->fetchColumn() > 0);
+    } catch (Exception $__) {}
+
     // Get topics for this course and group them by competency
-    $topicsAndMaterialsStmt = $pdo->prepare("
-        SELECT 
-            ct.*,
-            tm.id as material_id, tm.material_title, tm.material_description, tm.file_path as material_file_path, tm.uploaded_at,
-            br_m.id as br_material_id,
-            ta.id as activity_id, ta.activity_title, ta.activity_description, ta.activity_type, ta.due_date, ta.max_score,
-            br_a.id as br_activity_id,
-            asub.id as submission_id, asub.submission_text, asub.file_path as submission_file_path, asub.submitted_at, asub.score, asub.feedback,
-            sub_user.first_name as trainee_first_name, sub_user.last_name as trainee_last_name
-        FROM course_topics ct
-        LEFT JOIN topic_materials tm ON ct.id = tm.topic_id
-        LEFT JOIN batch_resources br_m ON br_m.resource_type = 'material' AND br_m.resource_id = tm.id AND br_m.course_code = ct.course_code AND br_m.batch_name = ?
-        LEFT JOIN topic_activities ta ON ct.id = ta.topic_id
-        LEFT JOIN batch_resources br_a ON br_a.resource_type = 'activity' AND br_a.resource_id = ta.id AND br_a.course_code = ct.course_code AND br_a.batch_name = ?
-        LEFT JOIN activity_submissions asub ON ta.id = asub.activity_id
-        LEFT JOIN users sub_user ON asub.guest_id = sub_user.user_id
-        WHERE ct.course_code = ? 
-        ORDER BY 
-            ct.created_at ASC, 
-            tm.uploaded_at ASC, 
-            ta.created_at ASC,
-            asub.submitted_at ASC
-    ");
-    $topicsAndMaterialsStmt->execute([$batchName, $batchName, $courseCode]);
+    if ($hasBatchResourcesTbl) {
+        $topicsAndMaterialsStmt = $pdo->prepare("
+            SELECT 
+                ct.*,
+                tm.id as material_id, tm.material_title, tm.material_description, tm.file_path as material_file_path, tm.uploaded_at,
+                br_m.id as br_material_id,
+                ta.id as activity_id, ta.activity_title, ta.activity_description, ta.activity_type, ta.due_date, ta.max_score,
+                br_a.id as br_activity_id,
+                asub.id as submission_id, asub.submission_text, asub.file_path as submission_file_path, asub.submitted_at, asub.score, asub.feedback,
+                sub_user.first_name as trainee_first_name, sub_user.last_name as trainee_last_name
+            FROM course_topics ct
+            LEFT JOIN topic_materials tm ON ct.id = tm.topic_id
+            LEFT JOIN batch_resources br_m ON br_m.resource_type = 'material' AND br_m.resource_id = tm.id AND br_m.course_code = ct.course_code AND br_m.batch_name = ?
+            LEFT JOIN topic_activities ta ON ct.id = ta.topic_id
+            LEFT JOIN batch_resources br_a ON br_a.resource_type = 'activity' AND br_a.resource_id = ta.id AND br_a.course_code = ct.course_code AND br_a.batch_name = ?
+            LEFT JOIN activity_submissions asub ON ta.id = asub.activity_id
+            LEFT JOIN users sub_user ON asub.guest_id = sub_user.user_id
+            WHERE ct.course_code = ? 
+            ORDER BY 
+                ct.created_at ASC, 
+                tm.uploaded_at ASC, 
+                ta.created_at ASC,
+                asub.submitted_at ASC
+        ");
+        $topicsAndMaterialsStmt->execute([$batchName, $batchName, $courseCode]);
+    } else {
+        $topicsAndMaterialsStmt = $pdo->prepare("
+            SELECT 
+                ct.*,
+                tm.id as material_id, tm.material_title, tm.material_description, tm.file_path as material_file_path, tm.uploaded_at,
+                ta.id as activity_id, ta.activity_title, ta.activity_description, ta.activity_type, ta.due_date, ta.max_score,
+                asub.id as submission_id, asub.submission_text, asub.file_path as submission_file_path, asub.submitted_at, asub.score, asub.feedback,
+                sub_user.first_name as trainee_first_name, sub_user.last_name as trainee_last_name
+            FROM course_topics ct
+            LEFT JOIN topic_materials tm ON ct.id = tm.topic_id
+            LEFT JOIN topic_activities ta ON ct.id = ta.topic_id
+            LEFT JOIN activity_submissions asub ON ta.id = asub.activity_id
+            LEFT JOIN users sub_user ON asub.guest_id = sub_user.user_id
+            WHERE ct.course_code = ? 
+            ORDER BY 
+                ct.created_at ASC, 
+                tm.uploaded_at ASC, 
+                ta.created_at ASC,
+                asub.submitted_at ASC
+        ");
+        $topicsAndMaterialsStmt->execute([$courseCode]);
+    }
     $results = $topicsAndMaterialsStmt->fetchAll(PDO::FETCH_ASSOC);
 
     $topicsByCompetency = [];
@@ -82,14 +113,14 @@ try {
             $tempTopics[$topicId]['activities'] = [];
         }
 
-        if ($row['material_id'] && $row['br_material_id']) {
+        if ($hasBatchResourcesTbl ? ($row['material_id'] && $row['br_material_id']) : $row['material_id']) {
             $materialId = $row['material_id'];
             if (!isset($tempTopics[$topicId]['materials'][$materialId])) {
                 $tempTopics[$topicId]['materials'][$materialId] = array_intersect_key($row, array_flip(['material_id', 'material_title', 'material_description', 'material_file_path', 'uploaded_at']));
             }
         }
 
-        if ($row['activity_id'] && $row['br_activity_id']) {
+        if ($hasBatchResourcesTbl ? ($row['activity_id'] && $row['br_activity_id']) : $row['activity_id']) {
             $activityId = $row['activity_id'];
             if (!isset($tempTopics[$topicId]['activities'][$activityId])) {
                 $tempTopics[$topicId]['activities'][$activityId] = array_intersect_key($row, array_flip(['activity_id', 'activity_title', 'activity_description', 'activity_type', 'due_date', 'max_score']));
@@ -106,8 +137,18 @@ try {
     }
 
     // Now, group the processed topics by competency
+    // Build mapping from competency_code (string) to numeric id for consistent keys
+    $codeToId = [];
+    if (!empty($competencies)) {
+        foreach ($competencies as $compRow) {
+            if (isset($compRow['competency_code'], $compRow['id'])) {
+                $codeToId[$compRow['competency_code']] = (int)$compRow['id'];
+            }
+        }
+    }
     foreach ($tempTopics as $topic) {
-        $competencyId = $topic['competency_id'];
+        $compKey = $topic['competency_id'];
+        $competencyId = isset($codeToId[$compKey]) ? $codeToId[$compKey] : $compKey;
         if (!isset($topicsByCompetency[$competencyId])) {
             $topicsByCompetency[$competencyId] = [];
         }
@@ -119,16 +160,32 @@ try {
         $topicsByCompetency[$competencyId][] = array_merge($topic, ['activities' => array_values($topic['activities'])]);
     }
 
-    // Fetch competencies for this course via course_id
-  $compStmt = $pdo->prepare("SELECT id, unit_order, competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes, status FROM competencies WHERE course_id = ? AND status = 'active' ORDER BY competency_type, unit_order, competency_name");
-    $compStmt->execute([(int)$course['id']]);
-    $competencies = $compStmt->fetchAll(PDO::FETCH_ASSOC);
+    // Fetch competencies for this course via course_id (fallback if table missing)
+    $hasCompetenciesTbl = false;
+    try {
+        $tchk = $pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'competencies'");
+        $tchk->execute();
+        $hasCompetenciesTbl = ((int)$tchk->fetchColumn() > 0);
+    } catch (Exception $__) {}
+    $competencies = [];
+    if ($hasCompetenciesTbl) {
+        $compStmt = $pdo->prepare("SELECT id, unit_order, competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes, status FROM competencies WHERE course_id = ? AND status = 'active' ORDER BY competency_type, unit_order, competency_name");
+        $compStmt->execute([(int)$course['id']]);
+        $competencies = $compStmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-    $materialsStmt = $pdo->prepare("SELECT cm.id, cm.course_code, cm.competency_id, cm.title, cm.content_type, cm.file_path, cm.content, cm.date_created 
-                                    FROM course_materials cm
-                                    JOIN batch_resources br ON br.resource_type = 'material' AND br.resource_id = cm.id AND br.course_code = cm.course_code AND br.batch_name = ?
-                                    WHERE cm.course_code = ? ORDER BY cm.date_created ASC");
-    $materialsStmt->execute([$batchName, $courseCode]);
+    if ($hasBatchResourcesTbl) {
+        $materialsStmt = $pdo->prepare("SELECT cm.id, cm.course_code, cm.competency_id, cm.title, cm.content_type, cm.file_path, cm.content, cm.date_created 
+                                        FROM course_materials cm
+                                        JOIN batch_resources br ON br.resource_type = 'material' AND br.resource_id = cm.id AND br.course_code = cm.course_code AND br.batch_name = ?
+                                        WHERE cm.course_code = ? ORDER BY cm.date_created ASC");
+        $materialsStmt->execute([$batchName, $courseCode]);
+    } else {
+        $materialsStmt = $pdo->prepare("SELECT cm.id, cm.course_code, cm.competency_id, cm.title, cm.content_type, cm.file_path, cm.content, cm.date_created 
+                                        FROM course_materials cm
+                                        WHERE cm.course_code = ? ORDER BY cm.date_created ASC");
+        $materialsStmt->execute([$courseCode]);
+    }
     $materials = $materialsStmt->fetchAll(PDO::FETCH_ASSOC);
 
     $materialsByCompetency = [];
