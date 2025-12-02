@@ -75,6 +75,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
                 // Hash password
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
+                // CAPTCHA validation
+                require_once __DIR__ . '/php/Captcha.php';
+                Captcha::start();
+                $captchaInput = trim($_POST['captcha_input'] ?? '');
+                list($captchaOk, $captchaMsg) = Captcha::validate($captchaInput);
+                if (!$captchaOk) {
+                    $register_error = $captchaMsg;
+                } else {
                 // Insert with only required fields
                 $sql = "INSERT INTO users (user_id, role, first_name, last_name, email, password) 
                         VALUES (?, 'guest', ?, ?, ?, ?)";
@@ -117,6 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
                     }
                 } else {
                     $register_error = "Registration failed!";
+                }
                 }
             }
         } catch (PDOException $e) {
@@ -490,6 +499,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <label class="form-label">CAPTCHA *</label>
+                        <div class="captcha-row" style="display:flex; gap:12px; align-items:center;">
+                            <img id="captchaImage" src="php/captcha_image.php" alt="CAPTCHA code image" width="300" height="80" aria-label="CAPTCHA image showing security code"/>
+                            <div class="captcha-controls" style="display:flex; flex-direction:column; gap:8px;">
+                                <button type="button" id="refreshCaptcha" class="btn btn-outline" aria-label="Refresh CAPTCHA" onclick="(function(){ var img=document.getElementById('captchaImage'); if(img){ img.src='php/captcha_image.php?t=' + Date.now(); } var inp=document.getElementById('captchaInput'); if(inp){ inp.value=''; } var v=document.getElementById('captchaValidation'); if(v){ v.textContent=''; v.className='form-validation'; } })()">Refresh</button>
+                                
+                            </div>
+                        </div>
+                        <input type="text" id="captchaInput" name="captcha_input" class="form-input" placeholder="Enter CAPTCHA code" required autocomplete="off" aria-describedby="captchaHelp" pattern="^[A-Za-z0-9]{6,8}$">
+                        <small id="captchaHelp" class="form-help">Enter the characters shown (A–Z, a–z, 0–9). Case sensitive.</small>
+                        <div class="form-validation" id="captchaValidation"></div>
+                    </div>
+
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary btn-full btn-ripple" id="registerSubmit"
                             aria-label="Create your account" role="button" tabindex="0">
@@ -524,8 +547,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
 
                     <div class="form-group">
                         <label for="forgotEmail" class="form-label">Email Address</label>
-                        <input type="email" id="forgotEmail" name="email" class="form-input" required>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input type="email" id="forgotEmail" name="email" class="form-input" required style="flex:1;">
+                            <button type="button" id="sendGuestResetOtp" class="btn btn-outline" style="white-space:nowrap;">Send OTP</button>
+                        </div>
                         <div class="form-validation" id="forgotEmailValidation"></div>
+                        <div class="form-validation" id="forgotOtpStatus"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="forgotOtpCode" class="form-label">OTP Code</label>
+                        <input type="text" id="forgotOtpCode" name="otp_code" class="form-input" placeholder="Enter 6-digit code" inputmode="numeric" pattern="^\d{6}$" required>
+                        <div class="form-validation" id="forgotOtpValidation"></div>
                     </div>
 
                     <div class="form-group">

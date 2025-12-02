@@ -446,6 +446,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const forgotNewPasswordValidation = document.getElementById('forgotNewPasswordValidation');
         const forgotConfirmPasswordValidation = document.getElementById('forgotConfirmPasswordValidation');
         const forgotPasswordStrength = document.getElementById('forgotPasswordStrength');
+        const sendGuestResetOtpBtn = document.getElementById('sendGuestResetOtp');
+        const forgotOtpStatus = document.getElementById('forgotOtpStatus');
+        const forgotOtpInput = document.getElementById('forgotOtpCode');
+        const forgotOtpValidation = document.getElementById('forgotOtpValidation');
         
         // Email validation for forgot password
         function validateForgotEmail() {
@@ -485,7 +489,71 @@ document.addEventListener("DOMContentLoaded", () => {
             strengthText.textContent = strength.text;
             strengthText.className = 'password-strength-text ' + strength.class;
         }
-        
+
+        function validateForgotOtp() {
+            const code = (forgotOtpInput?.value || '').trim();
+            if (!forgotOtpValidation) return true;
+            if (code.length === 0) {
+                forgotOtpValidation.textContent = 'OTP code is required';
+                forgotOtpValidation.className = 'form-validation error';
+                return false;
+            }
+            if (!/^\d{6}$/.test(code)) {
+                forgotOtpValidation.textContent = 'OTP must be a 6-digit number';
+                forgotOtpValidation.className = 'form-validation error';
+                return false;
+            }
+            forgotOtpValidation.textContent = '✓ OTP format valid';
+            forgotOtpValidation.className = 'form-validation success';
+            return true;
+        }
+
+        if (sendGuestResetOtpBtn) {
+            sendGuestResetOtpBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const emailValid = validateForgotEmail();
+                if (!emailValid) {
+                    forgotEmailInput.focus();
+                    return;
+                }
+                if (forgotOtpStatus) {
+                    forgotOtpStatus.textContent = '';
+                    forgotOtpStatus.className = 'form-validation';
+                }
+                try {
+                    sendGuestResetOtpBtn.disabled = true;
+                    sendGuestResetOtpBtn.classList.add('btn-loading');
+                    sendGuestResetOtpBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                    const form = new FormData();
+                    form.append('email', forgotEmailInput.value.trim());
+                    const res = await fetch('php/send_guest_reset_otp.php', { method: 'POST', body: form });
+                    const data = await res.json();
+                    if (data.success) {
+                        if (forgotOtpStatus) {
+                            forgotOtpStatus.textContent = data.message || 'OTP sent.';
+                            forgotOtpStatus.className = 'form-validation success';
+                        }
+                        if (forgotOtpInput) forgotOtpInput.focus();
+                    } else {
+                        if (forgotOtpStatus) {
+                            forgotOtpStatus.textContent = data.message || 'Failed to send OTP';
+                            forgotOtpStatus.className = 'form-validation error';
+                        }
+                    }
+                } catch (err) {
+                    console.error('OTP send error:', err);
+                    if (forgotOtpStatus) {
+                        forgotOtpStatus.textContent = 'An error occurred while sending OTP';
+                        forgotOtpStatus.className = 'form-validation error';
+                    }
+                } finally {
+                    sendGuestResetOtpBtn.disabled = false;
+                    sendGuestResetOtpBtn.classList.remove('btn-loading');
+                    sendGuestResetOtpBtn.innerHTML = 'Send OTP';
+                }
+            });
+        }
+
         // New password validation for forgot password
         function validateForgotNewPassword() {
             const password = forgotNewPasswordInput.value;
@@ -539,6 +607,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
         forgotConfirmPasswordInput.addEventListener('input', () => debounceValidation(validateForgotConfirmPassword));
+        if (forgotOtpInput) {
+            forgotOtpInput.addEventListener('input', () => debounceValidation(validateForgotOtp));
+        }
         
         // Forgot password form submission
         forgotPasswordForm.addEventListener('submit', function(e) {
@@ -548,6 +619,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const isEmailValid = validateForgotEmail();
             const isNewPasswordValid = validateForgotNewPassword();
             const isConfirmPasswordValid = validateForgotConfirmPassword();
+            const isOtpValid = validateForgotOtp();
             
             if (!isEmailValid) {
                 forgotEmailInput.focus();
@@ -561,6 +633,11 @@ document.addEventListener("DOMContentLoaded", () => {
             
             if (!isConfirmPasswordValid) {
                 forgotConfirmPasswordInput.focus();
+                return;
+            }
+
+            if (!isOtpValid) {
+                if (forgotOtpInput) forgotOtpInput.focus();
                 return;
             }
             
