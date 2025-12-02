@@ -65,23 +65,22 @@ try {
         throw $e;
     }
 
-    // Build competencies list using competencies table via course_topics mapping
+    // Build competencies list for the course using course_id
     $competencies = [];
-    $compCodesStmt = $pdo->prepare("SELECT DISTINCT competency_id FROM course_topics WHERE course_code = ?");
-    $compCodesStmt->execute([$courseCode]);
-    $codes = array_map(function($r){ return $r['competency_id']; }, $compCodesStmt->fetchAll(PDO::FETCH_ASSOC));
-    if (!empty($codes)) {
-        $in = implode(',', array_fill(0, count($codes), '?'));
-        $cstmt = $pdo->prepare("SELECT competency_code, competency_name, competency_type, description FROM competencies WHERE competency_code IN ($in) AND status = 'active'");
-        $cstmt->execute($codes);
-        foreach ($cstmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $competencies[$row['competency_code']] = [
-                'type' => $row['competency_type'],
-                'name' => $row['competency_name'],
-                'description' => $row['description'] ?? '',
-                'topics' => []
-            ];
-        }
+    $cstmt = $pdo->prepare("SELECT id, competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes FROM competencies WHERE status = 'active' AND course_id = ?");
+    $cstmt->execute([$course['id']]);
+    foreach ($cstmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $competencies[(int)$row['id']] = [
+            'id' => (int)$row['id'],
+            'type' => $row['competency_type'],
+            'name' => $row['competency_name'],
+            'code' => $row['competency_code'],
+            'module_title' => $row['module_title'] ?? $row['competency_name'],
+            'hours' => (int)($row['nominal_hours'] ?? 0),
+            'description' => $row['description'] ?? '',
+            'learning_outcomes' => $row['learning_outcomes'] ?? '',
+            'topics' => []
+        ];
     }
 
     $topics = [];
@@ -136,15 +135,15 @@ try {
         }
     }
 
-    // Assign topics to competencies
+    // Assign topics to competencies by numeric id
     foreach ($topics as $topic) {
-        if (isset($competencies[$topic['competency_id']])) {
+        $cid = (int)$topic['competency_id'];
+        if (isset($competencies[$cid])) {
             $topic['materials'] = array_values($topic['materials']);
             $topic['activities'] = array_values($topic['activities']);
-            $competencies[$topic['competency_id']]['topics'][] = $topic;
+            $competencies[$cid]['topics'][] = $topic;
         } else {
-            // Handle case where competency_id doesn't exist in competencies array
-            error_log("Competency ID '{$topic['competency_id']}' not found in competencies for topic '{$topic['name']}'");
+            error_log("Competency ID '{$cid}' not found in competencies for topic '{$topic['name']}'");
         }
     }
 

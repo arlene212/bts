@@ -1439,6 +1439,7 @@ body::before {
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--secondary-200);
 }
+ .switch-oval .switch-inner { position: absolute; top: 4px; left: 4px; height: calc(100% - 8px); background: var(--primary-600); border-radius: 999px; transition: transform var(--transition-normal), width var(--transition-normal); z-index: 1; }
 
 /* ===========================
    Action Buttons

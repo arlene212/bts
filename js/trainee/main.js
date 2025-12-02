@@ -135,12 +135,14 @@ document.addEventListener('DOMContentLoaded', function () {
       const desc = card.getAttribute('data-course-description');
       const credited = card.getAttribute('data-credited-hours');
       document.getElementById('course-detail-title').textContent = name;
-      document.getElementById('course-detail-code').textContent = code;
+      document.getElementById('course-detail-code').textContent = 'Code: ' + code;
       document.getElementById('course-detail-hours').textContent = hours + ' hrs';
       const ch = document.getElementById('course-detail-credited-hours');
       if (ch) ch.textContent = 'Credited: ' + (credited || '0') + ' hrs';
       document.getElementById('course-detail-description').textContent = desc;
-      document.getElementById('courseDetail').classList.remove('hidden');
+      const cd = document.getElementById('courseDetail');
+      cd.classList.remove('hidden');
+      cd.classList.add('active');
     }
   });
   const changeProfileBtn = document.getElementById('changeProfileBtn');

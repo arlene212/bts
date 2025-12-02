@@ -93,28 +93,14 @@ try {
             echo json_encode(['success' => false, 'message' => 'You are already enrolled in this course.']);
             exit;
         } elseif ($existing['status'] === 'pending') {
-            if ($user_role === 'guest') {
-                $stmt = $pdo->prepare("UPDATE enrollments SET status = 'approved', date_requested = NOW() WHERE id = ?");
-                $stmt->execute([$existing['id']]);
-                logEnrollmentDebug("✅ Converted pending to approved for guest");
-                echo json_encode(['success' => true, 'message' => 'Enrolled successfully for basic competencies.']);
-                exit;
-            }
             echo json_encode(['success' => false, 'message' => 'You already have a pending request for this course.']);
             exit;
         } elseif ($existing['status'] === 'rejected') {
-            if ($user_role === 'guest') {
-                $stmt = $pdo->prepare("UPDATE enrollments SET status = 'approved', date_requested = NOW() WHERE id = ?");
-                $stmt->execute([$existing['id']]);
-                logEnrollmentDebug("✅ Converted rejected to approved for guest");
-                echo json_encode(['success' => true, 'message' => 'Enrolled successfully for basic competencies.']);
-                exit;
-            }
-            // Resubmit rejected request for trainees
+            // Resubmit rejected request for both trainees and guests
             $stmt = $pdo->prepare("UPDATE enrollments SET status = 'pending', date_requested = NOW() WHERE id = ?");
             $stmt->execute([$existing['id']]);
             logEnrollmentDebug("✅ Resubmitted rejected request");
-            echo json_encode(['success' => true, 'message' => 'Request resubmitted successfully.']);
+            echo json_encode(['success' => true, 'message' => 'Request resubmitted successfully and is pending approval.']);
             exit;
         }
     }
@@ -126,17 +112,19 @@ try {
         trainee_id, 
         course_code, 
         course_name, 
+        batch_name,
         status, 
         date_requested,
         student_id_verification,
         email_verification
-    ) VALUES (?, ?, ?, ?, NOW(), ?, ?)";
+    ) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)";
     
     $values = [
         $trainee_id,
         $course_code,
-        $course['course_name'], // CRITICAL: course_name is NOT NULL
-        ($user_role === 'guest' ? 'approved' : 'pending'),
+        $course['course_name'],
+        isset($_POST['batch_name']) ? trim((string)$_POST['batch_name']) : null,
+        'pending',
         $_POST['student_id'] ?? null,
         $_POST['email_verification'] ?? null
     ];
@@ -159,7 +147,7 @@ try {
         
         echo json_encode([
             'success' => true,
-            'message' => 'Enrollment request submitted successfully!',
+            'message' => 'Enrollment request submitted. Awaiting approval.',
             'enrollment_id' => $enrollment_id
         ]);
     } else {

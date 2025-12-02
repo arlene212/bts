@@ -46,7 +46,11 @@ if ($traineeStatus === 'active') {
     $statusCondition = "AND u.status IN ('active', 'dropped', 'graduated')";
 }
 
-$trainees_base_query = "FROM users u JOIN enrollments e ON u.user_id = e.trainee_id JOIN course_assignments ca ON e.course_code = ca.course_code WHERE u.role = 'trainee' " . $statusCondition . " AND ca.trainer_id = :trainer_id";
+$trainees_base_query = "FROM users u 
+  JOIN enrollments e ON u.user_id = e.trainee_id 
+  JOIN course_assignments ca ON e.course_code = ca.course_code 
+  LEFT JOIN batch_assignments ba ON ba.trainee_id = u.user_id AND ba.course_code = e.course_code AND ba.trainer_id = ca.trainer_id 
+  WHERE u.role = 'trainee' " . $statusCondition . " AND ca.trainer_id = :trainer_id";
 
 try {
   $stmt = $db->prepare("SELECT c.* FROM courses c INNER JOIN course_assignments ca ON c.course_code = ca.course_code WHERE ca.trainer_id = ? AND c.status = 'active'");
@@ -71,7 +75,7 @@ try {
   $total_activities = (int)$stmt->fetch(PDO::FETCH_ASSOC)['count'];
 
   $trainees_count_query = "SELECT COUNT(DISTINCT u.user_id) " . $trainees_base_query;
-  $trainees_data_query = "SELECT DISTINCT u.*, e.course_name, e.batch_name, e.status as enrollment_status " . $trainees_base_query;
+  $trainees_data_query = "SELECT DISTINCT u.*, e.course_name, COALESCE(ba.batch_name, e.batch_name) as batch_name, e.status as enrollment_status " . $trainees_base_query;
   if (!empty($traineeSearch)) {
     $search_condition = " AND (u.first_name LIKE :search OR u.last_name LIKE :search OR u.email LIKE :search OR u.user_id LIKE :search OR e.course_name LIKE :search)";
     $trainees_count_query .= $search_condition;

@@ -53,6 +53,7 @@
   <script src="../js/guest/navigation.js"></script>
   <script src="../js/guest/modal_controls.js"></script>
   <script src="../js/guest/course_details.js"></script>
+  <script src="../js/guest/browse_course_details.js"></script>
   <script src="../js/guest/enrollment.js"></script>
   <script src="../js/guest/activity.js"></script>
   <script src="../js/guest/profile.js"></script>

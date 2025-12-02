@@ -1,6 +1,7 @@
 <?php
 require_once 'DatabaseConnection.php';
 require_once 'SessionManager.php';
+require_once 'AccessControl.php';
 
 SessionManager::startSession();
 SessionManager::requireRole('trainer');
@@ -15,9 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $input = json_decode(file_get_contents('php://input'), true);
 $activityId = $input['activity_id'] ?? null;
+$batchName = isset($input['batch_name']) ? trim($input['batch_name']) : '';
 
 if (empty($activityId)) {
     echo json_encode(['success' => false, 'message' => 'activity_id is required']);
+    exit;
+}
+if ($batchName === '') {
+    echo json_encode(['success' => false, 'message' => 'batch_name is required']);
     exit;
 }
 
@@ -56,6 +62,13 @@ try {
         echo json_encode(['success' => false, 'message' => 'Activity not found or access denied', 'debug' => ['trainer_id' => $trainerId, 'activity_id' => $activityId, 'course_code' => $courseCode, 'created_by' => $createdBy, 'assignment_match' => $assignCnt, 'batch_match' => $batchCnt]]);
         exit;
     }
+    // Batch scoping enforcement
+    $courseCode = $ctxRow['course_code'];
+    AccessControl::requireTrainerBatchAccess($pdo, $trainerId, $courseCode, $batchName);
+    if (!AccessControl::resourceIsMappedToBatch($pdo, $courseCode, $batchName, 'activity', (int)$activityId)) {
+        echo json_encode(['success' => false, 'message' => 'Access denied: activity not part of this batch']);
+        exit;
+    }
 
     $attachmentPath = $row['attachment_path'];
 
@@ -71,9 +84,11 @@ try {
     $delSubsStmt = $pdo->prepare("DELETE FROM activity_submissions WHERE activity_id = ?");
     $delSubsStmt->execute([$activityId]);
 
-    // Delete the activity itself
-    $delActStmt = $pdo->prepare("DELETE FROM topic_activities WHERE id = ?");
-    $delActStmt->execute([$activityId]);
+    // Delete batch mapping and the activity itself
+    $pdo->prepare("DELETE FROM batch_resources WHERE resource_type = 'activity' AND resource_id = ? AND course_code = ? AND batch_name = ?")
+        ->execute([$activityId, $courseCode, $batchName]);
+    $pdo->prepare("DELETE FROM topic_activities WHERE id = ?")
+        ->execute([$activityId]);
 
     $pdo->commit();
 
@@ -98,7 +113,14 @@ try {
         }
     }
 
-    echo json_encode(['success' => true, 'message' => 'Activity and associated submissions deleted successfully', 'debug' => ['trainer_id' => $trainerId, 'activity_id' => $activityId]]);
+    AccessControl::audit($pdo, [
+        'course_code' => $courseCode,
+        'batch_name' => $batchName,
+        'action' => 'DELETE_ACTIVITY',
+        'resource_type' => 'activity',
+        'resource_id' => (int)$activityId
+    ]);
+    echo json_encode(['success' => true, 'message' => 'Activity and associated submissions deleted successfully']);
 
 } catch (Exception $e) {
     if ($pdo && $pdo->inTransaction()) {

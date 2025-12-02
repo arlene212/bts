@@ -33,7 +33,7 @@ $completed_courses_list = is_array($enrolled_courses) ? array_filter($enrolled_c
           <div class="batch-card view-course-content-btn" 
                data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" 
                data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>" 
-               data-course-hours="<?php echo htmlspecialchars($course['hours']); ?>" 
+               data-course-hours="<?php echo htmlspecialchars($course['basic_hours'] ?? $course['hours']); ?>" 
                data-course-description="<?php echo htmlspecialchars($course['description']); ?>"
                data-credited-hours="<?php echo htmlspecialchars($course['credited_hours'] ?? 0); ?>"
                data-course-id="<?php echo htmlspecialchars($course['id'] ?? ''); ?>">
@@ -43,7 +43,7 @@ $completed_courses_list = is_array($enrolled_courses) ? array_filter($enrolled_c
             <div class="batch-info">
               <h3><?php echo htmlspecialchars($course['course_name']); ?></h3>
               <p>Code: <?php echo htmlspecialchars($course['course_code']); ?></p>
-              <p>Hours: <?php echo htmlspecialchars($course['hours']); ?> hrs</p>
+              <p>Basic Hours: <?php echo htmlspecialchars($course['basic_hours'] ?? 0); ?> hrs</p>
               <p>Credited: <?php echo htmlspecialchars($course['credited_hours'] ?? 0); ?> hrs</p>
               <?php if (!empty($course['description'])): ?>
                 <p class="course-description"><?php echo htmlspecialchars(substr($course['description'], 0, 100)); ?>...</p>
@@ -79,7 +79,7 @@ $completed_courses_list = is_array($enrolled_courses) ? array_filter($enrolled_c
           <div class="batch-card view-course-content-btn" 
                data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" 
                data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>" 
-               data-course-hours="<?php echo htmlspecialchars($course['hours']); ?>" 
+               data-course-hours="<?php echo htmlspecialchars($course['basic_hours'] ?? $course['hours']); ?>" 
                data-course-description="<?php echo htmlspecialchars($course['description']); ?>"
                data-credited-hours="<?php echo htmlspecialchars($course['credited_hours'] ?? 0); ?>"
                data-course-id="<?php echo htmlspecialchars($course['id'] ?? ''); ?>">
@@ -89,7 +89,7 @@ $completed_courses_list = is_array($enrolled_courses) ? array_filter($enrolled_c
             <div class="batch-info">
               <h3><?php echo htmlspecialchars($course['course_name']); ?></h3>
               <p>Code: <?php echo htmlspecialchars($course['course_code']); ?></p>
-              <p>Hours: <?php echo htmlspecialchars($course['hours']); ?> hrs</p>
+              <p>Basic Hours: <?php echo htmlspecialchars($course['basic_hours'] ?? 0); ?> hrs</p>
               <p>Credited: <?php echo htmlspecialchars($course['credited_hours'] ?? 0); ?> hrs</p>
               <span class="status-badge status-completed"><i class="fas fa-trophy"></i> Completed</span>
               <?php if (!empty($course['description'])): ?>
@@ -127,6 +127,7 @@ $completed_courses_list = is_array($enrolled_courses) ? array_filter($enrolled_c
     <div class="course-meta">
       <span id="course-detail-code"></span> | <span id="course-detail-hours"></span> | <span id="course-detail-credited-hours"></span>
     </div>
+    <p id="course-detail-description"></p>
     <div class="course-content" id="courseDetailContent"></div>
   </div>
 </div>

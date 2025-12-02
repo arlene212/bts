@@ -16,6 +16,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('course-detail-hours')) document.getElementById('course-detail-hours').textContent = `Hours: ${courseHours || 'N/A'} hrs`;
     if (document.getElementById('course-detail-description')) document.getElementById('course-detail-description').textContent = courseDescription || '';
     if (document.getElementById('course-detail-credited-hours')) document.getElementById('course-detail-credited-hours').textContent = `Credited: ${creditedHours || '0'} hrs`;
+    const basicChipInit = document.getElementById('course-detail-basic-hours');
+    const commonChipInit = document.getElementById('course-detail-common-hours');
+    const coreChipInit = document.getElementById('course-detail-core-hours');
+    basicChipInit && (basicChipInit.textContent = 'Basic: —');
+    commonChipInit && (commonChipInit.textContent = 'Common: —');
+    coreChipInit && (coreChipInit.textContent = 'Core: —');
 
     if (courseDetail) {
       courseDetail.classList.remove('hidden');
@@ -69,34 +75,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function loadCourseDetails(courseCode) {
     const competenciesCard = document.getElementById('competencies-card');
-    const modulesList = document.getElementById('modules-list');
-    const activitiesList = document.getElementById('activities-list');
-    if (!competenciesCard || !modulesList || !activitiesList) return;
+    if (!competenciesCard) return;
     competenciesCard.innerHTML = '<div>Loading competencies...</div>';
-    modulesList.innerHTML = '<div class="skeleton"></div>';
-    activitiesList.innerHTML = '<div class="skeleton"></div>';
 
     fetch(`../php/get_course_details_trainee.php?course_code=${encodeURIComponent(courseCode)}`)
       .then(r => r.json())
       .then(data => {
         if (data.error) {
           competenciesCard.innerHTML = `<div class="error-message">${data.error}</div>`;
-          modulesList.innerHTML = `<div class="error-message">${data.error}</div>`;
-          activitiesContainer.innerHTML = `<div class="error-message">${data.error}</div>`;
           return;
         }
         renderCompetenciesSummary(data.competencies || [], competenciesCard);
-        renderModulesFromCompetencies(data.competencies || [], modulesList);
-        renderActivitiesInteractive(data.activities || [], activitiesList);
-        // update counts in tabs
-        const modulesCountEl = document.getElementById('modules-count');
-        const activitiesCountEl = document.getElementById('activities-count');
-        modulesCountEl && (modulesCountEl.textContent = modulesList.querySelectorAll('.module-item').length);
-        activitiesCountEl && (activitiesCountEl.textContent = activitiesList.querySelectorAll('.activity-item, .topic-activity-item').length);
+        const totalHours = (data.competencies || []).reduce((sum, c) => sum + (parseInt(c.hours || 0, 10) || 0), 0);
+        const hoursChip = document.getElementById('course-detail-hours');
+        if (hoursChip) hoursChip.textContent = `Hours: ${totalHours} hrs`;
+        const byType = { basic: 0, common: 0, core: 0 };
+        (data.competencies || []).forEach(c => {
+          const t = String(c.type || '').toLowerCase();
+          const h = parseInt(c.hours || 0, 10) || 0;
+          if (t in byType) byType[t] += h;
+        });
+        const basicChip = document.getElementById('course-detail-basic-hours');
+        const commonChip = document.getElementById('course-detail-common-hours');
+        const coreChip = document.getElementById('course-detail-core-hours');
+        basicChip && (basicChip.textContent = `Basic: ${byType.basic} hrs`);
+        commonChip && (commonChip.textContent = `Common: ${byType.common} hrs`);
+        coreChip && (coreChip.textContent = `Core: ${byType.core} hrs`);
+        const modulesListEl = document.getElementById('modules-list');
+        const activitiesListEl = document.getElementById('activities-list');
+        if (modulesListEl) {
+          renderModulesFromCompetencies(data.competencies || [], modulesListEl);
+        }
+        if (activitiesListEl) {
+          const activitiesArr = Array.isArray(data.activities) ? data.activities : Object.values(data.activities || {});
+          renderActivitiesInteractive(activitiesArr, activitiesListEl);
+        }
+        // no tab counts; content now in per-competency modal
       })
       .catch(() => {
         competenciesCard.innerHTML = '<div class="error-message">Failed to load competencies.</div>';
-        modulesList.innerHTML = '<div class="error-message">Failed to load modules.</div>';
       });
   }
 
@@ -108,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const types = ['basic', 'common', 'core'];
     types.forEach(type => {
-      const group = competencies.filter(c => c.type === type);
+      const group = competencies.filter(c => String(c.type || '').toLowerCase() === type);
       if (group.length) {
         const section = document.createElement('div');
         section.className = 'competency-section';
@@ -121,10 +138,21 @@ document.addEventListener('DOMContentLoaded', () => {
         group.forEach(comp => {
           const el = document.createElement('div');
           el.className = 'competency-item';
+          el.setAttribute('data-comp-id', comp.id || '');
+          const topics = Array.isArray(comp.topics) ? comp.topics : [];
           el.innerHTML = `
             <div class="competency-header">
               <h4>${comp.name}</h4>
               <p>${comp.description || ''}</p>
+            </div>
+            <div class="competency-topics">
+              ${topics.length ? topics.map(t => `
+                <div class="topic-line">
+                  <span class="topic-title">${t.topic_name || t.name || 'Unnamed Topic'}</span>
+                  <span class="chip">Materials: ${(t.materials || []).length}</span>
+                  <span class="chip">Activities: ${(t.activities || []).length}</span>
+                </div>
+              `).join('') : '<div class="empty-state">No topics for this competency.</div>'}
             </div>
           `;
           list.appendChild(el);
@@ -246,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
     container.innerHTML = html;
   }
 
-  document.getElementById('activities-view')?.addEventListener('click', function(e) {
+  document.getElementById('activities-pane')?.addEventListener('click', function(e) {
     const header = e.target.closest('.activity-header');
     if (header) {
       const content = header.nextElementSibling;
@@ -296,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('activities-view')?.addEventListener('change', function(e) {
+  document.getElementById('activities-pane')?.addEventListener('change', function(e) {
     if (e.target.classList.contains('activity-file-input')) {
       const file = e.target.files[0];
       const item = e.target.closest('.topic-activity-item');
@@ -335,12 +363,10 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation();
 
         const targetTab = this.getAttribute('data-tab');
-        
-        // Update button states
+
         switchButtons.forEach(btn => btn.classList.remove('active'));
         this.classList.add('active');
 
-        // Update switch inner position
         const buttonIndex = Array.from(switchButtons).indexOf(this);
         const buttonWidth = 100 / switchButtons.length;
         if (switchInner) {
@@ -348,7 +374,9 @@ document.addEventListener('DOMContentLoaded', () => {
           switchInner.style.width = `${buttonWidth}%`;
         }
 
-        // Show/hide tab content
+        const modulesView = modulesPane;
+        const activitiesView = activitiesPane;
+
         if (targetTab === 'modules-view') {
           if (modulesView) {
             modulesView.classList.add('active');
@@ -374,4 +402,93 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize tab switching when DOM is ready
   initializeTabSwitching();
+
+  const modulesSearch = document.getElementById('modules-search');
+  const activitiesSearch = document.getElementById('activities-search');
+  const modulesList = document.getElementById('modules-list');
+  const activitiesList = document.getElementById('activities-list');
+  function attachFilter(input, list, selectors) {
+    if (!input || !list) return;
+    input.addEventListener('input', function(){
+      const q = this.value.toLowerCase();
+      list.querySelectorAll(selectors).forEach(el => {
+        const t = el.textContent.toLowerCase();
+        el.style.display = t.includes(q) ? '' : 'none';
+      });
+      const modulesCountEl = document.getElementById('modules-count');
+      const activitiesCountEl = document.getElementById('activities-count');
+      modulesCountEl && (modulesCountEl.textContent = (modulesList?.querySelectorAll('.module-item:not([style*="display: none"])')?.length || 0));
+      activitiesCountEl && (activitiesCountEl.textContent = (activitiesList?.querySelectorAll('.activity-item:not([style*="display: none"]), .topic-activity-item:not([style*="display: none"])')?.length || 0));
+    });
+  }
+  attachFilter(modulesSearch, modulesList, '.module-item');
+  attachFilter(activitiesSearch, activitiesList, '.activity-item, .topic-activity-item');
+  function openCompetencyModal(comp) {
+    const modal = document.getElementById('competencyModal');
+    const title = document.getElementById('competencyModalTitle');
+    const typeChip = document.getElementById('competencyModalType');
+    const hoursChip = document.getElementById('competencyModalHours');
+    const modulesList = document.getElementById('competencyModulesList');
+    const activitiesList = document.getElementById('competencyActivitiesList');
+    if (!modal || !title || !typeChip || !hoursChip || !modulesList || !activitiesList) return;
+
+    try {
+      title.textContent = comp.name || 'Competency Details';
+      typeChip.textContent = `Type: ${String(comp.type || '').charAt(0).toUpperCase() + String(comp.type || '').slice(1)}`;
+      hoursChip.textContent = `Hours: ${(parseInt(comp.hours || 0, 10) || 0)} hrs`;
+
+      const topics = (comp.topics || []);
+      if (!topics.length) {
+        modulesList.innerHTML = '<div class="empty-state">No modules found for this competency.</div>';
+      } else {
+        modulesList.innerHTML = topics.map(t => `
+          <div class="topic-container">
+            <h4 class="topic-title">${t.topic_name || t.name || 'Unnamed Topic'}</h4>
+            <div class="topic-content-section">
+              <h6 class="content-divider">Materials</h6>
+              ${renderMaterials(t.materials || [])}
+            </div>
+          </div>
+        `).join('');
+      }
+
+      const activities = topics.flatMap(t => t.activities || []);
+      if (!activities.length) {
+        activitiesList.innerHTML = '<p>No activities assigned for this competency.</p>';
+      } else {
+        let html = '<div class="activities-list">';
+        activities.forEach(a => {
+          html += `
+            <div class="topic-activity-item" data-activity-id="${a.id}">
+              <div class="activity-header">
+                <div class="activity-info-cleaned">
+                  <strong>${a.activity_title || a.title || 'Unnamed Activity'}</strong>
+                  <p>Date Given: ${formatDisplayDate(a.start_date)}</p>
+                  <p>Due: ${formatDisplayDate(a.due_date)}</p>
+                </div>
+                <div class="activity-actions">
+                  <a href="../trainee/activity_view.php?activity_id=${a.id}" target="_blank" class="btn btn-outline-primary view-activity-btn">View Activity</a>
+                </div>
+              </div>
+              <div class="activity-content hidden">
+                <div class="activity-instructions"><h4><i class="fas fa-info-circle"></i> Instructions</h4><p>${a.activity_description || a.description || 'No instructions provided.'}</p></div>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+        activitiesList.innerHTML = html;
+      }
+    } catch (err) {
+      modulesList.innerHTML = '<div class="error-message">Failed to render modules.</div>';
+      activitiesList.innerHTML = '<div class="error-message">Failed to render activities.</div>';
+    }
+
+    if (typeof openModal === 'function') openModal(modal); else { modal.classList.remove('hidden'); modal.style.display = 'flex'; }
+  }
+
+  document.getElementById('closeCompetencyModal')?.addEventListener('click', function(){
+    const m = document.getElementById('competencyModal');
+    if (typeof closeModal === 'function') closeModal(m); else { m.classList.add('hidden'); m.style.display = 'none'; }
+  });
 });

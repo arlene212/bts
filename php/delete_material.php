@@ -1,6 +1,7 @@
 <?php
 require_once 'DatabaseConnection.php';
 require_once 'SessionManager.php';
+require_once 'AccessControl.php';
 
 SessionManager::startSession();
 SessionManager::requireRole('trainer');
@@ -15,9 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $input = json_decode(file_get_contents('php://input'), true);
 $materialId = $input['material_id'] ?? null;
+$batchName = isset($input['batch_name']) ? trim($input['batch_name']) : '';
 
 if (empty($materialId)) {
     echo json_encode(['success' => false, 'message' => 'material_id is required']);
+    exit;
+}
+if ($batchName === '') {
+    echo json_encode(['success' => false, 'message' => 'batch_name is required']);
     exit;
 }
 
@@ -27,7 +33,7 @@ try {
     $database = new DatabaseConnection();
     $pdo = $database->getConnection();
 
-    // Verify trainer owns the course that the topic belongs to and the material exists
+    // Verify trainer owns the batch and the material exists
     $ctx = $pdo->prepare("SELECT tm.uploaded_by, ct.course_code FROM topic_materials tm JOIN course_topics ct ON tm.topic_id = ct.id WHERE tm.id = ?");
     $ctx->execute([$materialId]);
     $ctxRow = $ctx->fetch(PDO::FETCH_ASSOC) ?: [];
@@ -56,15 +62,24 @@ try {
         echo json_encode(['success' => false, 'message' => 'Material not found or access denied', 'debug' => ['trainer_id' => $trainerId, 'material_id' => $materialId, 'course_code' => $courseCode, 'uploaded_by' => $uploadedBy, 'assignment_match' => $assignCnt, 'batch_match' => $batchCnt]]);
         exit;
     }
+    // Batch scoping enforcement
+    $courseCode = $ctxRow['course_code'];
+    AccessControl::requireTrainerBatchAccess($pdo, $trainerId, $courseCode, $batchName);
+    if (!AccessControl::resourceIsMappedToBatch($pdo, $courseCode, $batchName, 'material', (int)$materialId)) {
+        echo json_encode(['success' => false, 'message' => 'Access denied: material not part of this batch']);
+        exit;
+    }
 
     $filePath = $row['file_path'];
 
     // Begin transaction
     $pdo->beginTransaction();
 
-    // Delete material record
-    $delStmt = $pdo->prepare("DELETE FROM topic_materials WHERE id = ?");
-    $delStmt->execute([$materialId]);
+    // Delete batch mapping and material record
+    $pdo->prepare("DELETE FROM batch_resources WHERE resource_type = 'material' AND resource_id = ? AND course_code = ? AND batch_name = ?")
+        ->execute([$materialId, $courseCode, $batchName]);
+    $pdo->prepare("DELETE FROM topic_materials WHERE id = ?")
+        ->execute([$materialId]);
 
     $pdo->commit();
 
@@ -76,7 +91,14 @@ try {
         }
     }
 
-    echo json_encode(['success' => true, 'message' => 'Material deleted successfully', 'debug' => ['trainer_id' => $trainerId, 'material_id' => $materialId]]);
+    AccessControl::audit($pdo, [
+        'course_code' => $courseCode,
+        'batch_name' => $batchName,
+        'action' => 'DELETE_MATERIAL',
+        'resource_type' => 'material',
+        'resource_id' => (int)$materialId
+    ]);
+    echo json_encode(['success' => true, 'message' => 'Material deleted successfully']);
 
 } catch (Exception $e) {
     if ($pdo && $pdo->inTransaction()) {

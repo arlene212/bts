@@ -18,7 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     switch ($action) {
       case 'enroll':
         $courseCode = $_POST['course_code'] ?? '';
-        echo json_encode(enrollGuest($db, $user['user_id'], $courseCode));
+        $batchName = isset($_POST['batch_name']) ? trim((string)$_POST['batch_name']) : '';
+        echo json_encode(enrollGuest($db, $user['user_id'], $courseCode, $batchName));
         break;
       case 'unenroll':
         $courseCode = $_POST['course_code'] ?? '';

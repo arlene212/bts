@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+  let currentBatchName = '';
   const enrolledTab = document.getElementById('enrolled');
   const courseDetail = document.getElementById('course-detail');
   const courseBackBtn = courseDetail ? courseDetail.querySelector('.back-btn') : null;
@@ -8,7 +9,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const courseName = batch.dataset.course;
       const courseCode = batch.dataset.code;
       const courseHours = batch.dataset.hours;
-      loadCourseDetails(courseCode, courseName, courseHours);
+      populateTrainerBatches(courseCode).then(() => {
+        if (!currentBatchName) {
+          const sel = document.getElementById('trainer-batch-select');
+          currentBatchName = sel && sel.value ? sel.value : '';
+        }
+        if (!currentBatchName) {
+          const comps = document.getElementById('competencies-list');
+          const subs = document.getElementById('submissions-list');
+          const cd = document.getElementById('course-description');
+          if (cd) cd.textContent = 'No batches assigned to you for this course';
+          if (comps) comps.innerHTML = '<div class="error-message">No batches assigned to you for this course</div>';
+          if (subs) subs.innerHTML = '<div class="error-message">No batches assigned to you for this course</div>';
+          return;
+        }
+        loadCourseDetails(courseCode, courseName, courseHours);
+      });
       enrolledTab && enrolledTab.classList.add('hidden');
       courseDetail && courseDetail.classList.remove('hidden');
       document.body.classList.add('modal-open');
@@ -71,12 +87,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (comps) comps.innerHTML = '<div class="loading">Loading...</div>';
     if (subs) subs.innerHTML = '<div class="loading">Loading...</div>';
 
-    fetch(`../php/get_course_details_trainer.php?course_code=${encodeURIComponent(courseCode)}`)
+    const bn = currentBatchName || (document.getElementById('trainer-batch-select')?.value || '');
+    if (!bn) {
+      const cd = document.getElementById('course-description');
+      if (cd) cd.textContent = 'No batches assigned to you for this course';
+      const comps = document.getElementById('competencies-list');
+      const subs = document.getElementById('submissions-list');
+      if (comps) comps.innerHTML = '<div class="error-message">No batches assigned to you for this course</div>';
+      if (subs) subs.innerHTML = '<div class="error-message">No batches assigned to you for this course</div>';
+      return;
+    }
+    fetch(`../php/get_course_details_trainer.php?course_code=${encodeURIComponent(courseCode)}&batch_name=${encodeURIComponent(bn)}`)
       .then(r => r.json())
       .then(data => {
         if (data.error) throw new Error(data.error);
         const cd = document.getElementById('course-description');
         if (cd) cd.textContent = (data.course && data.course.description) ? data.course.description : 'No description available';
+        currentBatchName = data.selectedBatch || bn;
         const competencies = (data.competencies || []).map(c => ({
           id: c.id,
           code: c.competency_code,
@@ -288,10 +315,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (deleteCompMatBtn) {
       const id = deleteCompMatBtn.dataset.materialId;
       openConfirm('Confirm Delete', 'Delete course material: ' + (deleteCompMatBtn.dataset.materialTitle || '') + '?', () => {
+        const bnA = document.getElementById('trainer-batch-select')?.value || currentBatchName;
         fetch('../php/delete_course_material.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ material_id: id })
+          body: JSON.stringify({ material_id: id, batch_name: bnA })
         })
         .then(r => r.json())
         .then(d => {
@@ -322,10 +350,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (deleteMaterialBtn) {
       const id = deleteMaterialBtn.dataset.materialId;
       openConfirm('Confirm Delete', 'Delete material: ' + (deleteMaterialBtn.dataset.materialTitle || '') + '?', () => {
+        const bnB = document.getElementById('trainer-batch-select')?.value || currentBatchName;
         fetch('../php/delete_material.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ material_id: id })
+          body: JSON.stringify({ material_id: id, batch_name: bnB })
         })
         .then(r => r.json())
         .then(d => {
@@ -357,10 +386,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (deleteActivityBtn) {
       const id = deleteActivityBtn.dataset.activityId;
       openConfirm('Confirm Delete', 'Delete activity: ' + (deleteActivityBtn.dataset.activityTitle || '') + '?', () => {
+        const bnC = document.getElementById('trainer-batch-select')?.value || currentBatchName;
         fetch('../php/delete_activity.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ activity_id: id })
+          body: JSON.stringify({ activity_id: id, batch_name: bnC })
         })
         .then(r => r.json())
         .then(d => {
@@ -463,6 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const formData = new FormData(addMaterialForm);
     const submitBtn = addMaterialForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true; submitBtn.textContent = 'Adding...';
+    formData.append('batch_name', document.getElementById('trainer-batch-select')?.value || currentBatchName);
     fetch('../php/add_materials.php', { method: 'POST', body: formData })
       .then(r => r.json())
       .then(d => {
@@ -519,6 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const formData = new FormData(addActivityForm);
     const submitBtn = addActivityForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true; submitBtn.textContent = 'Adding...';
+    formData.append('batch_name', document.getElementById('trainer-batch-select')?.value || currentBatchName);
     fetch('../php/add_activity.php', { method: 'POST', body: formData })
       .then(r => r.json())
       .then(d => {
@@ -574,6 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const maxScore = document.getElementById('submission_max_score').textContent;
     const submitBtn = this.querySelector('button[type="submit"]');
     submitBtn.disabled = true; submitBtn.textContent = 'Saving...';
+    formData.append('batch_name', document.getElementById('trainer-batch-select')?.value || currentBatchName);
     fetch('../php/grade_submission.php', { method: 'POST', body: formData })
       .then(r => r.json())
       .then(d => {
@@ -697,6 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = editMaterialForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true; submitBtn.textContent = 'Saving...';
     const endpoint = editMaterialScope === 'course' ? '../php/update_course_material.php' : '../php/update_material.php';
+    formData.append('batch_name', document.getElementById('trainer-batch-select')?.value || currentBatchName);
     fetch(endpoint, { method: 'POST', body: formData })
       .then(r => r.json())
       .then(d => {
@@ -735,6 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const formData = new FormData(editActivityForm);
     const submitBtn = editActivityForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true; submitBtn.textContent = 'Saving...';
+    formData.append('batch_name', document.getElementById('trainer-batch-select')?.value || currentBatchName);
     fetch('../php/update_activity.php', { method: 'POST', body: formData })
       .then(r => r.json())
       .then(d => {
@@ -752,4 +787,31 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .catch(() => openConfirm('Error', 'Network error during activity update', () => {}, { confirmText: 'OK', showCancel: false }))
       .finally(() => { submitBtn.disabled = false; submitBtn.textContent = 'Save Changes'; });
+  });
+  function populateTrainerBatches(courseCode) {
+    const sel = document.getElementById('trainer-batch-select');
+    if (!sel) return Promise.resolve();
+    sel.innerHTML = '<option value="" disabled selected>Loading...</option>';
+    return fetch(`../php/get_trainer_course_batches.php?course_code=${encodeURIComponent(courseCode)}`)
+      .then(r => r.json())
+      .then(d => {
+        if (!d.success) throw new Error(d.message || 'Failed to load batches');
+        sel.innerHTML = '';
+        (d.batches || []).forEach(b => {
+          const opt = document.createElement('option');
+          opt.value = b.batch_name;
+          opt.textContent = b.batch_name;
+          sel.appendChild(opt);
+        });
+        currentBatchName = sel.value || '';
+      })
+      .catch(() => { sel.innerHTML = '<option value="" disabled selected>No batches</option>'; });
+  }
+
+  document.getElementById('trainer-batch-select')?.addEventListener('change', () => {
+    currentBatchName = document.getElementById('trainer-batch-select').value || '';
+    const code = document.getElementById('course-code')?.textContent || '';
+    const name = document.getElementById('course-detail-title')?.textContent || '';
+    const hours = document.getElementById('course-hours')?.textContent || '';
+    if (code) loadCourseDetails(code, name, hours);
   });

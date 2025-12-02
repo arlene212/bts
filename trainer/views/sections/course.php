@@ -74,7 +74,10 @@
           <button class="back-btn btn btn-outline-secondary btn-sm btn-ripple"><i class="fas fa-arrow-left"></i> Back</button>
           <h2 class="course-title" id="course-detail-title">Course Name</h2>
         </div>
-        <div class="header-actions"></div>
+        <div class="header-actions">
+          <label for="trainer-batch-select"><strong>Batch:</strong></label>
+          <select id="trainer-batch-select" class="form-select" style="min-width:180px"></select>
+        </div>
       </div>
       <div class="detail-body">
         <div class="course-basic-info">
