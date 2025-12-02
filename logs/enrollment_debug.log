@@ -217,3 +217,151 @@
     [dropped_by] => 
 )
 
+[2025-12-02 07:54:14] ========================================
+[2025-12-02 07:54:14] === NEW ENROLLMENT REQUEST ===
+[2025-12-02 07:54:14] POST data: Array
+(
+    [course_code] => ANCII
+    [action] => enroll
+)
+
+[2025-12-02 07:54:14] Session user: Array
+(
+    [id] => 5
+    [user_id] => 412025524
+    [role] => guest
+    [first_name] => Arlene
+    [last_name] => Bayani
+    [email] => arlenebayani04@gmail.com
+    [contact_number] => 
+    [profile_picture] => 
+    [password_changed_at] => 
+)
+
+[2025-12-02 07:54:14] Parsed data:
+[2025-12-02 07:54:14]   - course_code: ANCII
+[2025-12-02 07:54:14]   - trainee_id: 412025524
+[2025-12-02 07:54:14]   - user_role: guest
+[2025-12-02 07:54:14] ✅ Validation passed
+[2025-12-02 07:54:14] ✅ Database connected
+[2025-12-02 07:54:14] ✅ Course found: Agriculture NCII
+[2025-12-02 07:54:14]   - course_id: 1
+[2025-12-02 07:54:14]   - course_status: published
+[2025-12-02 07:54:14] Creating new enrollment...
+[2025-12-02 07:54:14] SQL: INSERT INTO enrollments (
+        trainee_id, 
+        course_code, 
+        course_name, 
+        status, 
+        date_requested,
+        student_id_verification,
+        email_verification
+    ) VALUES (?, ?, ?, ?, NOW(), ?, ?)
+[2025-12-02 07:54:14] Values: Array
+(
+    [0] => 412025524
+    [1] => ANCII
+    [2] => Agriculture NCII
+    [3] => approved
+    [4] => 
+    [5] => 
+)
+
+[2025-12-02 07:54:14] ✅✅✅ SUCCESS! Enrollment ID: 3
+[2025-12-02 07:54:14] Verification: Array
+(
+    [id] => 3
+    [trainee_id] => 412025524
+    [course_code] => ANCII
+    [course_name] => Agriculture NCII
+    [batch_name] => 
+    [status] => approved
+    [remarks] => 
+    [student_id_verification] => 
+    [email_verification] => 
+    [verification_status] => pending
+    [date_requested] => 2025-12-02 06:54:14
+    [processed_date] => 
+    [processed_by] => 
+    [progress_percentage] => 0.00
+    [completion_date] => 
+    [final_grade] => 
+    [drop_date] => 
+    [drop_reason] => 
+    [dropped_by] => 
+)
+
+[2025-12-02 07:56:37] ========================================
+[2025-12-02 07:56:37] === NEW ENROLLMENT REQUEST ===
+[2025-12-02 07:56:37] POST data: Array
+(
+    [course_code] => ANCII
+    [action] => enroll
+)
+
+[2025-12-02 07:56:37] Session user: Array
+(
+    [id] => 5
+    [user_id] => 412025524
+    [role] => guest
+    [first_name] => Arlene
+    [last_name] => Bayani
+    [email] => arlenebayani04@gmail.com
+    [contact_number] => 
+    [profile_picture] => 
+    [password_changed_at] => 
+)
+
+[2025-12-02 07:56:37] Parsed data:
+[2025-12-02 07:56:37]   - course_code: ANCII
+[2025-12-02 07:56:37]   - trainee_id: 412025524
+[2025-12-02 07:56:37]   - user_role: guest
+[2025-12-02 07:56:37] ✅ Validation passed
+[2025-12-02 07:56:37] ✅ Database connected
+[2025-12-02 07:56:37] ✅ Course found: Agriculture NCII
+[2025-12-02 07:56:37]   - course_id: 1
+[2025-12-02 07:56:37]   - course_status: published
+[2025-12-02 07:56:37] Creating new enrollment...
+[2025-12-02 07:56:37] SQL: INSERT INTO enrollments (
+        trainee_id, 
+        course_code, 
+        course_name, 
+        status, 
+        date_requested,
+        student_id_verification,
+        email_verification
+    ) VALUES (?, ?, ?, ?, NOW(), ?, ?)
+[2025-12-02 07:56:37] Values: Array
+(
+    [0] => 412025524
+    [1] => ANCII
+    [2] => Agriculture NCII
+    [3] => approved
+    [4] => 
+    [5] => 
+)
+
+[2025-12-02 07:56:37] ✅✅✅ SUCCESS! Enrollment ID: 4
+[2025-12-02 07:56:37] Verification: Array
+(
+    [id] => 4
+    [trainee_id] => 412025524
+    [course_code] => ANCII
+    [course_name] => Agriculture NCII
+    [batch_name] => 
+    [status] => approved
+    [remarks] => 
+    [student_id_verification] => 
+    [email_verification] => 
+    [verification_status] => pending
+    [date_requested] => 2025-12-02 06:56:37
+    [processed_date] => 
+    [processed_by] => 
+    [progress_percentage] => 0.00
+    [completion_date] => 
+    [final_grade] => 
+    [drop_date] => 
+    [drop_reason] => 
+    [dropped_by] => 
+)
+

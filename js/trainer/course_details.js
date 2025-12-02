@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
           name: c.competency_name,
           type: c.competency_type,
           description: c.description,
-          topics: (data.topicsByCompetency && data.topicsByCompetency[c.competency_code]) ? data.topicsByCompetency[c.competency_code] : (c.topics || [])
+          topics: (data.topicsByCompetency && data.topicsByCompetency[c.id]) ? data.topicsByCompetency[c.id] : (c.topics || [])
         }));
         const materialsByComp = data.materialsByCompetency || {};
         renderCompetencies(competencies, materialsByComp);
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="competency-title">
             <h4><span class="competency-type ${comp.type}">${String(comp.type).toUpperCase()}</span> ${comp.name}</h4>
             <div class="competency-actions">
-              <button class="btn btn-outline-primary btn-sm add-topic-btn" data-competency-id="${comp.code}" data-competency-name="${comp.name}"><i class="fas fa-plus"></i> Add Topic</button>
+              <button type="button" class="btn btn-outline-primary btn-sm add-topic-btn" data-competency-id="${comp.id}" data-competency-name="${comp.name}"><i class="fas fa-plus"></i> Add Topic</button>
             </div>
           </div>
           ${comp.description ? `<p class="competency-description">${comp.description}</p>` : ''}
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="material-info">
               <strong>${m.material_title}</strong>
               <p>${m.material_description || ''}</p>
-              <small><a class="attachment-link" href="${m.material_file_path && String(m.material_file_path).startsWith('http') ? m.material_file_path : ('../uploads/courses/' + m.material_file_path)}" target="_blank">View Material</a></small>
+              ${m.material_file_path ? `<small><a class="attachment-link" href="${String(m.material_file_path).startsWith('http') ? m.material_file_path : ('../uploads/courses/' + m.material_file_path)}" target="_blank">View Material</a></small>` : ''}
             </div>
           </div>
           <div class="material-actions">
@@ -387,11 +387,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const compIdEl = document.getElementById('topic_competency_id');
     const compNameEl = document.getElementById('topic_competency_name');
     const courseNameEl = document.getElementById('topic_course_name');
+    const typeSel = document.getElementById('topic_material_type');
+    const fileGroup = document.getElementById('topic_file_input_group');
+    const linkGroup = document.getElementById('topic_link_input_group');
     if (codeEl) codeEl.value = courseCode || '';
     if (compIdEl) compIdEl.value = competencyId || '';
     if (compNameEl) compNameEl.textContent = competencyName || '';
     if (courseNameEl) courseNameEl.textContent = courseName || '';
-    modal && modal.classList.remove('hidden');
+    if (typeSel) typeSel.value = 'file';
+    if (fileGroup) fileGroup.classList.remove('hidden');
+    if (linkGroup) linkGroup.classList.add('hidden');
+    if (typeof openModal === 'function') { openModal(modal); } else { modal && modal.classList.remove('hidden'); modal && (modal.style.display = 'flex'); }
   }
 
   document.getElementById('submissions-list')?.addEventListener('click', function(e) {
@@ -408,13 +414,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function openAddMaterialModal(topicId) {
     const modal = document.getElementById('addMaterialModal');
     document.getElementById('material_topic_id').value = topicId;
-    modal.classList.remove('hidden');
+    if (typeof openModal === 'function') { openModal(modal); } else { modal && modal.classList.remove('hidden'); modal && (modal.style.display = 'flex'); }
   }
 
   function openAddActivityModal(topicId) {
     const modal = document.getElementById('addActivityModal');
     document.getElementById('activity_topic_id').value = topicId;
-    modal.classList.remove('hidden');
+    if (typeof openModal === 'function') { openModal(modal); } else { modal && modal.classList.remove('hidden'); modal && (modal.style.display = 'flex'); }
   }
 
   // Add Material modal interactions
@@ -440,6 +446,20 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   addMaterialForm?.addEventListener('submit', function(e) {
     e.preventDefault();
+    const type = materialTypeSel?.value;
+    if (type === 'file') {
+      const fileInput = document.querySelector('#file_input_group input[type="file"]');
+      if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        openConfirm('Error', 'Please select a file to upload', () => {}, { confirmText: 'OK', showCancel: false });
+        return;
+      }
+    } else if (type === 'link') {
+      const linkInput = document.querySelector('#link_input_group input[name="material_link"]');
+      if (!linkInput || !linkInput.value.trim()) {
+        openConfirm('Error', 'Please provide a link URL', () => {}, { confirmText: 'OK', showCancel: false });
+        return;
+      }
+    }
     const formData = new FormData(addMaterialForm);
     const submitBtn = addMaterialForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true; submitBtn.textContent = 'Adding...';
@@ -580,10 +600,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Universal module uploader removed; modules are added per topic via Add Material
   const addTopicForm = document.getElementById('addTopicForm');
   document.getElementById('cancelTopic')?.addEventListener('click', () => {
-    document.getElementById('addTopicModal')?.classList.add('hidden');
+    const m = document.getElementById('addTopicModal');
+    if (typeof closeModal === 'function') { closeModal(m); } else { m && (m.style.display = 'none'); m && m.classList.add('hidden'); }
   });
   document.getElementById('closeTopicModal')?.addEventListener('click', () => {
-    document.getElementById('addTopicModal')?.classList.add('hidden');
+    const m = document.getElementById('addTopicModal');
+    if (typeof closeModal === 'function') { closeModal(m); } else { m && (m.style.display = 'none'); m && m.classList.add('hidden'); }
   });
   addTopicForm?.addEventListener('submit', function(e) {
     e.preventDefault();
@@ -607,6 +629,20 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .catch(() => { openConfirm('Error', 'Network error while adding topic', () => {}, { confirmText: 'OK', showCancel: false }); })
       .finally(() => { submitBtn.disabled = false; submitBtn.textContent = 'Add Topic'; addTopicForm.reset(); });
+  });
+
+  const topicMaterialTypeSel = document.getElementById('topic_material_type');
+  const topicFileGroup = document.getElementById('topic_file_input_group');
+  const topicLinkGroup = document.getElementById('topic_link_input_group');
+  topicMaterialTypeSel?.addEventListener('change', function() {
+    const type = this.value;
+    if (type === 'file') {
+      topicFileGroup?.classList.remove('hidden');
+      topicLinkGroup?.classList.add('hidden');
+    } else if (type === 'link') {
+      topicLinkGroup?.classList.remove('hidden');
+      topicFileGroup?.classList.add('hidden');
+    }
   });
 
   // Modal confirm helper

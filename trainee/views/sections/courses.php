@@ -51,9 +51,9 @@ try {
   <div class="course-box">
     <style>
       #mycourses .hidden { display: none !important; }
-      #mycourses .course-detail { background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.08); border: 1px solid rgba(226,232,240,.8); padding: 16px; }
+      #mycourses .course-detail { background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.08); border: 1px solid rgba(226,232,240,.8); padding: 20px; display: flex; flex-direction: column; gap: 16px; }
       #mycourses .detail-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #e6f0ff; padding-bottom: 12px; margin-bottom: 16px; }
-      #mycourses .course-card { background: #f9fbff; border-radius: 12px; padding: 12px 16px; border: 1px solid #e6f0ff; margin-bottom: 16px; }
+      #mycourses .course-card { background: #f9fbff; border-radius: 12px; padding: 14px 18px; border: 1px solid #e6f0ff; }
       #mycourses .course-meta { color: #4a5568; font-size: 14px; display:flex; gap:8px; flex-wrap:wrap; }
       #mycourses .chip { background:#eef2ff; border:1px solid #e6e8ff; border-radius:999px; padding:4px 10px; font-size:12px; font-weight:700; color:#3730a3; }
       #mycourses .chip-blue { background:#dbeafe; color:#1d4ed8; border-color:#bfdbfe; }
@@ -61,7 +61,7 @@ try {
       #mycourses .switch-inner { position: absolute; top: 4px; left: 4px; width: calc(50% - 8px); height: calc(100% - 8px); background: linear-gradient(135deg,#3b82f6,#2563eb); border-radius: 999px; box-shadow: 0 4px 10px rgba(37,99,235,.3); transition: transform .25s; z-index: 0; }
       #mycourses .switch-btn { position: relative; z-index: 1; border: 0; background: transparent; padding: 8px 16px; border-radius: 999px; font-weight: 600; color: #1d4ed8; cursor: pointer; }
       #mycourses .switch-btn.active { color: #fff; }
-      #mycourses .modules-card, #mycourses .activities-card { background: #fff; border-radius: 16px; border: 1px solid #e6f0ff; padding: 20px; box-shadow: 0 10px 24px rgba(0,0,0,.08); }
+      #mycourses .modules-card, #mycourses .activities-card { background: #fff; border-radius: 16px; border: 1px solid #e6f0ff; padding: 20px; box-shadow: 0 10px 24px rgba(0,0,0,.08); margin-top: 8px; }
       #mycourses .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #e6f0ff; }
       #mycourses .list-header h3 { margin: 0; font-weight: 700; color: #1f2937; display:flex; align-items:center; gap:8px; }
       #mycourses .list-controls { display: flex; align-items: center; gap: 8px; }
@@ -70,7 +70,7 @@ try {
       #mycourses .search-input:focus { outline: none; border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96,165,250,.2); }
       #mycourses .modules-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
       #mycourses .activities-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
-      #mycourses .detail-tabs { position: relative; display: flex; gap: 8px; margin: 12px 0 16px; background: #eef6ff; border: 1px solid #dbeafe; border-radius: 999px; padding: 4px; }
+      #mycourses .detail-tabs { position: relative; display: flex; gap: 8px; margin: 20px 0 8px; background: #eef6ff; border: 1px solid #dbeafe; border-radius: 999px; padding: 4px; align-self: flex-start; }
       #mycourses .detail-tabs .tab-btn { position: relative; z-index: 1; border: 0; background: transparent; padding: 8px 16px; border-radius: 999px; font-weight: 700; color: #1d4ed8; cursor: pointer; display:flex; align-items:center; gap:8px; }
       #mycourses .detail-tabs .tab-btn.active { color: #fff; }
       #mycourses .detail-tabs .tab-indicator { position: absolute; top: 4px; left: 4px; height: calc(100% - 8px); width: calc(50% - 8px); background: linear-gradient(135deg,#3b82f6,#2563eb); border-radius: 999px; box-shadow: 0 4px 10px rgba(37,99,235,.3); transition: transform .25s ease; }
@@ -91,6 +91,7 @@ try {
       #mycourses .view-link:hover { text-decoration: underline; }
       #mycourses .empty-state { text-align: center; color: #6b7280; font-size: 14px; padding: 16px; }
       #mycourses .course-detail { max-width: 1120px; margin: 0 auto; }
+      #mycourses #competencies-card { background:#fff; border:1px solid #e6f0ff; border-radius:12px; padding:16px; }
       #mycourses .batch-list { display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:16px; }
       #mycourses .batch-card { background:#fff; border:1px solid #e6f0ff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,.06); overflow:hidden; display:flex; gap:12px; padding:12px; cursor:pointer; }
       #mycourses .batch-card .course-img { width:88px; height:88px; object-fit:cover; border-radius:12px; border:1px solid #e6f0ff; }

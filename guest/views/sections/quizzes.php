@@ -60,11 +60,7 @@ if (!$guest_id) {
             </div>
             <h3>No Activities Available</h3>
             <p>Your enrolled courses don't have any activities available yet. Check back soon!</p>
-            <div class="empty-actions">
-                <a href="?current_tab=courses" class="btn btn-outline-primary">
-                    <i class="fas fa-arrow-left"></i> Back to Courses
-                </a>
-            </div>
+            
         </div>
     <?php else: ?>
         <div class="quizzes-grid">

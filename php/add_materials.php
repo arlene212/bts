@@ -61,7 +61,20 @@ try {
             throw new Exception("Failed to upload file");
         }
     } elseif ($materialType === 'link') {
-        $filePath = filter_var($_POST['material_link'], FILTER_SANITIZE_URL);
+        $link = trim($_POST['material_link'] ?? '');
+        if ($link === '') {
+            echo json_encode(['success' => false, 'message' => 'Please provide a link URL']);
+            exit;
+        }
+        $filePath = filter_var($link, FILTER_SANITIZE_URL);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid material type']);
+        exit;
+    }
+
+    if ($materialType === 'file' && (!isset($_FILES['material_file']) || $_FILES['material_file']['error'] !== 0)) {
+        echo json_encode(['success' => false, 'message' => 'Please select a file to upload']);
+        exit;
     }
     
     // Insert material

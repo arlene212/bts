@@ -3,10 +3,10 @@
   <div class="profile">
     <div class="user-card">
       <div class="user-card-header">
-        <img src="<?php echo !empty($user['profile_picture']) ? '../uploads/profiles/' . htmlspecialchars($user['profile_picture']) : '../images/school.png'; ?>" alt="User Avatar" class="user-avatar">
+        <img src="<?php echo !empty($user['profile_picture']) ? '../uploads/profiles/' . htmlspecialchars($user['profile_picture']) : '../images/school.png'; ?>" alt="User Avatar" class="user-avatar" id="userCardAvatar">
         <button type="button" class="edit-profile-btn" id="editProfileBtn" title="Edit Profile"><i class="fas fa-edit"></i></button>
       </div>
-      <h3 class="user-name"><?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></h3>
+      <h3 class="user-name" id="userCardName"><?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></h3>
       <p class="user-role">Trainee</p>
       <p class="user-id"><?php echo htmlspecialchars($user['user_id']); ?></p>
     </div>

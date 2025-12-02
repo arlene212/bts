@@ -55,9 +55,6 @@ if (!$trainee_id) {
             <i class="fas fa-clipboard-question"></i>
             <h3>No Activities Available</h3>
             <p>Your enrolled courses don't have any activities yet. Check back later for new tasks.</p>
-            <a href="?current_tab=courses" class="btn btn-outline-primary">
-                <i class="fas fa-arrow-left"></i> Back to Courses
-            </a>
         </div>
     <?php else: ?>
         <div class="quizzes-grid">
