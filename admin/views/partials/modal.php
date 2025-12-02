@@ -56,6 +56,30 @@
   </div>
 </div>
 
+<script>
+(function(){
+  var daysInput = document.getElementById('schedule_days_per_week');
+  var daysGroup = document.getElementById('schedule_days_group');
+  if (daysInput && daysGroup) {
+    var boxes = daysGroup.querySelectorAll('input[type="checkbox"][name="schedule_days[]"]');
+    function clamp(val){
+      var n = parseInt(val, 10);
+      if (isNaN(n)) n = 0;
+      if (n < 0) n = 0;
+      if (n > 7) n = 7;
+      return n;
+    }
+    function updateCount(){
+      var count = Array.prototype.reduce.call(boxes, function(acc, cb){ return acc + (cb.checked ? 1 : 0); }, 0);
+      daysInput.value = count;
+    }
+    boxes.forEach(function(cb){ cb.addEventListener('change', updateCount); });
+    daysInput.addEventListener('input', function(){ daysInput.value = clamp(daysInput.value); });
+    updateCount();
+  }
+})();
+</script>
+
 <div class="modal hidden" id="createTrainerModal">
   <div class="modal-content">
     <div class="modal-header"><h2>Create Trainer Account</h2><span class="close">&times;</span></div>
@@ -120,25 +144,11 @@
                 <option value="archived">Archived</option>
               </select>
             </div>
-            <div class="form-group">
-              <label for="allow_preview">Allow Preview:</label>
-              <select id="allow_preview" name="allow_preview" class="form-control">
-                <option value="0">No</option>
-                <option value="1">Yes</option>
-              </select>
-            </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label for="schedule_days_per_week">Days per week</label>
-              <select id="schedule_days_per_week" name="schedule_days_per_week" class="form-control">
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-              </select>
+              <input type="number" id="schedule_days_per_week" name="schedule_days_per_week" class="form-control" min="0" max="7" step="1" placeholder="0–7">
             </div>
             <div class="form-group">
               <label>Days to attend</label>
@@ -157,32 +167,10 @@
               <input type="number" step="0.5" min="0.5" id="session_hours" name="session_hours" class="form-control" placeholder="e.g., 3">
             </div>
           </div>
-          <div class="form-group form-group-full" id="preview_content_group" style="display:none;">
-            <label for="course_preview_content">Preview Content:</label>
-            <textarea id="course_preview_content" name="course_preview_content" rows="3" placeholder="Content to show in course preview"></textarea>
-          </div>
+
           
-          <div class="form-row">
-            <div class="form-group">
-              <label for="require_verification">Require Verification:</label>
-              <select id="require_verification" name="require_verification" class="form-control">
-                <option value="0">No</option>
-                <option value="1">Yes</option>
-              </select>
-              <small class="form-text">Require student ID or email verification for enrollment</small>
-            </div>
-            <div class="form-group">
-              <label for="verification_type">Verification Type:</label>
-              <select id="verification_type" name="verification_type" class="form-control">
-                <option value="email">Email Verification</option>
-                <option value="student_id">Student ID</option>
-                <option value="phone">Phone Verification</option>
-              </select>
-              <small class="form-text">Type of verification required for enrollment</small>
-            </div>
           </div>
-        </div>
-        <div class="competencies-section">
+          <div class="competencies-section">
           <h3>Course Competencies</h3>
           <div class="competency-group" id="basicCompetenciesGroup"><div class="competency-header"><h4>Basic Competencies</h4><button type="button" class="add-competency-btn" data-type="basic">+ Add Another</button></div><div class="competency-fields"><div class="competency-field-group"><div class="form-group"><label>Name:</label><input type="text" name="basic_competency[]" placeholder="Enter basic competency name"></div><div class="form-group"><label>Module Title:</label><input type="text" name="basic_module_title[]" placeholder="Enter module title"></div><div class="form-group"><label>Nominal Hours:</label><input type="number" name="basic_nominal_hours[]" min="1" placeholder="e.g., 8"></div><div class="form-group"><label>Learning Outcomes:</label><textarea name="basic_learning_outcomes[]" rows="3" placeholder="Enter learning outcomes"></textarea></div><div class="form-group"><label>Description:</label><textarea name="basic_competency_desc[]" rows="2" placeholder="Enter description (optional)"></textarea></div><div class="form-group"><label>Generated Code:</label><input type="text" class="generated-comp-code" readonly placeholder="Auto-generated"></div></div></div></div>
           <div class="competency-group" id="commonCompetenciesGroup"><div class="competency-header"><h4>Common Competencies</h4><button type="button" class="add-competency-btn" data-type="common">+ Add Another</button></div><div class="competency-fields"><div class="competency-field-group"><div class="form-group"><label>Name:</label><input type="text" name="common_competency[]" placeholder="Enter common competency name"></div><div class="form-group"><label>Module Title:</label><input type="text" name="common_module_title[]" placeholder="Enter module title"></div><div class="form-group"><label>Nominal Hours:</label><input type="number" name="common_nominal_hours[]" min="1" placeholder="e.g., 12"></div><div class="form-group"><label>Learning Outcomes:</label><textarea name="common_learning_outcomes[]" rows="3" placeholder="Enter learning outcomes"></textarea></div><div class="form-group"><label>Description:</label><textarea name="common_competency_desc[]" rows="2" placeholder="Enter description (optional)"></textarea></div><div class="form-group"><label>Generated Code:</label><input type="text" class="generated-comp-code" readonly placeholder="Auto-generated"></div></div></div></div>
@@ -259,25 +247,22 @@
       <input type="hidden" id="edit_course_code" name="course_code">
       <input type="hidden" name="current_tab" value="courses">
       <div class="modal-body">
-      <div class="form-section">
-        <div class="section-header">
-          <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
-        </div>
+      <div class="form-group">
         <div class="form-row">
             <div class="form-group">
-              <label for="edit_course_name">Course Name <span class="required">*</span></label>
+              <label for="edit_course_name">Course Name:</label>
               <input type="text" id="edit_course_name" name="course_name" required class="form-control">
               <small class="form-text">Enter the full name of the course</small>
             </div>
             <div class="form-group">
-              <label for="edit_course_code_display">Course Code</label>
+              <label for="edit_course_code_display">Course Code:</label>
               <input type="text" id="edit_course_code_display" readonly class="form-control readonly-input">
               <small class="form-text text-muted">Course code cannot be changed</small>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="edit_course_hours">Course Hours <span class="required">*</span></label>
+              <label for="edit_course_hours">Course Hours:</label>
               <input type="number" id="edit_course_hours" name="course_hours" required min="1" class="form-control">
               <small class="form-text">Total duration in hours</small>
             </div>
@@ -292,18 +277,18 @@
               <small class="form-text text-muted">Leave blank to keep current image</small>
             </div>
           </div>
-          <div class="form-group">
-            <label for="edit_course_description">Course Description</label>
+          <div class="form-group form-group-full">
+            <label for="edit_course_description">Description:</label>
             <textarea id="edit_course_description" name="course_description" rows="4" class="form-control" placeholder="Enter course description..."></textarea>
             <small class="form-text">Provide a detailed description of the course</small>
           </div>
           <div class="form-group">
-            <label>Learning Outcomes</label>
+            <label>Learning Outcomes:</label>
             <small class="form-text">Manage learning outcomes per competency unit below.</small>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="edit_course_status">Course Status</label>
+              <label for="edit_course_status">Course Status:</label>
               <select id="edit_course_status" name="course_status" class="form-control">
                 <option value="draft">Draft</option>
                 <option value="published">Published</option>
@@ -311,20 +296,9 @@
               </select>
               <small class="form-text">Control course visibility and availability</small>
             </div>
-            <div class="form-group">
-              <label for="edit_allow_preview">Allow Preview</label>
-              <select id="edit_allow_preview" name="allow_preview" class="form-control">
-                <option value="0">No</option>
-                <option value="1">Yes</option>
-              </select>
-              <small class="form-text">Allow users to preview course content</small>
-            </div>
+            
           </div>
-          <div class="form-group" id="edit_preview_content_group" style="display:none;">
-            <label for="edit_course_preview_content">Preview Content</label>
-            <textarea id="edit_course_preview_content" name="course_preview_content" rows="3" class="form-control" placeholder="Content to show in course preview"></textarea>
-            <small class="form-text">Content shown when preview is enabled</small>
-          </div>
+          
           
           <div class="form-row">
             <div class="form-group">
@@ -349,14 +323,7 @@
         <div class="form-row">
           <div class="form-group">
             <label for="edit_schedule_days_per_week">Days per week</label>
-            <select id="edit_schedule_days_per_week" name="schedule_days_per_week" class="form-control">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-            </select>
+            <input type="number" id="edit_schedule_days_per_week" name="schedule_days_per_week" class="form-control" min="0" max="7" step="1" placeholder="0–7">
           </div>
           <div class="form-group">
             <label>Days to attend</label>
