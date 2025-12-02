@@ -4,7 +4,7 @@
       "username": "admin.jdoe",
       "first_name": "John",
       "last_name": "Doe",
-      "email": "admin.jdoe@bts.local",
+      "email": "admin.jdoe@bts.gov.ph",
       "role": "admin",
       "contact_number": "ENC:"
     },
@@ -12,7 +12,7 @@
       "username": "admin.sr",
       "first_name": "Sarah",
       "last_name": "Reeves",
-      "email": "admin.sr@bts.local",
+      "email": "admin.sr@bts.gov.ph",
       "role": "admin",
       "contact_number": "ENC:"
     },
@@ -20,7 +20,7 @@
       "username": "trainer.tsmith",
       "first_name": "Tom",
       "last_name": "Smith",
-      "email": "trainer.tsmith@bts.local",
+      "email": "trainer.tsmith@bts.gov.ph",
       "role": "trainer",
       "contact_number": "ENC:",
       "student_id": "ENC:TRN001"
@@ -29,7 +29,7 @@
       "username": "trainer.jlee",
       "first_name": "Julia",
       "last_name": "Lee",
-      "email": "trainer.jlee@bts.local",
+      "email": "trainer.jlee@bts.gov.ph",
       "role": "trainer",
       "contact_number": "ENC:",
       "student_id": "ENC:TRN002"
@@ -38,7 +38,7 @@
       "username": "trainee.abrown",
       "first_name": "Alex",
       "last_name": "Brown",
-      "email": "trainee.abrown@bts.local",
+      "email": "trainee.abrown@bts.gov.ph",
       "role": "trainee",
       "contact_number": "ENC:",
       "student_id": "ENC:STU1001"
@@ -47,7 +47,7 @@
       "username": "trainee.mgarcia",
       "first_name": "Maria",
       "last_name": "Garcia",
-      "email": "trainee.mgarcia@bts.local",
+      "email": "trainee.mgarcia@bts.gov.ph",
       "role": "trainee",
       "contact_number": "ENC:",
       "student_id": "ENC:STU1002"
@@ -56,7 +56,7 @@
       "username": "trainee.kmiller",
       "first_name": "Kevin",
       "last_name": "Miller",
-      "email": "trainee.kmiller@bts.local",
+      "email": "trainee.kmiller@bts.gov.ph",
       "role": "trainee",
       "contact_number": "ENC:",
       "student_id": "ENC:STU1003"

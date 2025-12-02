@@ -2,7 +2,7 @@
     "accounts": [
         {
             "username": "admin.jdoe",
-            "email": "admin.jdoe@bts.local",
+            "email": "admin.jdoe@bts.gov.ph",
             "role": "admin",
             "first_name": "John",
             "last_name": "Doe",
@@ -23,7 +23,7 @@
         },
         {
             "username": "admin.sr",
-            "email": "admin.sr@bts.local",
+            "email": "admin.sr@bts.gov.ph",
             "role": "admin",
             "first_name": "Sarah",
             "last_name": "Reeves",
@@ -44,7 +44,7 @@
         },
         {
             "username": "trainer.tsmith",
-            "email": "trainer.tsmith@bts.local",
+            "email": "trainer.tsmith@bts.gov.ph",
             "role": "trainer",
             "first_name": "Tom",
             "last_name": "Smith",
@@ -64,7 +64,7 @@
         },
         {
             "username": "trainer.jlee",
-            "email": "trainer.jlee@bts.local",
+            "email": "trainer.jlee@bts.gov.ph",
             "role": "trainer",
             "first_name": "Julia",
             "last_name": "Lee",
@@ -84,7 +84,7 @@
         },
         {
             "username": "trainee.abrown",
-            "email": "trainee.abrown@bts.local",
+            "email": "trainee.abrown@bts.gov.ph",
             "role": "trainee",
             "first_name": "Alex",
             "last_name": "Brown",
@@ -103,7 +103,7 @@
         },
         {
             "username": "trainee.mgarcia",
-            "email": "trainee.mgarcia@bts.local",
+            "email": "trainee.mgarcia@bts.gov.ph",
             "role": "trainee",
             "first_name": "Maria",
             "last_name": "Garcia",
@@ -122,7 +122,7 @@
         },
         {
             "username": "trainee.kmiller",
-            "email": "trainee.kmiller@bts.local",
+            "email": "trainee.kmiller@bts.gov.ph",
             "role": "trainee",
             "first_name": "Kevin",
             "last_name": "Miller",
