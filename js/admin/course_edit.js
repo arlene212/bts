@@ -404,6 +404,66 @@ function setupBatchScheduling() {
   // initial
   computeEnd();
 }
-document.addEventListener('DOMContentLoaded', function(){
-  setupCourseEditing();
-});
+  document.addEventListener('DOMContentLoaded', function(){
+    setupCourseEditing();
+  });
+
+  // Client-side duplicate course code check
+  const addCourseForm = document.getElementById('addCourseForm');
+  const courseCodeInput = document.getElementById('course_code');
+  let codeExists = false;
+  function showCodeWarning(msg) {
+    let el = document.getElementById('course_code_warning');
+    if (!el) {
+      el = document.createElement('small');
+      el.id = 'course_code_warning';
+      el.style.color = '#dc2626';
+      el.style.display = 'block';
+      el.style.marginTop = '4px';
+      courseCodeInput && courseCodeInput.parentElement && courseCodeInput.parentElement.appendChild(el);
+    }
+    el.textContent = msg || '';
+  }
+  function clearCodeWarning() { const el = document.getElementById('course_code_warning'); if (el) el.textContent = ''; }
+  function checkCourseCodeUnique(code) {
+    code = String(code || '').trim();
+    if (!code) { codeExists = false; clearCodeWarning(); return; }
+    fetch('../php/get_course_details.php?course_code=' + encodeURIComponent(code))
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.course && d.course.course_code) {
+          codeExists = true;
+          showCodeWarning('Course code already exists');
+        } else {
+          codeExists = false;
+          clearCodeWarning();
+        }
+      })
+      .catch(() => { codeExists = false; clearCodeWarning(); });
+  }
+  courseCodeInput && courseCodeInput.addEventListener('blur', function(){ checkCourseCodeUnique(this.value); });
+  courseCodeInput && courseCodeInput.addEventListener('input', function(){ clearCodeWarning(); });
+  addCourseForm && addCourseForm.addEventListener('submit', function(e){
+    if (!courseCodeInput) return;
+    const code = courseCodeInput.value;
+    e.preventDefault();
+    const submitBtn = this.querySelector('.submit-btn');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Checking...'; }
+    fetch('../php/get_course_details.php?course_code=' + encodeURIComponent(code))
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.course && d.course.course_code) {
+          showCodeWarning('Course code already exists');
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Add Course'; }
+        } else {
+          if (submitBtn) { submitBtn.textContent = 'Adding...'; }
+          // proceed
+          const fd = new FormData(addCourseForm);
+          fetch('../admin/index.php', { method: 'POST', body: fd })
+            .then(resp => resp.text())
+            .then(() => { window.location.href = window.location.pathname + '?current_tab=courses#courses'; })
+            .catch(() => { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Add Course'; } });
+        }
+      })
+      .catch(() => { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Add Course'; } });
+  });

@@ -21,13 +21,12 @@
     </div>
   </div>
   <div class="table-container">
-    <table class="table table-striped table-hover enrollment-table"><thead><tr><th>Enrollment ID</th><th>Trainee Name</th><th>Course & Trainee Type</th><th>Batch</th><th>Status</th><th>Date Requested</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>
+    <table class="table table-striped table-hover enrollment-table"><thead><tr><th>Trainee Name</th><th>Course & Trainee Type</th><th>Batch</th><th>Status</th><th>Date Requested</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>
       <?php if (empty($enrollments)): ?>
-        <tr><td colspan="8" class="no-data">No enrollments found</td></tr>
+        <tr><td colspan="7" class="no-data">No enrollments found</td></tr>
       <?php else: ?>
         <?php foreach ($enrollments as $enrollment): ?>
           <tr>
-            <td><?php echo $enrollment['id']; ?></td>
             <td><?php echo htmlspecialchars($enrollment['first_name'] . ' ' . $enrollment['last_name']); ?></td>
             <td><?php echo htmlspecialchars($enrollment['course_name']); ?><br><small>(<?php echo htmlspecialchars(ucfirst($enrollment['trainee_role'])); ?>)</small></td>
             <td><?php echo htmlspecialchars($enrollment['batch_name'] ?? 'Not Assigned'); ?></td>

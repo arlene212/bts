@@ -3,6 +3,13 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
 ?>
 <section class="main-content tab-content <?php echo ($currentTab === 'courses' ? 'active' : ''); ?>" id="courses">
   <div class="tab-header"><h2>Course Management</h2><div class="tab-actions"><button class="create-btn" id="addCourseBtn">+ Add Course</button><button class="create-btn" id="addBatchBtn">+ Add Course Batch</button></div></div>
+  <div class="news-switch-wrapper" style="margin-bottom:16px;">
+    <div class="switch-oval" id="coursesSwitch">
+      <div class="switch-inner" id="coursesSwitchInner"></div>
+      <button class="switch-btn active" data-target="active">Active</button>
+      <button class="switch-btn" data-target="archived">Archived</button>
+    </div>
+  </div>
   <style>
     .courses-grid { position: relative; }
     .course-card.card { cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; overflow: visible; }
@@ -44,7 +51,7 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
       return $st === 'archived' || $cs === 'archived'; 
     });
   ?>
-  <h3 style="margin:12px 0;">Active Courses</h3>
+  <h3 style="margin:12px 0;" id="activeCoursesHeader">Active Courses</h3>
   <div class="courses-grid row g-3" id="active-courses-grid">
       <?php foreach ($activeCourses as $index => $course): 
         $courseSpecificBatches = is_array($courseBatches) ? array_filter($courseBatches, function ($batch) use ($course) { return $batch['course_code'] == $course['course_code']; }) : [];
@@ -230,8 +237,8 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
       </div>
     <?php endforeach; ?>
   </div>
-  <h3 style="margin:18px 0 12px;">Archived Courses</h3>
-  <div class="courses-grid row g-3" id="archived-courses-grid">
+  <h3 style="margin:18px 0 12px;" id="archivedCoursesHeader" class="hidden">Archived Courses</h3>
+  <div class="courses-grid row g-3 hidden" id="archived-courses-grid">
       <?php foreach ($archivedCourses as $index => $course): 
         $courseSpecificBatches = is_array($courseBatches) ? array_filter($courseBatches, function ($batch) use ($course) { return $batch['course_code'] == $course['course_code']; }) : [];
         try {
@@ -294,6 +301,39 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
           else { card.classList.remove('collapsed'); card.classList.add('expanded'); }
         });
       });
+
+      var switchEl = document.getElementById('coursesSwitch');
+      var innerEl = document.getElementById('coursesSwitchInner');
+      var activeGrid = document.getElementById('active-courses-grid');
+      var archivedGrid = document.getElementById('archived-courses-grid');
+      var activeHeader = document.getElementById('activeCoursesHeader');
+      var archivedHeader = document.getElementById('archivedCoursesHeader');
+      var detailView = document.getElementById('course-detail-view');
+      var allCards = document.querySelectorAll('#courses .course-card.card');
+      if (switchEl && innerEl && activeGrid && archivedGrid) {
+        switchEl.addEventListener('click', function(e){
+          var btn = e.target.closest('.switch-btn');
+          if (!btn) return;
+          var btns = switchEl.querySelectorAll('.switch-btn');
+          btns.forEach(function(b){ b.classList.remove('active'); });
+          btn.classList.add('active');
+          var idx = Array.prototype.indexOf.call(btns, btn);
+          innerEl.style.transform = 'translateX(' + (idx * 100) + '%)';
+          if (detailView) { detailView.classList.add('hidden'); detailView.innerHTML = ''; }
+          if (allCards && allCards.length) { allCards.forEach(function(c){ c.classList.remove('expanded'); c.classList.add('collapsed'); }); }
+          if (btn.dataset.target === 'active') {
+            activeGrid.classList.remove('hidden');
+            activeHeader && activeHeader.classList.remove('hidden');
+            archivedGrid.classList.add('hidden');
+            archivedHeader && archivedHeader.classList.add('hidden');
+          } else {
+            archivedGrid.classList.remove('hidden');
+            archivedHeader && archivedHeader.classList.remove('hidden');
+            activeGrid.classList.add('hidden');
+            activeHeader && activeHeader.classList.add('hidden');
+          }
+        });
+      }
     })();
   </script>
 </section>

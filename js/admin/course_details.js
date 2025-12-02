@@ -4,10 +4,12 @@ document.addEventListener('click', function(e) {
   const courseDataStr = btn.getAttribute('data-course');
   try {
     const courseData = JSON.parse(courseDataStr);
-    const courseGrid = document.querySelector('.courses-grid');
+    const activeGrid = document.getElementById('active-courses-grid');
+    const archivedGrid = document.getElementById('archived-courses-grid');
     const detailView = document.getElementById('course-detail-view');
-    if (!courseGrid || !detailView) return;
-    courseGrid.classList.add('hidden');
+    if (!detailView) return;
+    if (activeGrid) activeGrid.classList.add('hidden');
+    if (archivedGrid) archivedGrid.classList.add('hidden');
     detailView.classList.remove('hidden');
     detailView.innerHTML = '<div class="loading">Loading course details...</div>';
     fetch(`../php/get_course_details.php?course_code=${courseData.course_code}`)
@@ -18,8 +20,10 @@ document.addEventListener('click', function(e) {
         if (backBtn) {
           backBtn.classList.remove('hidden');
           backBtn.addEventListener('click', () => {
+            const currentTarget = document.querySelector('#courses .switch-btn.active')?.dataset.target || 'active';
             detailView.classList.add('hidden');
-            courseGrid.classList.remove('hidden');
+            if (currentTarget === 'archived') { archivedGrid && archivedGrid.classList.remove('hidden'); }
+            else { activeGrid && activeGrid.classList.remove('hidden'); }
             detailView.innerHTML = '';
           });
         }

@@ -2035,7 +2035,17 @@ body div.modal .modal-content .modal-footer button.submit-btn:hover {
     color: white;
     padding: 1.5rem 2rem;
     border-bottom: none;
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+}
+
+.modal-header h2 {
+    color: #ffffff;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: left;
 }
 
 .modal-header-content {

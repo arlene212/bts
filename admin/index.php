@@ -359,6 +359,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $courseImage = $fileName;
       }
     }
+    // Duplicate course code check
+    try {
+      $dup = $pdo->prepare("SELECT 1 FROM courses WHERE course_code = ? LIMIT 1");
+      $dup->execute([$courseCode]);
+      if ($dup->fetch()) {
+        $_SESSION['error_message'] = "Course code already exists";
+        header("Location: " . $_SERVER['PHP_SELF'] . "?current_tab=courses#courses");
+        exit;
+      }
+    } catch (Exception $__dup) {
+      // proceed to insert; DB will enforce if unique constraints exist
+    }
+
     $stmt = $pdo->prepare("INSERT INTO courses (course_name, competency_name, module_title, course_code, hours, nominal_hours, description, learning_outcomes, course_status, allow_preview, preview_content, require_verification, verification_type, image, schedule_days_per_week, schedule_days, session_hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     try {
       $stmt->execute([$courseName, $courseName, $courseName, $courseCode, $courseHours, 0, $courseDescription, $learningOutcomes, $courseStatus, $allowPreview, $previewContent, $requireVerification, $verificationType, $courseImage, $scheduleDaysPerWeek, $scheduleDays, $sessionHours]);
