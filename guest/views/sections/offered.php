@@ -23,14 +23,14 @@ $pending_count = count(array_filter($enrollment_requests, function($r) { return 
         <div class="batch-card course-card" 
              data-course-code="<?php echo htmlspecialchars($course['course_code']); ?>" 
              data-course-name="<?php echo htmlspecialchars($course['course_name']); ?>" 
-             data-course-hours="<?php echo htmlspecialchars($course['hours']); ?>"
+             data-course-hours="<?php echo isset($course['basic_hours']) ? (int)$course['basic_hours'] : (int)$course['hours']; ?>"
              data-course-description="<?php echo htmlspecialchars($course['description']); ?>">
           <img src="<?php echo !empty($course['image']) ? '../uploads/courses/' . htmlspecialchars($course['image']) : '../images/school.png'; ?>" 
                alt="<?php echo htmlspecialchars($course['course_name']); ?>" 
                class="course-img">
           <div class="batch-info">
             <h3><?php echo htmlspecialchars($course['course_name']); ?></h3>
-            <p><?php echo htmlspecialchars($course['course_code']); ?> | <?php echo htmlspecialchars($course['hours']); ?> Hours</p>
+            <p><?php echo htmlspecialchars($course['course_code']); ?> (Basic Competencies) | <?php echo isset($course['basic_hours']) ? (int)$course['basic_hours'] : (int)$course['hours']; ?> Hours</p>
             <?php if (!empty($course['description'])): ?>
               <p class="course-description"><?php echo htmlspecialchars(substr($course['description'], 0, 120)); ?>...</p>
             <?php endif; ?>
@@ -56,6 +56,18 @@ $pending_count = count(array_filter($enrollment_requests, function($r) { return 
           </div>
         </div>
       <?php endforeach; ?>
+    </div>
+    <div id="browseCourseDetail" class="course-detail hidden" style="display:none;">
+      <div class="detail-header">
+        <button id="backToBrowseCourses" class="back-btn btn-ripple">
+          <i class="fas fa-arrow-left"></i> Back to Courses
+        </button>
+        <h2 id="browse-course-detail-title"></h2>
+      </div>
+      <div class="course-meta">
+        <span id="browse-course-detail-code"></span> | <span id="browse-course-detail-hours"></span>
+      </div>
+      <div class="course-content" id="browseCourseDetailContent"></div>
     </div>
   <?php else: ?>
     <div class="no-courses">

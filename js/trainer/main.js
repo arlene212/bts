@@ -4,6 +4,9 @@ function switchToTab(tab) {
   document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
   document.querySelectorAll('.content-area').forEach(c => c.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const overlay = document.getElementById('course-detail');
+  if (overlay) overlay.classList.add('hidden');
+  document.body.classList.remove('modal-open');
   const tabLink = document.querySelector(`.tab-link[data-tab="${tab}"]`);
   const contentArea = document.getElementById(`content-${tab}`);
   if (tabLink) tabLink.classList.add('active');
@@ -11,6 +14,12 @@ function switchToTab(tab) {
     contentArea.classList.add('active');
     const tabContent = contentArea.querySelector('.tab-content');
     if (tabContent) tabContent.classList.add('active');
+  }
+  if (tab === 'courses') {
+    const enrolled = document.getElementById('enrolled');
+    const overlay2 = document.getElementById('course-detail');
+    if (overlay2) overlay2.classList.add('hidden');
+    if (enrolled) enrolled.classList.remove('hidden');
   }
   const sidebar = document.querySelector('.sidebar');
   if (sidebar && window.innerWidth <= 768) sidebar.classList.remove('open');

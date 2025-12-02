@@ -6,3 +6,23 @@
 <div class="modal hidden" id="deleteAccountModal"><div class="modal-content small-modal"><span class="close-btn" id="closeDeleteModal">&times;</span><h2>⚠️ Delete Account</h2><p>Are you sure you want to permanently delete your account? <br>This action cannot be undone.</p><div class="modal-buttons"><button class="cancel-btn" id="cancelDeleteBtn">Cancel</button><form method="POST" action="../php/deleteAccount.php" style="display:inline;"><input type="hidden" name="user_id" value="<?php echo htmlspecialchars($user['user_id']); ?>"><button type="submit" class="delete-btn">Delete</button></form></div></div></div>
 
 <div class="modal hidden" id="activityModal"><div class="modal-content activity-modal-content"><div class="modal-header"><h2 class="modal-title" id="activityModalTitle">Activity Title</h2><button class="close-btn" id="closeActivityModal"><i class="fas fa-times"></i></button></div><div class="modal-body"><div class="activity-details-grid"><div class="detail-item"><i class="fas fa-calendar-alt"></i><div><strong>Due Date</strong><span id="activityDueDate"></span></div></div><div class="detail-item" id="activityAttachmentContainer"><i class="fas fa-paperclip"></i><div><strong>Attachment</strong><a href="#" target="_blank" id="activityAttachmentLink">View Attached File</a></div></div></div><div class="activity-instructions" id="activityInstructionsSection"><h4><i class="fas fa-info-circle"></i> Instructions</h4><div class="instructions-content" id="activityInstructions"></div></div><div class="upload-section" id="uploadSection"><h4><i class="fas fa-upload"></i> Submit Your Work</h4><div class="form-group"><label for="studentComment">Add a comment (optional)</label><textarea id="studentComment" placeholder="Type your comment here..."></textarea></div><div class="upload-area" id="uploadArea"><div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div><div class="upload-text">Click to upload or drag and drop</div><div class="upload-hint">Max file size: 10MB | Supported: PDF, DOC, DOCX, JPG, PNG</div><input type="file" id="activityFileInput" class="file-input" style="display:none;"></div><div class="file-preview hidden" id="activityFilePreview"></div><div class="modal-actions"><button class="submit-btn" id="activitySubmitBtn" disabled>Submit Assignment</button></div></div><div class="submission-success hidden" id="submissionSuccess"><i class="fas fa-check-circle"></i><span>Your assignment has been submitted successfully!</span></div></div></div>
+
+<div class="modal hidden" id="competencyModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title" id="competencyModalTitle">Competency Details</h2>
+      <button class="close-btn" id="closeCompetencyModal"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="competencyModalBody">
+      <div class="competency-meta"><span id="competencyModalType" class="chip"></span><span id="competencyModalHours" class="chip chip-blue"></span></div>
+      <div class="modules-card">
+        <div class="list-header"><h3><i class="fas fa-book"></i> Modules</h3></div>
+        <div id="competencyModulesList" class="modules-list"><div class="empty-state">No modules found for this competency.</div></div>
+      </div>
+      <div class="activities-card">
+        <div class="list-header"><h3><i class="fas fa-tasks"></i> Activities</h3></div>
+        <div id="competencyActivitiesList" class="activities-list"><div class="empty-state">No activities assigned for this competency.</div></div>
+      </div>
+    </div>
+  </div>
+</div>

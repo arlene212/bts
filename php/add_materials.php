@@ -1,6 +1,7 @@
 <?php
 require_once 'DatabaseConnection.php';
 require_once 'SessionManager.php';
+require_once 'AccessControl.php';
 
 SessionManager::startSession();
 SessionManager::requireRole('trainer');
@@ -19,17 +20,13 @@ try {
     $pdo = $database->getConnection();
     
     $topicId = $_POST['topic_id'];
+    $batchName = trim($_POST['batch_name'] ?? '');
     $materialTitle = trim($_POST['material_title']);
     $materialDescription = trim($_POST['material_description'] ?? '');
     $materialType = $_POST['material_type'];
     
-    // Verify trainer has access to this topic
-    $accessStmt = $pdo->prepare("
-        SELECT ct.course_code 
-        FROM course_topics ct
-        JOIN course_assignments ca ON ct.course_code = ca.course_code
-        WHERE ct.id = ? AND ca.trainer_id = ?
-    ");
+    // Verify trainer has access to this topic and batch
+    $accessStmt = $pdo->prepare("\n        SELECT ct.course_code \n        FROM course_topics ct\n        JOIN course_assignments ca ON ct.course_code = ca.course_code\n        WHERE ct.id = ? AND ca.trainer_id = ?\n    ");
     $accessStmt->execute([$topicId, $trainerId]);
     $topic = $accessStmt->fetch(PDO::FETCH_ASSOC);
     
@@ -37,6 +34,11 @@ try {
         echo json_encode(['success' => false, 'message' => 'Access denied to this topic']);
         exit;
     }
+    if ($batchName === '') {
+        echo json_encode(['success' => false, 'message' => 'Batch name is required']);
+        exit;
+    }
+    AccessControl::requireTrainerBatchAccess($pdo, $trainerId, $topic['course_code'], $batchName);
     
     $filePath = null;
     
@@ -78,11 +80,17 @@ try {
     }
     
     // Insert material
-    $stmt = $pdo->prepare("
-        INSERT INTO topic_materials (topic_id, material_title, material_description, file_path, uploaded_by)
-        VALUES (?, ?, ?, ?, ?)
-    ");
+    $stmt = $pdo->prepare("\n        INSERT INTO topic_materials (topic_id, material_title, material_description, file_path, uploaded_by)\n        VALUES (?, ?, ?, ?, ?)\n    ");
     $stmt->execute([$topicId, $materialTitle, $materialDescription, $filePath, $trainerId]);
+    $materialId = (int)$pdo->lastInsertId();
+    AccessControl::mapResourceToBatch($pdo, $topic['course_code'], $batchName, 'material', $materialId, $trainerId);
+    AccessControl::audit($pdo, [
+        'course_code' => $topic['course_code'],
+        'batch_name' => $batchName,
+        'action' => 'UPLOAD_MATERIAL',
+        'resource_type' => 'material',
+        'resource_id' => $materialId
+    ]);
     
     echo json_encode(['success' => true, 'message' => 'Material added successfully']);
     

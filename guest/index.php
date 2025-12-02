@@ -21,7 +21,16 @@ $enrollment_requests = [];
 $announcements = [];
 
 try {
-  $stmt = $db->prepare("SELECT * FROM courses WHERE course_status = 'published'");
+  $stmt = $db->prepare(
+    "SELECT c.*, 
+            COALESCE((SELECT SUM(comp.nominal_hours)
+                       FROM competencies comp
+                       WHERE comp.course_id = c.id
+                         AND comp.status = 'active'
+                         AND comp.competency_type = 'basic'), 0) AS basic_hours
+     FROM courses c 
+     WHERE c.course_status = 'published'"
+  );
   $stmt->execute();
   $offered_courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -29,7 +38,14 @@ try {
     e.*, 
     c.course_name, 
     c.course_code, 
-    c.hours, 
+    c.hours,
+    COALESCE((
+      SELECT SUM(comp.nominal_hours)
+      FROM competencies comp
+      WHERE comp.course_id = c.id
+        AND comp.status = 'active'
+        AND comp.competency_type = 'basic'
+    ), 0) AS basic_hours,
     c.description, 
     c.image,
     COALESCE((SELECT SUM(hc.hours) FROM hour_credits hc WHERE hc.trainee_id = e.trainee_id AND hc.course_code = e.course_code), 0) AS credited_hours

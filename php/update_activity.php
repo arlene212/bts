@@ -1,6 +1,7 @@
 <?php
 require_once 'DatabaseConnection.php';
 require_once 'SessionManager.php';
+require_once 'AccessControl.php';
 
 SessionManager::startSession();
 SessionManager::requireRole('trainer');
@@ -19,6 +20,7 @@ try {
     $pdo = $database->getConnection();
     
     $activityId = $_POST['activity_id'];
+    $batchName = trim($_POST['batch_name'] ?? '');
     $activityTitle = trim($_POST['activity_title']);
     $activityDescription = trim($_POST['activity_description'] ?? '');
     $startDate = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
@@ -50,6 +52,17 @@ try {
         echo json_encode(['success' => false, 'message' => 'Access denied to this activity', 'debug' => ['trainer_id' => $trainerId, 'activity_id' => $activityId, 'course_code' => $courseCode, 'created_by' => $createdBy, 'assignment_match' => $assignCnt, 'batch_match' => $batchCnt]]);
         exit;
     }
+    // Batch scoping enforcement
+    $courseCode = $ctxRow['course_code'];
+    if ($batchName === '') {
+        echo json_encode(['success' => false, 'message' => 'batch_name is required']);
+        exit;
+    }
+    AccessControl::requireTrainerBatchAccess($pdo, $trainerId, $courseCode, $batchName);
+    if (!AccessControl::resourceIsMappedToBatch($pdo, $courseCode, $batchName, 'activity', (int)$activityId)) {
+        echo json_encode(['success' => false, 'message' => 'Access denied: activity not part of this batch']);
+        exit;
+    }
     
     // Update activity
     $stmt = $pdo->prepare("
@@ -59,7 +72,14 @@ try {
     ");
     $stmt->execute([$activityTitle, $activityDescription, $dueDate, $maxScore, $maxAttempts, $startDate, $activityId]);
     
-    echo json_encode(['success' => true, 'message' => 'Activity updated successfully', 'debug' => ['trainer_id' => $trainerId, 'activity_id' => $activityId]]);
+    AccessControl::audit($pdo, [
+        'course_code' => $courseCode,
+        'batch_name' => $batchName,
+        'action' => 'UPDATE_ACTIVITY',
+        'resource_type' => 'activity',
+        'resource_id' => (int)$activityId
+    ]);
+    echo json_encode(['success' => true, 'message' => 'Activity updated successfully']);
     
 } catch (PDOException $e) {
     error_log("Database error in update_activity: " . $e->getMessage());

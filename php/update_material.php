@@ -1,6 +1,7 @@
 <?php
 require_once 'DatabaseConnection.php';
 require_once 'SessionManager.php';
+require_once 'AccessControl.php';
 
 SessionManager::startSession();
 SessionManager::requireRole('trainer');
@@ -19,11 +20,16 @@ try {
     $pdo = $database->getConnection();
 
     $materialId = $_POST['material_id'] ?? null;
+    $batchName = trim($_POST['batch_name'] ?? '');
     $title = trim($_POST['material_title'] ?? '');
     $description = trim($_POST['material_description'] ?? '');
 
     if (empty($materialId) || empty($title)) {
         echo json_encode(['success' => false, 'message' => 'material_id and material_title are required']);
+        exit;
+    }
+    if ($batchName === '') {
+        echo json_encode(['success' => false, 'message' => 'batch_name is required']);
         exit;
     }
 
@@ -55,6 +61,13 @@ try {
         echo json_encode(['success' => false, 'message' => 'Material not found or access denied', 'debug' => ['trainer_id' => $trainerId, 'material_id' => $materialId, 'course_code' => $courseCode, 'uploaded_by' => $uploadedBy, 'assignment_match' => $assignCnt, 'batch_match' => $batchCnt]]);
         exit;
     }
+    // Batch scoping enforcement
+    $courseCode = $ctxRow['course_code'];
+    AccessControl::requireTrainerBatchAccess($pdo, $trainerId, $courseCode, $batchName);
+    if (!AccessControl::resourceIsMappedToBatch($pdo, $courseCode, $batchName, 'material', (int)$materialId)) {
+        echo json_encode(['success' => false, 'message' => 'Access denied: material not part of this batch']);
+        exit;
+    }
 
     $currentPath = $row['file_path'];
     $newPath = $currentPath;
@@ -84,7 +97,14 @@ try {
     $upd = $pdo->prepare("UPDATE topic_materials SET material_title = ?, material_description = ?, file_path = ? WHERE id = ?");
     $upd->execute([$title, $description, $newPath, $materialId]);
 
-    echo json_encode(['success' => true, 'message' => 'Material updated successfully', 'debug' => ['trainer_id' => $trainerId, 'material_id' => $materialId]]);
+    AccessControl::audit($pdo, [
+        'course_code' => $courseCode,
+        'batch_name' => $batchName,
+        'action' => 'UPDATE_MATERIAL',
+        'resource_type' => 'material',
+        'resource_id' => (int)$materialId
+    ]);
+    echo json_encode(['success' => true, 'message' => 'Material updated successfully']);
 
 } catch (Exception $e) {
     error_log('Error in update_material.php: ' . $e->getMessage());

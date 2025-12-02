@@ -4,6 +4,14 @@ function openEnrollModal(courseCode, courseName) {
   const confirmEnroll = document.getElementById('confirmEnroll');
   const cancelEnroll = document.getElementById('cancelEnroll');
   const verificationSection = document.getElementById('verificationSection');
+  let batchSection = document.getElementById('batchSelectSection');
+  if (!batchSection && enrollModal) {
+    batchSection = document.createElement('div');
+    batchSection.id = 'batchSelectSection';
+    batchSection.className = 'batch-select-section';
+    batchSection.innerHTML = '<label for="batchSelect">Select Batch</label> <select id="batchSelect"><option value="">Loading...</option></select><div id="batchSelectError" class="error hidden">Please select a batch</div>';
+    enrollModal.querySelector('.modal-body') ? enrollModal.querySelector('.modal-body').appendChild(batchSection) : enrollModal.appendChild(batchSection);
+  }
   
   if (!enrollModal || !enrollCourseName || !confirmEnroll || !cancelEnroll) return;
   
@@ -18,6 +26,9 @@ function openEnrollModal(courseCode, courseName) {
       verificationSection.classList.add('hidden');
     }
   });
+
+  // Load batches for selected course and populate select
+  loadBatchesForCourse(courseCode);
   
   const newConfirmBtn = confirmEnroll.cloneNode(true);
   confirmEnroll.parentNode.replaceChild(newConfirmBtn, confirmEnroll);
@@ -70,6 +81,15 @@ function setupVerificationFields(verificationType) {
 
 function validateEnrollment() {
   const verificationSection = document.getElementById('verificationSection');
+  const batchSelect = document.getElementById('batchSelect');
+  const batchError = document.getElementById('batchSelectError');
+  if (batchSelect && !batchSelect.value) {
+    if (batchError) batchError.classList.remove('hidden');
+    batchSelect.focus();
+    return false;
+  } else if (batchError) {
+    batchError.classList.add('hidden');
+  }
   if (verificationSection.classList.contains('hidden')) {
     return true;
   }
@@ -104,6 +124,22 @@ function validateEnrollment() {
   return true;
 }
 
+function loadBatchesForCourse(courseCode) {
+  const batchSelect = document.getElementById('batchSelect');
+  if (!batchSelect) return;
+  fetch('../php/get_batches.php?course_code=' + encodeURIComponent(courseCode))
+    .then(r => r.json())
+    .then(rows => {
+      while (batchSelect.firstChild) batchSelect.removeChild(batchSelect.firstChild);
+      const def = document.createElement('option'); def.value = ''; def.textContent = 'Select a batch'; batchSelect.appendChild(def);
+      (rows || []).forEach(r => { const opt = document.createElement('option'); opt.value = r.batch_name; opt.textContent = r.batch_name; batchSelect.appendChild(opt); });
+    })
+    .catch(() => {
+      while (batchSelect.firstChild) batchSelect.removeChild(batchSelect.firstChild);
+      const err = document.createElement('option'); err.value = ''; err.textContent = 'No batches available'; batchSelect.appendChild(err);
+    });
+}
+
 function openUnenrollModal(courseCode, courseName) {
   document.getElementById('unenrollConfirmCourseName').textContent = courseName;
   const confirmUnenroll = document.getElementById('confirmUnenroll');
@@ -118,6 +154,10 @@ function enrollInCourse(courseCode, courseName) {
   const formData = new FormData();
   formData.append('course_code', courseCode);
   formData.append('action', 'enroll');
+  const batchSelect = document.getElementById('batchSelect');
+  if (batchSelect && batchSelect.value) {
+    formData.append('batch_name', batchSelect.value);
+  }
   
   // Add verification data if required
   const verificationSection = document.getElementById('verificationSection');
@@ -141,17 +181,8 @@ function enrollInCourse(courseCode, courseName) {
         showNotification(data.message, 'success');
         const courseCard = document.querySelector(`.course-card[data-course="${courseCode}"]`) || document.querySelector(`.batch-card[data-course-code="${courseCode}"]`);
         if (courseCard) {
-          const oldBtn = courseCard.querySelector('.enroll-btn');
-          if (oldBtn) { 
-            const newBtn = document.createElement('button'); 
-            newBtn.className = 'unenroll-btn'; 
-            newBtn.setAttribute('data-course-code', courseCode); 
-            newBtn.setAttribute('data-course-name', courseName); 
-            newBtn.textContent = 'Unenroll'; 
-            oldBtn.parentNode.replaceChild(newBtn, oldBtn); 
-          }
-          const pendingEl = courseCard.querySelector('.enrollment-status.pending'); 
-          if (pendingEl) pendingEl.remove();
+          const btn = courseCard.querySelector('.enroll-btn');
+          if (btn) { btn.disabled = true; btn.classList.add('pending'); btn.textContent = 'Pending Approval'; }
         }
         // Removed auto redirect to avoid interrupting user actions; stay on current view
       } else {

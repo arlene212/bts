@@ -155,6 +155,24 @@ function processEnrollment($pdo, $data)
     $status = ($action === 'approve') ? 'approved' : 'rejected';
     $stmt = $pdo->prepare("UPDATE enrollments SET status = ?, remarks = ?, processed_date = NOW(), processed_by = ? WHERE id = ?");
     $stmt->execute([$status, $remarks, $processedBy, $enrollmentId]);
+
+    if ($status === 'approved') {
+      $infoStmt = $pdo->prepare("SELECT trainee_id, course_code, batch_name FROM enrollments WHERE id = ?");
+      $infoStmt->execute([$enrollmentId]);
+      $enr = $infoStmt->fetch(PDO::FETCH_ASSOC);
+      if ($enr && !empty($enr['batch_name'])) {
+        $trainerStmt = $pdo->prepare("SELECT trainer_id FROM course_batches WHERE course_code = ? AND batch_name = ? AND trainer_id IS NOT NULL");
+        $trainerStmt->execute([$enr['course_code'], $enr['batch_name']]);
+        $trainer = $trainerStmt->fetch(PDO::FETCH_ASSOC);
+        $trainerId = $trainer ? $trainer['trainer_id'] : null;
+        $checkStmt = $pdo->prepare("SELECT 1 FROM batch_assignments WHERE trainee_id = ? AND course_code = ? AND batch_name = ? LIMIT 1");
+        $checkStmt->execute([$enr['trainee_id'], $enr['course_code'], $enr['batch_name']]);
+        if (!$checkStmt->fetch(PDO::FETCH_ASSOC)) {
+          $assignStmt = $pdo->prepare("INSERT INTO batch_assignments (trainee_id, trainer_id, course_code, batch_name, assigned_by, date_assigned) VALUES (?, ?, ?, ?, ?, NOW())");
+          $assignStmt->execute([$enr['trainee_id'], $trainerId, $enr['course_code'], $enr['batch_name'], $processedBy]);
+        }
+      }
+    }
     return ['success' => true, 'message' => "Enrollment {$action}d successfully"];
   } catch (Exception $e) {
     return ['success' => false, 'message' => 'Failed to process enrollment'];

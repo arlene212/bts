@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
   setupEnrollmentButtons();
   setupActivityBindings();
   setupCourseDetailView();
+  if (typeof setupBrowseCourseDetailView === 'function') { setupBrowseCourseDetailView(); }
   setupProfileModal();
   setupEnrolledTabs();
 });

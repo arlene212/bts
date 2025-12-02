@@ -1,5 +1,5 @@
 <?php
-function enrollGuest($db, $userId, $courseCode)
+function enrollGuest($db, $userId, $courseCode, $batchName = null)
 {
   $stmt = $db->prepare("SELECT status FROM enrollments WHERE trainee_id = ? AND course_code = ? ORDER BY date_requested DESC LIMIT 1");
   $stmt->execute([$userId, $courseCode]);
@@ -11,9 +11,9 @@ function enrollGuest($db, $userId, $courseCode)
   $cstmt->execute([$courseCode]);
   $c = $cstmt->fetch(PDO::FETCH_ASSOC);
   if (!$c) { return ['success' => false, 'message' => 'Course not found']; }
-  $stmt = $db->prepare("INSERT INTO enrollments (trainee_id, course_code, course_name, status, date_requested) VALUES (?, ?, ?, 'approved', NOW())");
-  $stmt->execute([$userId, $courseCode, $c['course_name']]);
-  return ['success' => true, 'message' => 'Enrolled successfully for basic competencies'];
+  $stmt = $db->prepare("INSERT INTO enrollments (trainee_id, course_code, course_name, batch_name, status, date_requested) VALUES (?, ?, ?, ?, 'pending', NOW())");
+  $stmt->execute([$userId, $courseCode, $c['course_name'], $batchName]);
+  return ['success' => true, 'message' => 'Enrollment request submitted. Awaiting approval.'];
 }
 
 function unenrollGuest($db, $userId, $courseCode)

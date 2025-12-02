@@ -1,6 +1,7 @@
 <?php
 require_once 'DatabaseConnection.php';
 require_once 'SessionManager.php';
+require_once 'AccessControl.php';
 
 SessionManager::startSession();
 SessionManager::requireRole('trainer');
@@ -20,6 +21,7 @@ try {
 
     // Retrieve and sanitize form data
     $topicId = $_POST['topic_id'];
+    $batchName = trim($_POST['batch_name'] ?? '');
     $activityTitle = trim($_POST['activity_title']);
     $activityDescription = trim($_POST['activity_description'] ?? '');
     $activityType = $_POST['activity_type'];
@@ -27,18 +29,19 @@ try {
     $maxScore = $_POST['max_score'];
     $attachmentType = $_POST['activity_attachment_type'] ?? null;
 
-    // Verify trainer has access to this topic
-    $accessStmt = $pdo->prepare("
-        SELECT ct.course_code 
-        FROM course_topics ct
-        JOIN course_assignments ca ON ct.course_code = ca.course_code
-        WHERE ct.id = ? AND ca.trainer_id = ?
-    ");
+    // Verify trainer has access to this topic and batch
+    $accessStmt = $pdo->prepare("\n        SELECT ct.course_code \n        FROM course_topics ct\n        JOIN course_assignments ca ON ct.course_code = ca.course_code\n        WHERE ct.id = ? AND ca.trainer_id = ?\n    ");
     $accessStmt->execute([$topicId, $trainerId]);
-    if (!$accessStmt->fetch()) {
+    $topic = $accessStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$topic) {
         echo json_encode(['success' => false, 'message' => 'Access denied to this topic']);
         exit;
     }
+    if ($batchName === '') {
+        echo json_encode(['success' => false, 'message' => 'Batch name is required']);
+        exit;
+    }
+    AccessControl::requireTrainerBatchAccess($pdo, $trainerId, $topic['course_code'], $batchName);
 
     $filePath = null;
 
@@ -93,6 +96,15 @@ try {
     // Insert activity into the database (link to quiz if created)
     $stmt = $pdo->prepare("INSERT INTO topic_activities (topic_id, activity_title, activity_description, activity_type, due_date, max_score, attachment_path, created_by, start_date, parent_activity_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([$topicId, $activityTitle, $activityDescription, $activityType, $dueDate, $maxScore, $filePath, $trainerId, $_POST['start_date'] ?: null, $parentQuizId]);
+    $activityId = (int)$pdo->lastInsertId();
+    AccessControl::mapResourceToBatch($pdo, $topic['course_code'], $batchName, 'activity', $activityId, $trainerId);
+    AccessControl::audit($pdo, [
+        'course_code' => $topic['course_code'],
+        'batch_name' => $batchName,
+        'action' => 'CREATE_ACTIVITY',
+        'resource_type' => 'activity',
+        'resource_id' => $activityId
+    ]);
 
     echo json_encode(['success' => true, 'message' => 'Activity added successfully.']);
 

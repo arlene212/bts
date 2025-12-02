@@ -1,0 +1,151 @@
+[2025-12-02 16:52:45] ========================================
+[2025-12-02 16:52:45] === NEW ENROLLMENT REQUEST ===
+[2025-12-02 16:52:45] POST data: Array
+(
+    [course_code] => ASNCI
+    [action] => enroll
+)
+
+[2025-12-02 16:52:45] Session user: Array
+(
+    [id] => 4
+    [user_id] => 411071438
+    [role] => guest
+    [first_name] => Erick
+    [last_name] => Gaceta
+    [email] => gacetaerick124@gmail.com
+    [contact_number] => 09123456789
+    [profile_picture] => 
+    [password_changed_at] => 2025-12-02 14:39:24
+)
+
+[2025-12-02 16:52:45] Parsed data:
+[2025-12-02 16:52:45]   - course_code: ASNCI
+[2025-12-02 16:52:45]   - trainee_id: 411071438
+[2025-12-02 16:52:45]   - user_role: guest
+[2025-12-02 16:52:45] ✅ Validation passed
+[2025-12-02 16:52:45] ✅ Database connected
+[2025-12-02 16:52:45] ✅ Course found: Automotive Servicing NC-1
+[2025-12-02 16:52:45]   - course_id: 6
+[2025-12-02 16:52:45]   - course_status: published
+[2025-12-02 16:52:45] Creating new enrollment...
+[2025-12-02 16:52:45] SQL: INSERT INTO enrollments (
+        trainee_id, 
+        course_code, 
+        course_name, 
+        status, 
+        date_requested,
+        student_id_verification,
+        email_verification
+    ) VALUES (?, ?, ?, ?, NOW(), ?, ?)
+[2025-12-02 16:52:45] Values: Array
+(
+    [0] => 411071438
+    [1] => ASNCI
+    [2] => Automotive Servicing NC-1
+    [3] => approved
+    [4] => 
+    [5] => 
+)
+
+[2025-12-02 16:52:45] ✅✅✅ SUCCESS! Enrollment ID: 37
+[2025-12-02 16:52:45] Verification: Array
+(
+    [id] => 37
+    [trainee_id] => 411071438
+    [course_code] => ASNCI
+    [course_name] => Automotive Servicing NC-1
+    [batch_name] => 
+    [status] => approved
+    [remarks] => 
+    [student_id_verification] => 
+    [email_verification] => 
+    [verification_status] => pending
+    [date_requested] => 2025-12-02 15:52:45
+    [processed_date] => 
+    [processed_by] => 
+    [progress_percentage] => 0.00
+    [completion_date] => 
+    [final_grade] => 
+    [drop_date] => 
+    [drop_reason] => 
+    [dropped_by] => 
+)
+
+[2025-12-02 17:04:22] ========================================
+[2025-12-02 17:04:22] === NEW ENROLLMENT REQUEST ===
+[2025-12-02 17:04:22] POST data: Array
+(
+    [course_code] => ASNCI
+    [action] => enroll
+    [batch_name] => ASB1
+)
+
+[2025-12-02 17:04:22] Session user: Array
+(
+    [id] => 4
+    [user_id] => 411071438
+    [role] => guest
+    [first_name] => Erick
+    [last_name] => Gaceta
+    [email] => gacetaerick124@gmail.com
+    [contact_number] => 09123456789
+    [profile_picture] => 
+    [password_changed_at] => 2025-12-02 14:39:24
+)
+
+[2025-12-02 17:04:22] Parsed data:
+[2025-12-02 17:04:22]   - course_code: ASNCI
+[2025-12-02 17:04:22]   - trainee_id: 411071438
+[2025-12-02 17:04:22]   - user_role: guest
+[2025-12-02 17:04:22] ✅ Validation passed
+[2025-12-02 17:04:22] ✅ Database connected
+[2025-12-02 17:04:22] ✅ Course found: Automotive Servicing NC-1
+[2025-12-02 17:04:22]   - course_id: 6
+[2025-12-02 17:04:22]   - course_status: published
+[2025-12-02 17:04:22] Creating new enrollment...
+[2025-12-02 17:04:22] SQL: INSERT INTO enrollments (
+        trainee_id, 
+        course_code, 
+        course_name, 
+        batch_name,
+        status, 
+        date_requested,
+        student_id_verification,
+        email_verification
+    ) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)
+[2025-12-02 17:04:22] Values: Array
+(
+    [0] => 411071438
+    [1] => ASNCI
+    [2] => Automotive Servicing NC-1
+    [3] => ASB1
+    [4] => pending
+    [5] => 
+    [6] => 
+)
+
+[2025-12-02 17:04:22] ✅✅✅ SUCCESS! Enrollment ID: 38
+[2025-12-02 17:04:22] Verification: Array
+(
+    [id] => 38
+    [trainee_id] => 411071438
+    [course_code] => ASNCI
+    [course_name] => Automotive Servicing NC-1
+    [batch_name] => ASB1
+    [status] => pending
+    [remarks] => 
+    [student_id_verification] => 
+    [email_verification] => 
+    [verification_status] => pending
+    [date_requested] => 2025-12-02 16:04:22
+    [processed_date] => 
+    [processed_by] => 
+    [progress_percentage] => 0.00
+    [completion_date] => 
+    [final_grade] => 
+    [drop_date] => 
+    [drop_reason] => 
+    [dropped_by] => 
+)
+

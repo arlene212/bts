@@ -43,19 +43,22 @@ function viewCourseDetails(courseCode, courseName, hours, description, credited)
   const creditedEl = document.getElementById('course-detail-credited-hours');
   if (titleEl) titleEl.textContent = courseName || '';
   if (codeEl) codeEl.textContent = courseCode || '';
-  if (hoursEl) hoursEl.textContent = hours ? `${hours} hrs` : '';
+  if (hoursEl) hoursEl.textContent = hours ? `Basic Hours: ${hours} hrs` : '';
   if (creditedEl) creditedEl.textContent = credited ? `Credited: ${credited} hrs` : '';
   document.dispatchEvent(new CustomEvent('courseDetailOpened', { detail: { courseCode, courseName } }));
   const courseContentContainer = document.getElementById('courseDetailContent');
   if (!courseContentContainer) return;
   courseContentContainer.innerHTML = '<div>Loading course content...</div>';
-  fetch('../guest/handlers/ajax_handlers.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `action=get_course_details&course_code=${encodeURIComponent(courseCode)}` })
+  fetch(`../php/get_course_details_guest.php?course_code=${encodeURIComponent(courseCode)}`)
     .then(response => response.json())
     .then(data => {
       if (data.error) { courseContentContainer.innerHTML = `<div class="error-message">Error: ${data.error}</div>`; return; }
+      const descEl = document.getElementById('course-detail-description');
+      if (descEl && data.course && data.course.description) {
+        descEl.textContent = data.course.description;
+      }
       let contentHtml = `<h2>Basic Competencies</h2>`;
-      contentHtml += `<p class="course-description-detail">${data.course.description}</p>`;
-      const basicCompetencies = (data.competencies || []).filter(comp => comp.type === 'basic');
+      const basicCompetencies = (data.competencies || []);
       if (basicCompetencies.length > 0) {
         contentHtml += '<h4>Basic Competencies</h4>';
         basicCompetencies.forEach(comp => {

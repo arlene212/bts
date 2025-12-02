@@ -77,35 +77,32 @@
   <div class="modal-content">
     <span class="close-btn" id="closeEnrollModal">&times;</span>
     <h3>⚠️ Enrollment Confirmation</h3>
-    <p>Are you sure you want to enroll in <strong id="enrollCourseName"></strong>?</p>
-    
-    <div id="verificationSection" class="verification-section hidden">
-      <h4>Verification Required</h4>
-      <p id="verificationMessage"></p>
-      
-      <div id="studentIdVerification" class="verification-field hidden">
-        <label for="studentIdInput">Student ID:</label>
-        <input type="text" id="studentIdInput" class="form-control" placeholder="Enter your Student ID">
-        <div class="validation-error hidden" id="studentIdError">Please enter a valid Student ID</div>
+    <div class="modal-body">
+      <p>Are you sure you want to enroll in <strong id="enrollCourseName"></strong>?</p>
+      <div id="verificationSection" class="verification-section hidden">
+        <h4>Verification Required</h4>
+        <p id="verificationMessage"></p>
+        <div id="studentIdVerification" class="verification-field hidden">
+          <label for="studentIdInput">Student ID:</label>
+          <input type="text" id="studentIdInput" class="form-control" placeholder="Enter your Student ID">
+          <div class="validation-error hidden" id="studentIdError">Please enter a valid Student ID</div>
+        </div>
+        <div id="emailVerification" class="verification-field hidden">
+          <label for="emailVerificationInput">Email Address:</label>
+          <input type="email" id="emailVerificationInput" class="form-control" placeholder="Enter your email address">
+          <div class="validation-error hidden" id="emailVerificationError">Please verify your email address first</div>
+        </div>
       </div>
-      
-      <div id="emailVerification" class="verification-field hidden">
-        <label for="emailVerificationInput">Email Address:</label>
-        <input type="email" id="emailVerificationInput" class="form-control" placeholder="Enter your email address">
-        <div class="validation-error hidden" id="emailVerificationError">Please verify your email address first</div>
+      <div class="enrollment-info" id="enrollmentInfo">
+        <p><strong>Important:</strong> By enrolling in this course, you agree to:</p>
+        <ul>
+          <li>Complete all required assignments and activities</li>
+          <li>Follow the course schedule and deadlines</li>
+          <li>Respect the learning environment and other participants</li>
+          <li>Maintain academic integrity in all submissions</li>
+        </ul>
       </div>
     </div>
-    
-    <div class="enrollment-info" id="enrollmentInfo">
-      <p><strong>Important:</strong> By enrolling in this course, you agree to:</p>
-      <ul>
-        <li>Complete all required assignments and activities</li>
-        <li>Follow the course schedule and deadlines</li>
-        <li>Respect the learning environment and other participants</li>
-        <li>Maintain academic integrity in all submissions</li>
-      </ul>
-    </div>
-    
     <div class="modal-actions">
       <button id="cancelEnroll" class="cancel-btn">Cancel</button>
       <button id="confirmEnroll" class="confirm-btn">Yes, Enroll</button>

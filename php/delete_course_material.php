@@ -1,6 +1,7 @@
 <?php
 require_once 'DatabaseConnection.php';
 require_once 'SessionManager.php';
+require_once 'AccessControl.php';
 
 SessionManager::startSession();
 SessionManager::requireRole('trainer');
@@ -15,9 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $input = json_decode(file_get_contents('php://input'), true);
 $materialId = $input['material_id'] ?? null;
+$batchName = isset($input['batch_name']) ? trim($input['batch_name']) : '';
 
 if (empty($materialId)) {
     echo json_encode(['success' => false, 'message' => 'material_id is required']);
+    exit;
+}
+if ($batchName === '') {
+    echo json_encode(['success' => false, 'message' => 'batch_name is required']);
     exit;
 }
 
@@ -54,11 +60,19 @@ try {
     }
 
     $filePath = $row['file_path'];
+    $courseCode = $row['course_code'];
+    AccessControl::requireTrainerBatchAccess($pdo, $trainerId, $courseCode, $batchName);
+    if (!AccessControl::resourceIsMappedToBatch($pdo, $courseCode, $batchName, 'material', (int)$materialId)) {
+        echo json_encode(['success' => false, 'message' => 'Access denied: course material not part of this batch']);
+        exit;
+    }
 
     $pdo->beginTransaction();
 
-    $delStmt = $pdo->prepare("DELETE FROM course_materials WHERE id = ?");
-    $delStmt->execute([$materialId]);
+    $pdo->prepare("DELETE FROM batch_resources WHERE resource_type = 'material' AND resource_id = ? AND course_code = ? AND batch_name = ?")
+        ->execute([$materialId, $courseCode, $batchName]);
+    $pdo->prepare("DELETE FROM course_materials WHERE id = ?")
+        ->execute([$materialId]);
 
     $pdo->commit();
 
@@ -67,7 +81,14 @@ try {
         if (file_exists($fullPath)) { @unlink($fullPath); }
     }
 
-    echo json_encode(['success' => true, 'message' => 'Course material deleted successfully', 'debug' => ['trainer_id' => $trainerId, 'material_id' => $materialId]]);
+    AccessControl::audit($pdo, [
+        'course_code' => $courseCode,
+        'batch_name' => $batchName,
+        'action' => 'DELETE_COURSE_MATERIAL',
+        'resource_type' => 'material',
+        'resource_id' => (int)$materialId
+    ]);
+    echo json_encode(['success' => true, 'message' => 'Course material deleted successfully']);
 
 } catch (Exception $e) {
     if ($pdo && $pdo->inTransaction()) { $pdo->rollBack(); }
