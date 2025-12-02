@@ -39,27 +39,6 @@
             <?php include __DIR__ . '/sections/quizzes.php'; ?>
           </div>
         </div>
-        <aside class="announcements">
-          <div class="announcements-header">
-            <h2><i class="fas fa-bullhorn"></i> Announcements</h2>
-          </div>
-          <div class="announcements-content">
-            <?php if (!empty($announcements)): ?>
-              <?php foreach ($announcements as $announcement): ?>
-                <div class="announcement-item">
-                  <h4><?php echo htmlspecialchars($announcement['title']); ?></h4>
-                  <p><?php echo htmlspecialchars(substr($announcement['content'], 0, 100)); ?>...</p>
-                  <small><?php echo date('M d, Y', strtotime($announcement['date_posted'])); ?></small>
-                </div>
-              <?php endforeach; ?>
-            <?php else: ?>
-              <div class="no-announcements">
-                <i class="fas fa-bell-slash"></i>
-                <p>No announcements yet. Stay tuned!</p>
-              </div>
-            <?php endif; ?>
-          </div>
-        </aside>
       </div>
     </main>
   </div>

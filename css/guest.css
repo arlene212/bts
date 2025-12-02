@@ -1703,7 +1703,7 @@ body::after {
 =========================== */
 .content {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.25fr);
+  grid-template-columns: 1fr;
   gap: var(--spacing-6);
   padding: var(--spacing-8);
   flex: 1;
@@ -1754,6 +1754,71 @@ body::after {
 
 .section-header i {
   color: var(--primary-500);
+}
+
+/* ===========================
+   About Us Tab
+=========================== */
+#about-content h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 var(--spacing-6) 0;
+}
+
+.about-content {
+  background: var(--gradient-card);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-8);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.about-content p {
+  color: var(--secondary-700);
+  font-size: var(--font-size-base);
+  line-height: 1.7;
+  margin-bottom: var(--spacing-4);
+}
+
+.about-content .contact-info {
+  margin-top: var(--spacing-8);
+  background: var(--secondary-50);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--secondary-200);
+  padding: var(--spacing-6);
+}
+
+.about-content .contact-info h3 {
+  color: var(--primary-800);
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  margin: 0 0 var(--spacing-4) 0;
+}
+
+.about-content .contact-info p {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  color: var(--secondary-700);
+  font-size: var(--font-size-base);
+  margin-bottom: var(--spacing-2);
+}
+
+.about-content .contact-info i {
+  color: var(--primary-600);
+  background: var(--primary-100);
+  padding: var(--spacing-2);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 768px) {
+  .about-content {
+    padding: var(--spacing-6);
+  }
 }
 
 /* ===========================

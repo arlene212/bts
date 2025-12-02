@@ -133,6 +133,7 @@ function setupUserManagement() {
   const editTraineeIdInput = document.getElementById('editTraineeId');
   document.querySelectorAll('.edit-trainee-btn').forEach(btn => {
     btn.addEventListener('click', function() {
+      window.__reenrollMode = false;
       const userId = this.getAttribute('data-user-id');
       const userDataStr = this.getAttribute('data-user-data');
       try {
@@ -172,17 +173,37 @@ function setupUserManagement() {
 
   document.querySelectorAll('.reenroll-trainee-btn').forEach(btn => {
     btn.addEventListener('click', function() {
+      window.__reenrollMode = true;
       const userId = this.getAttribute('data-user-id');
       const form = document.getElementById('editTraineeForm');
       if (!form) return;
       document.getElementById('editTraineeId').value = userId;
-      // Reset fields for fresh reenrollment
+      const firstNameInput = document.getElementById('edit_trainee_first_name');
+      const lastNameInput = document.getElementById('edit_trainee_last_name');
+      const emailInput = document.getElementById('edit_trainee_email');
+      const contactInput = document.getElementById('edit_trainee_contact');
       const courseSelect = document.getElementById('edit_trainee_course');
       const batchSelect = document.getElementById('edit_trainee_batch');
       const statusSelect = document.getElementById('edit_trainee_enrollment_status');
+      if (statusSelect) statusSelect.value = 'active';
       if (courseSelect) courseSelect.value = '';
       if (batchSelect) batchSelect.innerHTML = '<option value="">Select Batch</option>';
-      if (statusSelect) statusSelect.value = 'active';
+      fetch(`../php/get_user.php?user_id=${userId}`)
+        .then(r => r.json())
+        .then(u => {
+          if (firstNameInput) firstNameInput.value = u.first_name || '';
+          if (lastNameInput) lastNameInput.value = u.last_name || '';
+          if (emailInput) emailInput.value = u.email || '';
+          if (contactInput) contactInput.value = u.contact_number || '';
+        })
+        .catch(() => {});
+      fetch(`../php/get_completed_courses.php?trainee_id=${userId}`)
+        .then(r => r.json())
+        .then(d => {
+          const completed = Array.isArray(d.course_codes) ? d.course_codes.map(String) : [];
+          window.__completedCourses = completed;
+        })
+        .catch(() => {});
       openModal('editTraineeModal');
     });
   });
@@ -223,6 +244,12 @@ function setupUserManagement() {
     editTraineeCourseSelect.addEventListener('change', function() {
       const courseCode = this.value;
       editTraineeBatchSelect.innerHTML = '<option value="">Select Batch</option>';
+      const completed = Array.isArray(window.__completedCourses) ? window.__completedCourses : [];
+      if (window.__reenrollMode && courseCode && completed.includes(courseCode)) {
+        this.value = '';
+        if (typeof showAlert === 'function') { showAlert('warning', 'Already Graduated', 'This trainee already graduated from this course.'); }
+        return;
+      }
       if (courseCode) {
         fetch('../admin/handlers/get_batches.php?course_code=' + courseCode)
           .then(response => response.json())

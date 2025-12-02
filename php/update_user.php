@@ -154,8 +154,10 @@ try {
         $updStatusStmt = $pdo->prepare("UPDATE users SET status = ? WHERE user_id = ?");
         $updStatusStmt->execute([$enrollmentStatus, $userId]);
 
-    // 1. Create new enrollment and batch assignment if a course is selected (and reset previous assignments)
-    if (!empty($courseCode)) {
+        if (!empty($courseCode)) {
+            $chk = $pdo->prepare("SELECT 1 FROM enrollments WHERE trainee_id = ? AND course_code = ? AND completion_date IS NOT NULL LIMIT 1");
+            $chk->execute([$userId, $courseCode]);
+            if ($chk->fetch()) { throw new Exception('Already graduated from this course'); }
             // Delete existing enrollment and batch assignment only when reassigning
             $deleteEnrollmentStmt = $pdo->prepare("DELETE FROM enrollments WHERE trainee_id = ?");
             $deleteEnrollmentStmt->execute([$userId]);

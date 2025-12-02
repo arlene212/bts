@@ -170,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
     <meta property="og:type" content="website">
 </head>
 
-<body>
+<body id="top">
     <style>*{ -webkit-user-select: none; -ms-user-select: none; user-select: none; }</style>
     <!-- Skip navigation for accessibility -->
     <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -209,20 +209,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
                     <i class="fas fa-search"></i>
                     Browse Courses
                 </button>
-            </div>
-            <div class="hero-stats">
-                <div class="stat-item">
-                    <span class="stat-number">8+</span>
-                    <span class="stat-label">Certified Courses</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">500+</span>
-                    <span class="stat-label">Active Learners</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">95%</span>
-                    <span class="stat-label">Completion Rate</span>
-                </div>
             </div>
         </div>
     </section>
@@ -638,31 +624,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
                             </div>
                         </div>
                     </div>
-                    <div class="about-stats">
-                        <div class="stat-card">
-                            <div class="stat-number">27+</div>
-                            <div class="stat-label">Years of Excellence</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">8+</div>
-                            <div class="stat-label">Certified Courses</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">1000+</div>
-                            <div class="stat-label">Graduates</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">95%</div>
-                            <div class="stat-label">Job Placement Rate</div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer id="contact" class="footer bg-dark">
+    <!-- Site Info (moved out of footer) -->
+    <section id="site-info" class="prefooter">
         <div class="container">
             <div class="footer-content">
                 <div class="footer-section">
@@ -674,31 +642,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
                         <h4 class="footer-section-title">Contact Information</h4>
                         <div class="contact-list">
                             <div class="contact-item">
-                                <div class="contact-icon">
-                                    <i class="fas fa-envelope"></i>
-                                </div>
-                                <div class="contact-details">
-                                    <span class="contact-label">Email</span>
-                                    <a href="mailto:pgobts@bts.gov.ph" class="contact-link">pgobts@bts.gov.ph</a>
-                                </div>
+                                <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+                                <div class="contact-details"><span class="contact-label">Email</span><a href="mailto:pgobts@bts.gov.ph" class="contact-link">pgobts@bts.gov.ph</a></div>
                             </div>
                             <div class="contact-item">
-                                <div class="contact-icon">
-                                    <i class="fas fa-phone"></i>
-                                </div>
-                                <div class="contact-details">
-                                    <span class="contact-label">Phone</span>
-                                    <a href="tel:(074)4247060" class="contact-link">(074) 424-7060</a>
-                                </div>
+                                <div class="contact-icon"><i class="fas fa-phone"></i></div>
+                                <div class="contact-details"><span class="contact-label">Phone</span><a href="tel:(074)4247060" class="contact-link">(074) 424-7060</a></div>
                             </div>
                             <div class="contact-item">
-                                <div class="contact-icon">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                </div>
-                                <div class="contact-details">
-                                    <span class="contact-label">Address</span>
-                                    <span class="contact-text">Motorpool, Wangal, La Trinidad, Benguet</span>
-                                </div>
+                                <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
+                                <div class="contact-details"><span class="contact-label">Address</span><span class="contact-text">Motorpool, Wangal, La Trinidad, Benguet</span></div>
                             </div>
                         </div>
                     </div>
@@ -707,21 +660,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
                     <div class="footer-social">
                         <h4 class="footer-section-title">Follow Us</h4>
                         <div class="social-links">
-                            <a href="https://www.facebook.com/BenguetTechSchool/" target="_blank" class="social-link" title="Facebook">
-                                <i class="fab fa-facebook-f"></i>
-                            </a>
-                            <a href="mailto:pgobts@bts.gov.ph" class="social-link" title="Email">
-                                <i class="fas fa-envelope"></i>
-                            </a>
-                            <a href="tel:(074)4247060" class="social-link" title="Phone">
-                                <i class="fas fa-phone"></i>
-                            </a>
+                            <a href="https://www.facebook.com/BenguetTechSchool/" target="_blank" class="social-link" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                            <a href="mailto:pgobts@bts.gov.ph" class="social-link" title="Email"><i class="fas fa-envelope"></i></a>
+                            <a href="tel:(074)4247060" class="social-link" title="Phone"><i class="fas fa-phone"></i></a>
                         </div>
                     </div>
                     <div class="footer-links">
                         <h4 class="footer-section-title">Quick Links</h4>
                         <div class="footer-nav" role="navigation" aria-label="Footer navigation">
-                            <a href="#home" class="footer-nav-link" aria-label="Navigate to home section">Home</a>
+                            <a href="#top" class="footer-nav-link" aria-label="Navigate to top of page">Home</a>
                             <a href="#courses" class="footer-nav-link" aria-label="Navigate to courses section">Courses</a>
                             <a href="#mission-vision" class="footer-nav-link" aria-label="Navigate to mission and vision section">Mission & Vision</a>
                             <a href="#about" class="footer-nav-link" aria-label="Navigate to about us section">About Us</a>
@@ -730,6 +677,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="footer bg-dark">
+        <div class="container">
+            
             <div class="footer-bottom">
                 <div class="footer-divider"></div>
                 <div class="footer-copyright">
