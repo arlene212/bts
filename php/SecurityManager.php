@@ -15,7 +15,9 @@ class SecurityManager {
     private function __construct() {
         $this->errorHandler = ErrorHandler::getInstance();
         $this->securityConfig = $this->loadSecurityConfig();
-        $this->initializeSecurityHeaders();
+        if (php_sapi_name() !== 'cli') {
+            $this->initializeSecurityHeaders();
+        }
     }
     
     public static function getInstance() {
@@ -436,8 +438,10 @@ function log_security_event($event, $details = '') {
     return $securityManager->logSecurityEvent($event, $details);
 }
 
-// Initialize security on include
-$securityManager = SecurityManager::getInstance();
-$securityManager->initializeSecureSession();
+// Initialize security on include (skip for CLI)
+if (php_sapi_name() !== 'cli') {
+    $securityManager = SecurityManager::getInstance();
+    $securityManager->initializeSecureSession();
+}
 
 ?>

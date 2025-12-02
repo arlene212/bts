@@ -336,17 +336,18 @@ function handleException($exception) {
     $errorHandler->handle500($exception);
 }
 
-// Set error handlers
-set_error_handler('handleError');
-set_exception_handler('handleException');
-
-// Register shutdown function for fatal errors
-register_shutdown_function(function() {
-    $error = error_get_last();
-    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-        $errorHandler = ErrorHandler::getInstance();
-        $errorHandler->handle500("Fatal error: {$error['message']} in {$error['file']} on line {$error['line']}", $error);
-    }
-});
+// Set error handlers (skip for CLI)
+if (php_sapi_name() !== 'cli') {
+    set_error_handler('handleError');
+    set_exception_handler('handleException');
+    // Register shutdown function for fatal errors
+    register_shutdown_function(function() {
+        $error = error_get_last();
+        if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+            $errorHandler = ErrorHandler::getInstance();
+            $errorHandler->handle500("Fatal error: {$error['message']} in {$error['file']} on line {$error['line']}", $error);
+        }
+    });
+}
 
 ?>

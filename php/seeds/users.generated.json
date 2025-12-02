@@ -1,0 +1,143 @@
+{
+    "accounts": [
+        {
+            "username": "admin.jdoe",
+            "email": "admin.jdoe@bts.local",
+            "role": "admin",
+            "first_name": "John",
+            "last_name": "Doe",
+            "user_id": "1000000002",
+            "password_hash": "$2y$12$CnpDURc9dgdsstVABbmIVOd9P0gJhqLysCQyYDJI3G84uVbB4b4lu",
+            "sensitive": {
+                "contact_number": "{\"iv\":\"TaA3Zi3fmSeD4BZ2uAavkg==\",\"data\":\"NIxPPr25Mwgt+3Cz9xaieg==\"}",
+                "student_id": null
+            },
+            "permissions": [
+                "manage_users",
+                "manage_courses",
+                "view_reports",
+                "backup_restore"
+            ],
+            "access_level": "full",
+            "purpose": "System administration and oversight"
+        },
+        {
+            "username": "admin.sr",
+            "email": "admin.sr@bts.local",
+            "role": "admin",
+            "first_name": "Sarah",
+            "last_name": "Reeves",
+            "user_id": "1000000003",
+            "password_hash": "$2y$12$57i1kgdP3tPTV.vuzXeGI.Itfw4FG\/b3KZM3iYb6S7deCTrTrT7Qm",
+            "sensitive": {
+                "contact_number": "{\"iv\":\"qUwKZO6E9jxNYz9fOPaqxA==\",\"data\":\"\\\/gYR\\\/e\\\/hdbeQULsNoJyL8A==\"}",
+                "student_id": null
+            },
+            "permissions": [
+                "manage_users",
+                "manage_courses",
+                "view_reports",
+                "backup_restore"
+            ],
+            "access_level": "full",
+            "purpose": "System administration and oversight"
+        },
+        {
+            "username": "trainer.tsmith",
+            "email": "trainer.tsmith@bts.local",
+            "role": "trainer",
+            "first_name": "Tom",
+            "last_name": "Smith",
+            "user_id": "2000000001",
+            "password_hash": "$2y$12$YMjk17\/YAN9\/sLP\/19ME.eHmlFsKJK42jf9JScRs0wTU3TIvlY.Eu",
+            "sensitive": {
+                "contact_number": "{\"iv\":\"o94FW91N9gjupfTVWQydeQ==\",\"data\":\"Mgbd3KAEcHFeGAJL2pQVoA==\"}",
+                "student_id": "{\"iv\":\"fUg0SFhDR\\\/CafDPikOZIug==\",\"data\":\"zQN19iypDSObG8G6LaAlqg==\"}"
+            },
+            "permissions": [
+                "manage_activities",
+                "grade_trainees",
+                "view_reports"
+            ],
+            "access_level": "elevated",
+            "purpose": "Course creation and trainee evaluation"
+        },
+        {
+            "username": "trainer.jlee",
+            "email": "trainer.jlee@bts.local",
+            "role": "trainer",
+            "first_name": "Julia",
+            "last_name": "Lee",
+            "user_id": "2000000002",
+            "password_hash": "$2y$12$VUBJPOou8esU04\/zT2hrJuVhMuG1K9G88RehzJo7uCCU.6okZMNXm",
+            "sensitive": {
+                "contact_number": "{\"iv\":\"\\\/xHuLqcj1ShQifC47IyKRw==\",\"data\":\"LGczFr\\\/AGK\\\/JaI1t4\\\/n1LQ==\"}",
+                "student_id": "{\"iv\":\"ogHX63d8BqI4OzAbrSexwA==\",\"data\":\"4SVvWdHRMrJcSqH+mfZp7Q==\"}"
+            },
+            "permissions": [
+                "manage_activities",
+                "grade_trainees",
+                "view_reports"
+            ],
+            "access_level": "elevated",
+            "purpose": "Course creation and trainee evaluation"
+        },
+        {
+            "username": "trainee.abrown",
+            "email": "trainee.abrown@bts.local",
+            "role": "trainee",
+            "first_name": "Alex",
+            "last_name": "Brown",
+            "user_id": "3000000001",
+            "password_hash": "$2y$12$FWP\/hpy5mLA3aanw7xKxVOffcRnIA1Dv8JdLqvJLs1Xve9WFw9V.2",
+            "sensitive": {
+                "contact_number": "{\"iv\":\"aeS1M5nC+Vm1SuNhgZGtHg==\",\"data\":\"Mvog94AJ2qHKkb\\\/UOrO4nA==\"}",
+                "student_id": "{\"iv\":\"Y5NgZu7R6Bi5svWzA8M00w==\",\"data\":\"uHF+E5EkzdDs8iXWkavA2Q==\"}"
+            },
+            "permissions": [
+                "submit_activities",
+                "view_courses"
+            ],
+            "access_level": "standard",
+            "purpose": "Learning participation and submissions"
+        },
+        {
+            "username": "trainee.mgarcia",
+            "email": "trainee.mgarcia@bts.local",
+            "role": "trainee",
+            "first_name": "Maria",
+            "last_name": "Garcia",
+            "user_id": "3000000002",
+            "password_hash": "$2y$12$Y4.GgZa278PlRzdbushpfu8Mnla\/RTxinTQpA1quOHMXxeH20iZ1W",
+            "sensitive": {
+                "contact_number": "{\"iv\":\"oUh7nGWmSio+yFcSqQPueQ==\",\"data\":\"hMk57\\\/D4\\\/zVKYE7XV\\\/3DVA==\"}",
+                "student_id": "{\"iv\":\"Bju78lfjTz6BDi3JKfDLnA==\",\"data\":\"r2pvPFi873x\\\/BDVTGvYBbA==\"}"
+            },
+            "permissions": [
+                "submit_activities",
+                "view_courses"
+            ],
+            "access_level": "standard",
+            "purpose": "Learning participation and submissions"
+        },
+        {
+            "username": "trainee.kmiller",
+            "email": "trainee.kmiller@bts.local",
+            "role": "trainee",
+            "first_name": "Kevin",
+            "last_name": "Miller",
+            "user_id": "3000000003",
+            "password_hash": "$2y$12$KwlLat5t6KzgWrYDFtwG4e6f8H\/qeNbf34UOaDqzVdx7uxS0u2gDa",
+            "sensitive": {
+                "contact_number": "{\"iv\":\"2A8H5l\\\/ni6hPMYR35+mXZA==\",\"data\":\"EP4ewQ04bnPGXc0atsNOtw==\"}",
+                "student_id": "{\"iv\":\"nplVm80PWGpOyD5zfC1ocg==\",\"data\":\"eoQ2vIs5n54Z7vgU5t\\\/HyA==\"}"
+            },
+            "permissions": [
+                "submit_activities",
+                "view_courses"
+            ],
+            "access_level": "standard",
+            "purpose": "Learning participation and submissions"
+        }
+    ]
+}
