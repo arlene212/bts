@@ -79,6 +79,7 @@
   <script src="../js/guest/profile.js"></script>
   <script src="../js/verification.js"></script>
   <script src="../js/guest/main.js"></script>
+  <script src="../js/guest/certification.js"></script>
   <script>
     (function(){
       function d(e){ e.preventDefault(); return false; }

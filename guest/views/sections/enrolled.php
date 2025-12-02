@@ -117,6 +117,12 @@ $completed_courses_list = is_array($enrolled_courses) ? array_filter($enrolled_c
         <i class="fas fa-arrow-left"></i> Back to My Courses
       </button>
       <h2 id="course-detail-title">Course Title</h2>
+      <div class="cert-actions" style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+        <button id="downloadCertificateBtn" class="btn btn-success" style="display:none;">
+          <i class="fas fa-download"></i> Download Certificate
+        </button>
+        <span id="certificateInfo" class="text-muted" data-bs-toggle="tooltip" title="Checking eligibility..."></span>
+      </div>
     </div>
     <div class="course-meta">
       <span id="course-detail-code"></span> | <span id="course-detail-hours"></span> | <span id="course-detail-credited-hours"></span>

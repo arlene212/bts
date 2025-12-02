@@ -455,15 +455,3 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="modal-footer"><button type="button" class="submit-btn" onclick="closeModal('resetPasswordConfirmationModal')">OK</button></div>
   </div>
 </div>
-            <div class="form-group">
-              <label for="edit_competency_name">Competency Name <span class="required">*</span></label>
-              <input type="text" id="edit_competency_name" name="competency_name" required pattern="^[A-Za-z0-9 _-]+$" class="form-control">
-            </div>
-            <div class="form-group">
-              <label for="edit_module_title">Module Title <span class="required">*</span></label>
-              <input type="text" id="edit_module_title" name="module_title" required maxlength="100" class="form-control">
-            </div>
-            <div class="form-group">
-              <label for="edit_nominal_hours">Nominal Hours <span class="required">*</span></label>
-              <input type="number" id="edit_nominal_hours" name="nominal_hours" required min="1" class="form-control">
-            </div>

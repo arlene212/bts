@@ -45,6 +45,7 @@ function viewCourseDetails(courseCode, courseName, hours, description, credited)
   if (codeEl) codeEl.textContent = courseCode || '';
   if (hoursEl) hoursEl.textContent = hours ? `${hours} hrs` : '';
   if (creditedEl) creditedEl.textContent = credited ? `Credited: ${credited} hrs` : '';
+  document.dispatchEvent(new CustomEvent('courseDetailOpened', { detail: { courseCode, courseName } }));
   const courseContentContainer = document.getElementById('courseDetailContent');
   if (!courseContentContainer) return;
   courseContentContainer.innerHTML = '<div>Loading course content...</div>';

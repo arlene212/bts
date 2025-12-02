@@ -32,8 +32,21 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
     .competency-chip.type-common { background: #fff3bf; border-color: #fcc419; color: #7c5d00; }
     .competency-chip.type-core { background: #ffe3e3; border-color: #ff8787; color: #c92a2a; }
   </style>
-  <div class="courses-grid row g-3">
-      <?php foreach ($courses as $index => $course): 
+  <?php 
+    $activeCourses = array_filter($courses ?? [], function($c){ 
+      $st = $c['status'] ?? 'active'; 
+      $cs = $c['course_status'] ?? 'published'; 
+      return $st !== 'archived' && $cs !== 'archived'; 
+    });
+    $archivedCourses = array_filter($courses ?? [], function($c){ 
+      $st = $c['status'] ?? 'active'; 
+      $cs = $c['course_status'] ?? 'draft'; 
+      return $st === 'archived' || $cs === 'archived'; 
+    });
+  ?>
+  <h3 style="margin:12px 0;">Active Courses</h3>
+  <div class="courses-grid row g-3" id="active-courses-grid">
+      <?php foreach ($activeCourses as $index => $course): 
         $courseSpecificBatches = is_array($courseBatches) ? array_filter($courseBatches, function ($batch) use ($course) { return $batch['course_code'] == $course['course_code']; }) : [];
         try {
           if (!isset($pdo) || !($pdo instanceof PDO)) { require_once __DIR__ . '/../../php/DatabaseConnection.php'; $database = new DatabaseConnection(); $pdo = $database->getConnection(); }
@@ -216,6 +229,58 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
         </div>
       </div>
     <?php endforeach; ?>
+  </div>
+  <h3 style="margin:18px 0 12px;">Archived Courses</h3>
+  <div class="courses-grid row g-3" id="archived-courses-grid">
+      <?php foreach ($archivedCourses as $index => $course): 
+        $courseSpecificBatches = is_array($courseBatches) ? array_filter($courseBatches, function ($batch) use ($course) { return $batch['course_code'] == $course['course_code']; }) : [];
+        try {
+          if (!isset($pdo) || !($pdo instanceof PDO)) { require_once __DIR__ . '/../../php/DatabaseConnection.php'; $database = new DatabaseConnection(); $pdo = $database->getConnection(); }
+          $competenciesStmt = $pdo->prepare("SELECT competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes FROM competencies WHERE course_id = ? AND status = 'active' ORDER BY competency_type, unit_order, competency_name");
+          $competenciesStmt->execute([(int)$course['id']]);
+          $competencies = $competenciesStmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $__) { $competencies = []; }
+      ?>
+      <div class="course-card card collapsed archived" style="animation-delay: <?php echo ($index * 0.1); ?>s;">
+        <div class="course-image">
+          <?php if (!empty($course['image'])): ?>
+            <img src="../uploads/courses/<?php echo htmlspecialchars($course['image']); ?>" alt="<?php echo htmlspecialchars($course['course_name']); ?>" loading="lazy">
+          <?php else: ?>
+            <div class="course-image-placeholder">
+              <i class="fas fa-archive"></i>
+            </div>
+          <?php endif; ?>
+          <div class="course-status archived">Archived</div>
+        </div>
+        <div class="course-info card-body">
+          <h3><?php echo htmlspecialchars($course['course_name']); ?></h3>
+          <span class="course-code"><?php echo htmlspecialchars($course['course_code']); ?></span>
+          <div class="course-hours"><?php echo htmlspecialchars($course['hours']); ?> hours</div>
+          <p class="course-description"><?php echo htmlspecialchars($course['description']); ?></p>
+          <?php if (!empty($competencies)): ?>
+          <div class="course-competencies">
+            <h4>Competencies</h4>
+            <div class="competency-chips">
+              <?php foreach ($competencies as $competency): ?>
+                <span class="competency-chip type-<?php echo htmlspecialchars($competency['competency_type']); ?>" title="<?php echo htmlspecialchars(ucfirst($competency['competency_type'])); ?>">
+                  <?php echo htmlspecialchars($competency['competency_name']); ?>
+                </span>
+              <?php endforeach; ?>
+            </div>
+          </div>
+          <?php endif; ?>
+        </div>
+        <div class="course-actions card-footer">
+          <form method="POST" style="display:inline-block;" onsubmit="return confirm('Restore this course?');">
+            <input type="hidden" name="current_tab" value="courses">
+            <input type="hidden" name="course_code" value="<?php echo htmlspecialchars($course['course_code']); ?>">
+            <button type="submit" name="restore_course" class="btn btn-success">
+              <i class="fas fa-box-open"></i> Restore
+            </button>
+          </form>
+        </div>
+      </div>
+      <?php endforeach; ?>
   </div>
   <div id="course-detail-view" class="hidden"></div>
   <script>
