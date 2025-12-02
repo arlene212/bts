@@ -1565,7 +1565,7 @@ tbody tr:hover {
 
 .modal-content {
   background: #fff;
-  padding: 2rem;
+  padding: 0;
   border-radius: 12px;
   width: 90%;
   max-width: 500px;

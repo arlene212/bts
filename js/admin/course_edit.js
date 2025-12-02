@@ -161,8 +161,10 @@ function openEditCourseModal(courseData) {
       document.getElementById('edit_course_hours').value = c.hours || courseData.hours || '';
       document.getElementById('edit_course_description').value = c.description || courseData.description || '';
       document.getElementById('edit_course_status').value = c.course_status ?? courseData.course_status ?? 'published';
-      document.getElementById('edit_allow_preview').value = c.allow_preview ?? courseData.allow_preview ?? 0;
-      document.getElementById('edit_course_preview_content').value = c.preview_content ?? courseData.preview_content ?? '';
+      const allowPreviewEl = document.getElementById('edit_allow_preview');
+      if (allowPreviewEl) { allowPreviewEl.value = c.allow_preview ?? courseData.allow_preview ?? 0; }
+      const previewContentEl = document.getElementById('edit_course_preview_content');
+      if (previewContentEl) { previewContentEl.value = c.preview_content ?? courseData.preview_content ?? ''; }
       document.getElementById('edit_require_verification').value = c.require_verification ?? courseData.require_verification ?? 0;
       document.getElementById('edit_verification_type').value = c.verification_type ?? courseData.verification_type ?? 'email';
 
@@ -182,8 +184,10 @@ function openEditCourseModal(courseData) {
 
       // Show/hide preview content based on allow_preview setting
       const previewContentGroup = document.getElementById('edit_preview_content_group');
-      if ((c.allow_preview ?? courseData.allow_preview ?? 0) == 1) { previewContentGroup.style.display = 'block'; }
-      else { previewContentGroup.style.display = 'none'; }
+      if (previewContentGroup) {
+        if ((c.allow_preview ?? courseData.allow_preview ?? 0) == 1) { previewContentGroup.style.display = 'block'; }
+        else { previewContentGroup.style.display = 'none'; }
+      }
 
       // Image
       const imagePreview = document.getElementById('current_image_preview');
@@ -207,8 +211,10 @@ function openEditCourseModal(courseData) {
       document.getElementById('edit_course_hours').value = courseData.hours || '';
       document.getElementById('edit_course_description').value = courseData.description || '';
       document.getElementById('edit_course_status').value = courseData.course_status || 'published';
-      document.getElementById('edit_allow_preview').value = courseData.allow_preview || 0;
-      document.getElementById('edit_course_preview_content').value = courseData.preview_content || '';
+      const allowPreviewEl2 = document.getElementById('edit_allow_preview');
+      if (allowPreviewEl2) { allowPreviewEl2.value = courseData.allow_preview || 0; }
+      const previewContentEl2 = document.getElementById('edit_course_preview_content');
+      if (previewContentEl2) { previewContentEl2.value = courseData.preview_content || ''; }
       document.getElementById('edit_require_verification').value = courseData.require_verification || 0;
       document.getElementById('edit_verification_type').value = courseData.verification_type || 'email';
       const editDaysPerWeek = document.getElementById('edit_schedule_days_per_week');
@@ -221,8 +227,10 @@ function openEditCourseModal(courseData) {
         const days = daysStr ? daysStr.split(',').map(d => d.trim()) : [];
         editDaysGroup.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = days.includes(cb.value); });
       }
-      const previewContentGroup = document.getElementById('edit_preview_content_group');
-      if (courseData.allow_preview == 1) { previewContentGroup.style.display = 'block'; } else { previewContentGroup.style.display = 'none'; }
+      const previewContentGroup2 = document.getElementById('edit_preview_content_group');
+      if (previewContentGroup2) {
+        if (courseData.allow_preview == 1) { previewContentGroup2.style.display = 'block'; } else { previewContentGroup2.style.display = 'none'; }
+      }
       const imagePreview = document.getElementById('current_image_preview');
       if (courseData.image) { imagePreview.innerHTML = `<p><strong>Current Image:</strong></p><img src="../uploads/courses/${courseData.image}">`; }
       else { imagePreview.innerHTML = '<p class="field-note"><em>No current image</em></p>'; }
