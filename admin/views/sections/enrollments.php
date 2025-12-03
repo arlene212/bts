@@ -37,7 +37,7 @@
               <?php if ($enrollment['status'] == 'pending'): ?>
                 <div class="table-actions enrollment-actions" data-enrollment-id="<?php echo $enrollment['id']; ?>">
                   <button class="action-btn approve btn btn-sm btn-success" title="Approve" data-action="approve"><i class="fas fa-check"></i><span class="btn-text">Approve</span></button>
-                  <button class="action-btn reject btn btn-sm btn-outline-danger" title="Reject"><i class="fas fa-times"></i><span class="btn-text">Reject</span></button>
+                  <button class="action-btn reject btn btn-sm btn-outline-danger" title="Reject" data-action="reject"><i class="fas fa-times"></i><span class="btn-text">Reject</span></button>
                 </div>
               <?php else: ?>
                 <span class="processed-text">

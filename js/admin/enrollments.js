@@ -6,17 +6,15 @@ function setupEnrollmentActions() {
     if (button) {
       const action = button.dataset.action;
       const enrollmentId = button.closest('.enrollment-actions').dataset.enrollmentId;
-      let remarks = '';
-      if (action === 'reject') {
-        const r = prompt('Please provide a reason for rejection (optional):');
-        if (r === null) return;
-        remarks = r;
+      const isReject = action === 'reject';
+      const title = isReject ? 'Reject Enrollment' : 'Approve Enrollment';
+      const label = isReject ? 'Please provide a reason for rejection (optional):' : 'Optional remarks for approval:';
+      const placeholder = isReject ? 'Reason for rejection (optional)' : 'Remarks (optional)';
+      if (typeof showRemarks === 'function') {
+        showRemarks(title, label, placeholder, (val) => { processEnrollment(enrollmentId, action, val || '', button); });
       } else {
-        const r = prompt('Optional remarks for approval:');
-        if (r === null) return;
-        remarks = r;
+        processEnrollment(enrollmentId, action, '', button);
       }
-      processEnrollment(enrollmentId, action, remarks, button);
     }
   });
 }
