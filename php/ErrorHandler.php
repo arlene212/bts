@@ -184,21 +184,24 @@ class ErrorHandler {
      * Show user-friendly 404 page
      */
     private function show404Page() {
-        include __DIR__ . '/../error_pages/404.php';
+        $p = __DIR__ . '/../error_pages/404.php';
+        if (file_exists($p)) { include $p; } else { echo '<h1>404 Not Found</h1><p>The requested page could not be found.</p>'; }
     }
     
     /**
      * Show user-friendly 403 page
      */
     private function show403Page() {
-        include __DIR__ . '/../error_pages/403.php';
+        $p = __DIR__ . '/../error_pages/403.php';
+        if (file_exists($p)) { include $p; } else { echo '<h1>403 Forbidden</h1><p>You do not have permission to access this resource.</p>'; }
     }
     
     /**
      * Show user-friendly 500 page
      */
     private function show500Page() {
-        include __DIR__ . '/../error_pages/500.php';
+        $p = __DIR__ . '/../error_pages/500.php';
+        if (file_exists($p)) { include $p; } else { echo '<h1>500 Internal Server Error</h1><p>Something went wrong. Please try again later.</p>'; }
     }
     
     /**

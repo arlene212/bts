@@ -164,17 +164,20 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
                               $pdo = $database->getConnection(); 
                             }
                             
+                            $trainerAssignedBatchesAttr = '';
                             // Get batches directly from course_batches table using trainer_id
                             $stmt = $pdo->prepare("SELECT DISTINCT TRIM(batch_name) AS batch_name FROM course_batches WHERE trainer_id = ? AND batch_name IS NOT NULL AND batch_name != '' ORDER BY created_at DESC");
                             $stmt->execute([$trainer['user_id']]);
                             $batches = $stmt->fetchAll(PDO::FETCH_COLUMN);
-                            
+                            $trainerAssignedBatchesAttr = !empty($batches) ? implode(', ', $batches) : '';
+
                             if (!empty($batches)) {
                               echo htmlspecialchars(implode(', ', $batches));
                             } else {
                               echo 'None';
                             }
                           } catch (Exception $e) { 
+                            $trainerAssignedBatchesAttr = '';
                             echo 'None'; 
                           }
                         ?>

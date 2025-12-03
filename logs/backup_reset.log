@@ -1,0 +1,27 @@
+{"timestamp":"2025-12-03 18:05:15","event":"backup_failed","user":"1000000001","details":{"reason":"Zip extension not available"}}
+{"timestamp":"2025-12-03 18:05:19","event":"backup_failed","user":"1000000001","details":{"reason":"Zip extension not available"}}
+{"timestamp":"2025-12-03 18:09:55","event":"backup_success","user":"1000000001","details":{"file":"2025-12-03_18-09-52_backup.zip"}}
+{"timestamp":"2025-12-03 18:10:21","event":"backup_success","user":"1000000001","details":{"file":"2025-12-03_18-10-19_backup.zip"}}
+{"timestamp":"2025-12-03 18:10:23","event":"reset_success","user":"1000000001","details":{"backup":"2025-12-03_18-10-19_backup.zip"}}
+{"timestamp":"2025-12-03 18:15:24","event":"backup_success","user":"1000000001","details":{"file":"2025-12-03_18-15-23_backup.sql"}}
+{"timestamp":"2025-12-03 18:15:42","event":"backup_success","user":"1000000001","details":{"file":"2025-12-03_18-15-41_backup.sql"}}
+{"timestamp":"2025-12-03 18:15:43","event":"reset_success","user":"1000000001","details":{"backup":"2025-12-03_18-15-41_backup.sql"}}
+{"timestamp":"2025-12-03 18:20:40","event":"backup_success","user":"1000000001","details":{"file":"2025-12-03_18-20-38_backup.zip"}}
+{"timestamp":"2025-12-03 18:20:41","event":"backup_reset_success","user":"1000000001","details":{"backup":"2025-12-03_18-20-38_backup.zip"}}
+{"timestamp":"2025-12-03 18:27:18","event":"restore_latest_success","user":"1000000001","details":{"file":"2025-12-03_18-20-38_backup.zip"}}
+{"timestamp":"2025-12-03 18:27:35","event":"restore_latest_success","user":"1000000001","details":{"file":"2025-12-03_18-20-38_backup.zip"}}
+{"timestamp":"2025-12-03 18:29:59","event":"restore_latest_success","user":"1000000001","details":{"file":"2025-12-03_18-20-38_backup.zip","config_restored":["config.php","security.php"],"sample_counts":{"access_audit":0,"activities":0,"activity_submissions":0,"announcements":0,"batch_assignment_status":0}}}
+{"timestamp":"2025-12-03 18:30:19","event":"restore_latest_success","user":"1000000001","details":{"file":"2025-12-03_18-20-38_backup.zip","config_restored":["config.php","security.php"],"sample_counts":{"access_audit":0,"activities":0,"activity_submissions":0,"announcements":0,"batch_assignment_status":0}}}
+{"timestamp":"2025-12-03 18:33:36","event":"restore_latest_success","user":"1000000001","details":{"file":"2025-12-03_18-20-38_backup.zip","config_restored":["config.php","security.php"],"dirs_restored":[],"sample_counts":{"access_audit":0,"activities":0,"activity_submissions":0,"announcements":0,"batch_assignment_status":0}}}
+{"timestamp":"2025-12-03 18:33:41","event":"restore_latest_success","user":"1000000001","details":{"file":"2025-12-03_18-20-38_backup.zip","config_restored":["config.php","security.php"],"dirs_restored":[],"sample_counts":{"access_audit":0,"activities":0,"activity_submissions":0,"announcements":0,"batch_assignment_status":0}}}
+{"timestamp":"2025-12-03 18:39:03","event":"backup_success","user":"1000000001","details":{"file":"2025-12-03_18-38-58_backup.zip","includes":["database.sql","users_schema.sql","config","uploads","guest_data"]}}
+{"timestamp":"2025-12-03 18:39:04","event":"backup_reset_success","user":"1000000001","details":{"backup":"2025-12-03_18-38-58_backup.zip"}}
+{"timestamp":"2025-12-03 18:39:24","event":"backup_warning","user":"1000000001","details":{"reason":"No INSERT statements detected in database dump","file":"database_no_users.sql"}}
+{"timestamp":"2025-12-03 18:39:28","event":"backup_success","user":"1000000001","details":{"file":"2025-12-03_18-39-23_backup.zip","includes":["database.sql","users_schema.sql","config","uploads","guest_data"]}}
+{"timestamp":"2025-12-03 18:39:29","event":"backup_reset_success","user":"1000000001","details":{"backup":"2025-12-03_18-39-23_backup.zip"}}
+{"timestamp":"2025-12-03 18:39:38","event":"restore_latest_success","user":"1000000001","details":{"file":"2025-12-03_18-39-23_backup.zip","config_restored":["config.php","security.php"],"dirs_restored":["uploads","guest_data"],"sample_counts":{"access_audit":0,"activities":0,"activity_submissions":0,"announcements":0,"batch_assignment_status":0}}}
+{"timestamp":"2025-12-03 18:51:34","event":"backup_success","user":"1000000001","details":{"file":"2025-12-03_18-51-33_full_backup.sql"}}
+{"timestamp":"2025-12-03 18:51:36","event":"reset_success","user":"1000000001","details":[]}
+{"timestamp":"2025-12-03 18:52:02","event":"backup_success","user":"1000000001","details":{"file":"2025-12-03_18-52-02_full_backup.sql"}}
+{"timestamp":"2025-12-03 18:52:04","event":"reset_success","user":"1000000001","details":[]}
+{"timestamp":"2025-12-03 18:52:12","event":"restore_success","user":"1000000001","details":{"file":"2025-12-03_18-52-02_full_backup.sql","sample_counts":{"access_audit":0,"activities":0,"activity_submissions":0,"announcements":0,"batch_assignment_status":0}}}
