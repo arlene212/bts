@@ -149,3 +149,157 @@
     [dropped_by] => 
 )
 
+[2025-12-03 04:32:09] ========================================
+[2025-12-03 04:32:09] === NEW ENROLLMENT REQUEST ===
+[2025-12-03 04:32:09] POST data: Array
+(
+    [course_code] => ITNCII
+    [action] => enroll
+    [batch_name] => sdfbn
+)
+
+[2025-12-03 04:32:09] Session user: Array
+(
+    [id] => 5
+    [user_id] => 412025524
+    [role] => guest
+    [first_name] => Arlene
+    [last_name] => Bayani
+    [email] => arlenebayani04@gmail.com
+    [contact_number] => 
+    [profile_picture] => 
+    [password_changed_at] => 
+)
+
+[2025-12-03 04:32:09] Parsed data:
+[2025-12-03 04:32:09]   - course_code: ITNCII
+[2025-12-03 04:32:09]   - trainee_id: 412025524
+[2025-12-03 04:32:09]   - user_role: guest
+[2025-12-03 04:32:09] ✅ Validation passed
+[2025-12-03 04:32:09] ✅ Database connected
+[2025-12-03 04:32:09] ✅ Course found: Information Technology
+[2025-12-03 04:32:09]   - course_id: 6
+[2025-12-03 04:32:09]   - course_status: published
+[2025-12-03 04:32:09] Creating new enrollment...
+[2025-12-03 04:32:09] SQL: INSERT INTO enrollments (
+        trainee_id, 
+        course_code, 
+        course_name, 
+        batch_name,
+        status, 
+        date_requested,
+        student_id_verification,
+        email_verification
+    ) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)
+[2025-12-03 04:32:09] Values: Array
+(
+    [0] => 412025524
+    [1] => ITNCII
+    [2] => Information Technology
+    [3] => sdfbn
+    [4] => pending
+    [5] => 
+    [6] => 
+)
+
+[2025-12-03 04:32:09] ✅✅✅ SUCCESS! Enrollment ID: 18
+[2025-12-03 04:32:09] Verification: Array
+(
+    [id] => 18
+    [trainee_id] => 412025524
+    [course_code] => ITNCII
+    [course_name] => Information Technology
+    [batch_name] => sdfbn
+    [status] => pending
+    [remarks] => 
+    [student_id_verification] => 
+    [email_verification] => 
+    [verification_status] => pending
+    [date_requested] => 2025-12-03 03:32:09
+    [processed_date] => 
+    [processed_by] => 
+    [progress_percentage] => 0.00
+    [completion_date] => 
+    [final_grade] => 
+    [drop_date] => 
+    [drop_reason] => 
+    [dropped_by] => 
+)
+
+[2025-12-03 06:33:36] ========================================
+[2025-12-03 06:33:36] === NEW ENROLLMENT REQUEST ===
+[2025-12-03 06:33:36] POST data: Array
+(
+    [course_code] => ITNCII
+    [action] => enroll
+    [batch_name] => sdfbn
+)
+
+[2025-12-03 06:33:36] Session user: Array
+(
+    [id] => 9
+    [user_id] => 412038863
+    [role] => guest
+    [first_name] => Sample
+    [last_name] => Testing
+    [email] => bayani@gmail.com
+    [contact_number] => 
+    [profile_picture] => 
+    [password_changed_at] => 
+)
+
+[2025-12-03 06:33:36] Parsed data:
+[2025-12-03 06:33:36]   - course_code: ITNCII
+[2025-12-03 06:33:36]   - trainee_id: 412038863
+[2025-12-03 06:33:36]   - user_role: guest
+[2025-12-03 06:33:36] ✅ Validation passed
+[2025-12-03 06:33:36] ✅ Database connected
+[2025-12-03 06:33:36] ✅ Course found: Information Technology
+[2025-12-03 06:33:36]   - course_id: 6
+[2025-12-03 06:33:36]   - course_status: published
+[2025-12-03 06:33:36] Creating new enrollment...
+[2025-12-03 06:33:36] SQL: INSERT INTO enrollments (
+        trainee_id, 
+        course_code, 
+        course_name, 
+        batch_name,
+        status, 
+        date_requested,
+        student_id_verification,
+        email_verification
+    ) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)
+[2025-12-03 06:33:36] Values: Array
+(
+    [0] => 412038863
+    [1] => ITNCII
+    [2] => Information Technology
+    [3] => sdfbn
+    [4] => pending
+    [5] => 
+    [6] => 
+)
+
+[2025-12-03 06:33:36] ✅✅✅ SUCCESS! Enrollment ID: 21
+[2025-12-03 06:33:36] Verification: Array
+(
+    [id] => 21
+    [trainee_id] => 412038863
+    [course_code] => ITNCII
+    [course_name] => Information Technology
+    [batch_name] => sdfbn
+    [status] => pending
+    [remarks] => 
+    [student_id_verification] => 
+    [email_verification] => 
+    [verification_status] => pending
+    [date_requested] => 2025-12-03 05:33:36
+    [processed_date] => 
+    [processed_by] => 
+    [progress_percentage] => 0.00
+    [completion_date] => 
+    [final_grade] => 
+    [drop_date] => 
+    [drop_reason] => 
+    [dropped_by] => 
+)
+

@@ -24,10 +24,28 @@ function showConfirm(title, message, onConfirm) {
   modal.style.display = 'block';
 }
 function closeConfirmModal() { document.getElementById('confirmModal').style.display = 'none'; }
+function showRemarks(title, label, placeholder, onConfirm) {
+  const modal = document.getElementById('remarksModal');
+  const titleEl = document.getElementById('remarksTitle');
+  const labelEl = document.getElementById('remarksLabel');
+  const inputEl = document.getElementById('remarksInput');
+  const confirmBtn = document.getElementById('remarksConfirmBtn');
+  titleEl.textContent = title || 'Add Remarks';
+  if (labelEl) labelEl.textContent = label || 'Enter remarks (optional):';
+  if (inputEl) { inputEl.value = ''; inputEl.placeholder = placeholder || ''; }
+  if (inputEl) { try { inputEl.focus(); inputEl.selectionStart = inputEl.value.length; inputEl.selectionEnd = inputEl.value.length; } catch (_) {} }
+  const newConfirmBtn = confirmBtn.cloneNode(true);
+  confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+  newConfirmBtn.addEventListener('click', () => { const val = inputEl ? inputEl.value : ''; closeRemarksModal(); if (typeof onConfirm === 'function') { onConfirm(val); } });
+  modal.style.display = 'block';
+}
+function closeRemarksModal() { document.getElementById('remarksModal').style.display = 'none'; }
 window.onclick = function(event) {
   const alertModal = document.getElementById('alertModal');
   const confirmModal = document.getElementById('confirmModal');
+  const remarksModal = document.getElementById('remarksModal');
   if (event.target === alertModal) { closeAlertModal(); }
   if (event.target === confirmModal) { closeConfirmModal(); }
+  if (event.target === remarksModal) { closeRemarksModal(); }
 }
 window.alert = function(message) { showAlert('info', 'Notice', message); };

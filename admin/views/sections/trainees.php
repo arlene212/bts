@@ -158,7 +158,7 @@ $graduatedTraineesCount = is_array($graduatedTrainees) ? count($graduatedTrainee
               </td>
               <td><?php echo date('Y-m-d', strtotime($trainee['date_created'])); ?></td>
               <td class="table-actions">
-                <form method="POST" onsubmit="return confirm('Undrop this trainee and set status to Active?');" class="undrop-form">
+                <form method="POST" class="undrop-form">
                   <input type="hidden" name="user_id" value="<?php echo $trainee['user_id']; ?>">
                   <input type="hidden" name="user_role" value="trainee">
                   <input type="hidden" name="enrollment_status" value="active">

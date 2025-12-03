@@ -10,7 +10,7 @@
       <button class="alert-modal-btn alert-modal-btn-primary" onclick="closeAlertModal()">OK</button>
     </div>
   </div>
-  </div>
+</div>
 
 <div id="confirmModal" class="alert-modal">
   <div class="alert-modal-content">
@@ -25,6 +25,23 @@
     </div>
   </div>
 </div>
+
+<div id="remarksModal" class="alert-modal">
+  <div class="alert-modal-content">
+    <div class="alert-modal-header">
+      <div class="alert-modal-icon info"><i class="fas fa-comment-dots"></i></div>
+      <h3 class="alert-modal-title" id="remarksTitle">Add Remarks</h3>
+    </div>
+    <div class="alert-modal-body" id="remarksBody">
+      <label for="remarksInput" id="remarksLabel">Enter remarks (optional):</label>
+      <textarea id="remarksInput" class="form-control" rows="3" style="width:100%;" placeholder="Enter remarks"></textarea>
+    </div>
+    <div class="alert-modal-footer">
+      <button class="alert-modal-btn alert-modal-btn-secondary" onclick="closeRemarksModal()">Cancel</button>
+      <button class="alert-modal-btn alert-modal-btn-primary" id="remarksConfirmBtn">Confirm</button>
+    </div>
+  </div>
+  </div>
 
 <style>
   .checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
