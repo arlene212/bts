@@ -102,6 +102,18 @@ if ($action === 'backup_and_reset') {
   $trace=[]; $msgBk=''; $okBk=false; $bkPath=null; $trace[]=['stage'=>'start_backup','ts'=>date('c')];
   list($okBk,$bkPath) = backup_full($msgBk,$trace);
   if (!$okBk) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>$msgBk,'trace'=>$trace]); exit; }
+  // Verify admin password before proceeding to reset
+  $adminPassword = $_POST['admin_password'] ?? '';
+  if (trim($adminPassword) === '') { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Admin password is required to proceed with reset','trace'=>$trace]); exit; }
+  try {
+    $db = new DatabaseConnection();
+    $pdo = $db->getConnection();
+    $userId = $_SESSION['user']['user_id'] ?? '';
+    $stmt = $pdo->prepare('SELECT password FROM users WHERE user_id = ? AND role = "admin" AND status = "active"');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row || !password_verify($adminPassword, $row['password'])) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Invalid admin password','trace'=>$trace]); exit; }
+  } catch (Exception $e) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Password verification failed','trace'=>$trace]); exit; }
   $trace[]=['stage'=>'start_reset','ts'=>date('c')]; $msgRs=''; $okRs = reset_full($msgRs,$trace); $type = $okRs ? 'warning' : 'danger'; $finalMsg = $okRs ? ('Backup created and system reset: ' . basename($bkPath)) : $msgRs; echo json_encode(['ok'=>$okRs,'type'=>$type,'message'=>$finalMsg,'trace'=>$trace]); exit;
 } elseif ($action === 'restore_latest') {
   $trace=[]; $trace[]=['stage'=>'start_restore','ts'=>date('c')]; $msg=''; $ok = restore_latest_sql($msg,$trace); $type = $ok ? 'success':'danger'; echo json_encode(['ok'=>$ok,'type'=>$type,'message'=>$msg,'trace'=>$trace]); exit;

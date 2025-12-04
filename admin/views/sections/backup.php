@@ -358,23 +358,24 @@ document.getElementById('backupResetForm')?.addEventListener('submit', function(
   const progress = document.getElementById('backupResetProgress');
   btn.disabled = true; if (sp) sp.classList.remove('d-none');
   const fd = new FormData(this);
-  openConfirm('Confirm Backup & Reset', 'This will create a full backup and then reset system data. Proceed?', 'Backup & Reset')
-  .then(ok=>{ if(!ok) throw new Error('cancel'); return fetch('actions/backup.php', { method: 'POST', body: fd }); })
-  .then(r=>r.json())
-  .then(data=>{
-    renderSteps(progress, data.trace);
-    const alert = document.createElement('div');
-    alert.className = 'alert alert-'+(data.type||'info')+' mt-2';
-    alert.textContent = data.message || 'Completed';
-    progress.appendChild(alert);
-  })
-  .catch(()=>{
-    const alert = document.createElement('div');
-    alert.className = 'alert alert-danger mt-2';
-    alert.textContent = 'Action cancelled or request failed';
-    progress.appendChild(alert);
-  })
-  .finally(()=>{ btn.disabled = false; if (sp) sp.classList.add('d-none'); });
+  openConfirmWithPassword('Confirm Backup & Reset', 'This will create a full backup and then reset system data. Please enter admin password to confirm.', 'Backup & Reset')
+    .then(pwd => { if(!pwd) throw new Error('cancel'); fd.append('admin_password', pwd); return fetch('actions/backup.php', { method: 'POST', body: fd }); })
+    .then(r=>r.json())
+    .then(data=>{
+      renderSteps(progress, data.trace);
+      const alert = document.createElement('div');
+      alert.className = 'alert alert-'+(data.type||'info')+' mt-2';
+      alert.textContent = data.message || 'Completed';
+      progress.appendChild(alert);
+      if (data.ok) { setTimeout(()=>{ window.location.reload(); }, 1000); }
+    })
+    .catch(()=>{
+      const alert = document.createElement('div');
+      alert.className = 'alert alert-danger mt-2';
+      alert.textContent = 'Action cancelled or request failed';
+      progress.appendChild(alert);
+    })
+    .finally(()=>{ btn.disabled = false; if (sp) sp.classList.add('d-none'); });
 });
 document.getElementById('restoreLatestForm')?.addEventListener('submit', function(e){
   e.preventDefault();
@@ -392,6 +393,7 @@ document.getElementById('restoreLatestForm')?.addEventListener('submit', functio
     alert.className = 'alert alert-'+(data.type||'info')+' mt-2';
     alert.textContent = data.message || 'Completed';
     progress.appendChild(alert);
+    if (data.ok) { setTimeout(()=>{ window.location.reload(); }, 1000); }
   })
   .catch(()=>{
     const alert = document.createElement('div');
@@ -495,7 +497,12 @@ document.addEventListener('DOMContentLoaded', loadBackups);
 <div class="cf-modal d-none" id="backupConfirmModal" aria-hidden="true">
   <div class="cf-dialog" role="dialog" aria-modal="true" aria-labelledby="cfTitle">
     <div class="cf-header"><h5 id="cfTitle"><i class="fas fa-question-circle"></i> Confirm Action</h5></div>
-    <div class="cf-body"><p id="cfMessage" class="mb-0"></p></div>
+    <div class="cf-body"><p id="cfMessage" class="mb-0"></p>
+      <div id="cfPasswordWrap" class="mt-3 d-none">
+        <label for="cfPassword" class="form-label small">Admin password</label>
+        <input type="password" class="form-control" id="cfPassword" autocomplete="current-password" placeholder="Enter admin password">
+      </div>
+    </div>
     <div class="cf-footer">
       <button type="button" class="btn btn-secondary" id="cfCancelBtn">Cancel</button>
       <button type="button" class="btn btn-primary" id="cfOkBtn">Confirm</button>
@@ -515,24 +522,51 @@ document.addEventListener('DOMContentLoaded', loadBackups);
 
 <script>
 let cfResolve = null;
+let cfMode = 'confirm';
 function openConfirm(title, message, okLabel){
   return new Promise((resolve)=>{
     cfResolve = resolve;
+    cfMode = 'confirm';
     const modal = document.getElementById('backupConfirmModal');
     document.getElementById('cfTitle').textContent = title || 'Confirm';
     document.getElementById('cfMessage').textContent = message || 'Proceed?';
     document.getElementById('cfOkBtn').textContent = okLabel || 'Confirm';
+    const pw = document.getElementById('cfPasswordWrap'); if (pw) pw.classList.add('d-none');
+    const pwd = document.getElementById('cfPassword'); if (pwd) pwd.value = '';
     modal.classList.remove('d-none');
   });
 }
-document.getElementById('cfCancelBtn')?.addEventListener('click', function(){
+function openConfirmWithPassword(title, message, okLabel){
+  return new Promise((resolve)=>{
+    cfResolve = resolve;
+    cfMode = 'password';
+    const modal = document.getElementById('backupConfirmModal');
+    document.getElementById('cfTitle').textContent = title || 'Confirm';
+    document.getElementById('cfMessage').textContent = message || 'Proceed?';
+    document.getElementById('cfOkBtn').textContent = okLabel || 'Confirm';
+    const pw = document.getElementById('cfPasswordWrap'); if (pw) pw.classList.remove('d-none');
+    const pwd = document.getElementById('cfPassword'); if (pwd) pwd.value = '';
+    modal.classList.remove('d-none');
+  });
+}
+document.getElementById('cfCancelBtn')?.addEventListener('click', function(e){
   document.getElementById('backupConfirmModal').classList.add('d-none');
   if (cfResolve) cfResolve(false);
-});
-document.getElementById('cfOkBtn')?.addEventListener('click', function(){
-  document.getElementById('backupConfirmModal').classList.add('d-none');
-  if (cfResolve) cfResolve(true);
-});
+  e.stopImmediatePropagation();
+}, { capture: true });
+document.getElementById('cfOkBtn')?.addEventListener('click', function(e){
+  const modal = document.getElementById('backupConfirmModal');
+  modal.classList.add('d-none');
+  if (cfResolve) {
+    if (cfMode === 'password') {
+      const pwd = document.getElementById('cfPassword')?.value || '';
+      cfResolve(pwd);
+    } else {
+      cfResolve(true);
+    }
+  }
+  e.stopImmediatePropagation();
+}, { capture: true });
 document.addEventListener('keydown', function(e){
   const visible = !document.getElementById('backupConfirmModal').classList.contains('d-none');
   if (!visible) return;

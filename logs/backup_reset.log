@@ -38,3 +38,6 @@
 {"timestamp":"2025-12-03 22:46:03","event":"restore_success","user":"11201123","details":{"file":"2025-12-03_22-45-59_full_backup.sql","sample_counts":{"activities":0,"activity_submissions":0,"announcements":0,"batch_assignment_status":0,"batch_assignments":0}}}
 {"timestamp":"2025-12-03 22:46:07","event":"restore_success","user":"11201123","details":{"file":"2025-12-03_22-45-59_full_backup.sql"}}
 {"timestamp":"2025-12-03 22:46:08","event":"backup_deleted","user":"11201123","details":{"file":"2025-12-03_22-45-59_full_backup.sql"}}
+{"timestamp":"2025-12-04 14:42:56","event":"backup_success","user":"11204345","details":{"file":"2025-12-04_14-42-56_full_backup.sql"}}
+{"timestamp":"2025-12-04 14:42:57","event":"reset_success","user":"11204345","details":[]}
+{"timestamp":"2025-12-04 14:43:11","event":"restore_success","user":"11204345","details":{"file":"2025-12-04_14-42-56_full_backup.sql","sample_counts":{"activities":0,"activity_submissions":0,"announcements":0,"batch_assignment_status":0,"batch_assignments":0}}}
