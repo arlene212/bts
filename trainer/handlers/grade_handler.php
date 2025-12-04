@@ -104,6 +104,163 @@ try {
     exit;
   }
 
+  if ($action === 'get_gradebook') {
+    $studentsStmt = $pdo->prepare(
+      "SELECT DISTINCT u.user_id, u.first_name, u.last_name
+       FROM enrollments e
+       JOIN users u ON e.trainee_id = u.user_id
+       WHERE e.course_code IN (SELECT course_code FROM course_assignments WHERE trainer_id = ?)
+         AND e.status = 'approved' AND u.role = 'trainee' AND u.status = 'active'
+       ORDER BY u.last_name, u.first_name"
+    );
+    $studentsStmt->execute([$user['user_id']]);
+    $students = [];
+    foreach ($studentsStmt->fetchAll(PDO::FETCH_ASSOC) as $s) {
+      $students[] = [
+        'id' => (string)$s['user_id'],
+        'name' => trim(($s['last_name'] ?? '') . ', ' . ($s['first_name'] ?? '')),
+      ];
+    }
+
+    $activitiesStmt = $pdo->prepare(
+      "SELECT q.id, q.title, q.course_code, c.course_name
+       FROM quizzes q
+       JOIN courses c ON q.course_code = c.course_code
+       WHERE q.course_code IN (SELECT course_code FROM course_assignments WHERE trainer_id = ?)
+       ORDER BY c.course_name, q.title"
+    );
+    $activitiesStmt->execute([$user['user_id']]);
+    $activities = $activitiesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $maxStmt = $pdo->prepare(
+      "SELECT qa.quiz_id, MAX(qa.max_score) AS max_score
+       FROM quiz_attempts qa
+       WHERE qa.quiz_id IN (
+         SELECT id FROM quizzes WHERE course_code IN (
+           SELECT course_code FROM course_assignments WHERE trainer_id = ?
+         )
+       )
+       GROUP BY qa.quiz_id"
+    );
+    $maxStmt->execute([$user['user_id']]);
+    $maxMap = [];
+    foreach ($maxStmt->fetchAll(PDO::FETCH_ASSOC) as $m) {
+      $maxMap[(string)$m['quiz_id']] = (int)$m['max_score'];
+    }
+    $activitiesOut = [];
+    foreach ($activities as $a) {
+      $activitiesOut[] = [
+        'id' => (string)$a['id'],
+        'title' => (string)$a['title'],
+        'course_code' => (string)$a['course_code'],
+        'course_name' => (string)$a['course_name'],
+        'max_score' => isset($maxMap[(string)$a['id']]) ? $maxMap[(string)$a['id']] : 100,
+      ];
+    }
+
+    $scoresStmt = $pdo->prepare(
+      "SELECT qa.quiz_id, qa.trainee_id, MAX(qa.score) AS score, MAX(qa.max_score) AS max_score
+       FROM quiz_attempts qa
+       JOIN quizzes q ON qa.quiz_id = q.id
+       WHERE q.course_code IN (SELECT course_code FROM course_assignments WHERE trainer_id = ?)
+       GROUP BY qa.quiz_id, qa.trainee_id"
+    );
+    $scoresStmt->execute([$user['user_id']]);
+    $scores = [];
+    foreach ($scoresStmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+      $pct = (float)$r['score'];
+      $max = (int)($r['max_score'] ?? ($maxMap[(string)$r['quiz_id']] ?? 100));
+      $points = $max > 0 ? round(($pct / 100) * $max) : 0;
+      $scores[] = [
+        'student_id' => (string)$r['trainee_id'],
+        'activity_id' => (string)$r['quiz_id'],
+        'points' => $points,
+        'max_score' => $max,
+        'percentage' => round($pct, 1),
+        'grade' => letterGrade($pct),
+      ];
+    }
+
+    $hasHrd = false;
+    foreach ($activitiesOut as $a) {
+      if (($a['course_code'] ?? '') === 'HRD-NCII') { $hasHrd = true; break; }
+    }
+    if (!$hasHrd) {
+      $demoActivities = [
+        ['id' => 'DEMO-HRD-01', 'title' => 'Basic Hair Coloring Quiz', 'course_code' => 'HRD-NCII', 'course_name' => 'Hairdressing', 'max_score' => 50],
+        ['id' => 'DEMO-HRD-02', 'title' => 'Pre/Post Hair Care Assignment', 'course_code' => 'HRD-NCII', 'course_name' => 'Hairdressing', 'max_score' => 100],
+        ['id' => 'DEMO-HRD-03', 'title' => 'Scalp Treatment Assessment', 'course_code' => 'HRD-NCII', 'course_name' => 'Hairdressing', 'max_score' => 75],
+      ];
+      $activitiesOut = array_merge($activitiesOut, $demoActivities);
+      $demoStudents = [
+        ['id' => 'HRD-DEMO-01', 'name' => 'Cruz, Maria'],
+        ['id' => 'HRD-DEMO-02', 'name' => 'Santos, Juan'],
+        ['id' => 'HRD-DEMO-03', 'name' => 'Reyes, Ana'],
+      ];
+      $existingIds = array_map(function($s){ return $s['id']; }, $students);
+      foreach ($demoStudents as $ds) { if (!in_array($ds['id'], $existingIds, true)) { $students[] = $ds; } }
+      $demoScores = [
+        ['student_id' => 'HRD-DEMO-01', 'activity_id' => 'DEMO-HRD-01', 'percentage' => 92.0],
+        ['student_id' => 'HRD-DEMO-01', 'activity_id' => 'DEMO-HRD-02', 'percentage' => 88.0],
+        ['student_id' => 'HRD-DEMO-01', 'activity_id' => 'DEMO-HRD-03', 'percentage' => 95.0],
+        ['student_id' => 'HRD-DEMO-02', 'activity_id' => 'DEMO-HRD-01', 'percentage' => 76.0],
+        ['student_id' => 'HRD-DEMO-02', 'activity_id' => 'DEMO-HRD-02', 'percentage' => 82.0],
+        ['student_id' => 'HRD-DEMO-02', 'activity_id' => 'DEMO-HRD-03', 'percentage' => 68.0],
+        ['student_id' => 'HRD-DEMO-03', 'activity_id' => 'DEMO-HRD-01', 'percentage' => 64.0],
+        ['student_id' => 'HRD-DEMO-03', 'activity_id' => 'DEMO-HRD-02', 'percentage' => 91.0],
+        ['student_id' => 'HRD-DEMO-03', 'activity_id' => 'DEMO-HRD-03', 'percentage' => 73.0],
+      ];
+      $maxMapDemo = [];
+      foreach ($activitiesOut as $a) { if (($a['course_code'] ?? '') === 'HRD-NCII') { $maxMapDemo[$a['id']] = (int)$a['max_score']; } }
+      foreach ($demoScores as $ds) {
+        $max = isset($maxMapDemo[$ds['activity_id']]) ? $maxMapDemo[$ds['activity_id']] : 100;
+        $points = $max > 0 ? round(($ds['percentage'] / 100) * $max) : 0;
+        $scores[] = [
+          'student_id' => $ds['student_id'],
+          'activity_id' => $ds['activity_id'],
+          'points' => $points,
+          'max_score' => $max,
+          'percentage' => round($ds['percentage'], 1),
+          'grade' => letterGrade($ds['percentage']),
+        ];
+      }
+    }
+
+    // Build enrollments and batches
+    $enrollStmt = $pdo->prepare(
+      "SELECT e.trainee_id, e.course_code, COALESCE(ba.batch_name, e.batch_name) AS batch_name
+       FROM enrollments e
+       JOIN course_assignments ca ON e.course_code = ca.course_code
+       LEFT JOIN batch_assignments ba ON ba.trainee_id = e.trainee_id AND ba.course_code = e.course_code AND ba.trainer_id = ca.trainer_id
+       WHERE ca.trainer_id = ? AND e.status = 'approved'"
+    );
+    $enrollStmt->execute([$user['user_id']]);
+    $enrollments = $enrollStmt->fetchAll(PDO::FETCH_ASSOC);
+    $batches = [];
+    foreach ($enrollments as $en) {
+      $cc = (string)$en['course_code'];
+      $bn = $en['batch_name'];
+      if (!isset($batches[$cc])) { $batches[$cc] = []; }
+      if ($bn !== null && $bn !== '') { if (!in_array($bn, $batches[$cc], true)) { $batches[$cc][] = $bn; } }
+    }
+
+    // If demo Hairdressing was injected, also provide demo enrollments and batches
+    $hrdActivities = array_filter($activitiesOut, function($a){ return ($a['course_code'] ?? '') === 'HRD-NCII'; });
+    if (!empty($hrdActivities)) {
+      $demoEnroll = [
+        ['trainee_id' => 'HRD-DEMO-01', 'course_code' => 'HRD-NCII', 'batch_name' => 'Batch A'],
+        ['trainee_id' => 'HRD-DEMO-02', 'course_code' => 'HRD-NCII', 'batch_name' => 'Batch A'],
+        ['trainee_id' => 'HRD-DEMO-03', 'course_code' => 'HRD-NCII', 'batch_name' => 'Batch B'],
+      ];
+      foreach ($demoEnroll as $de) { $enrollments[] = $de; }
+      if (!isset($batches['HRD-NCII'])) { $batches['HRD-NCII'] = []; }
+      foreach (['Batch A', 'Batch B'] as $bn) { if (!in_array($bn, $batches['HRD-NCII'], true)) { $batches['HRD-NCII'][] = $bn; } }
+    }
+
+    echo json_encode(['success' => true, 'students' => $students, 'activities' => $activitiesOut, 'scores' => $scores, 'enrollments' => $enrollments, 'batches' => $batches]);
+    exit;
+  }
+
   if ($action === 'update_grade') {
     $gradeId = isset($_POST['grade_id']) ? (int)$_POST['grade_id'] : 0;
     $points = isset($_POST['score']) ? (float)$_POST['score'] : 0.0;

@@ -25,3 +25,16 @@
 {"timestamp":"2025-12-03 18:52:02","event":"backup_success","user":"1000000001","details":{"file":"2025-12-03_18-52-02_full_backup.sql"}}
 {"timestamp":"2025-12-03 18:52:04","event":"reset_success","user":"1000000001","details":[]}
 {"timestamp":"2025-12-03 18:52:12","event":"restore_success","user":"1000000001","details":{"file":"2025-12-03_18-52-02_full_backup.sql","sample_counts":{"access_audit":0,"activities":0,"activity_submissions":0,"announcements":0,"batch_assignment_status":0}}}
+{"timestamp":"2025-12-03 22:26:23","event":"backup_success","user":"11201123","details":{"file":"2025-12-03_22-26-23_full_backup.sql"}}
+{"timestamp":"2025-12-03 22:43:46","event":"backup_success","user":"11201123","details":{"file":"2025-12-03_22-43-46_full_backup.sql"}}
+{"timestamp":"2025-12-03 22:43:47","event":"reset_success","user":"11201123","details":[]}
+{"timestamp":"2025-12-03 22:43:53","event":"backup_success","user":"11201123","details":{"file":"2025-12-03_22-43-53_full_backup.sql"}}
+{"timestamp":"2025-12-03 22:43:58","event":"backup_success","user":"11201123","details":{"file":"2025-12-03_22-43-57_full_backup.sql"}}
+{"timestamp":"2025-12-03 22:44:06","event":"restore_success","user":"11201123","details":{"file":"2025-12-03_22-43-57_full_backup.sql","sample_counts":{"activities":0,"activity_submissions":0,"announcements":0,"batch_assignment_status":0,"batch_assignments":0}}}
+{"timestamp":"2025-12-03 22:44:18","event":"backup_deleted","user":"11201123","details":{"file":"2025-12-03_22-43-57_full_backup.sql"}}
+{"timestamp":"2025-12-03 22:45:56","event":"backup_success","user":"11201123","details":{"file":"2025-12-03_22-45-55_full_backup.sql"}}
+{"timestamp":"2025-12-03 22:45:56","event":"reset_success","user":"11201123","details":[]}
+{"timestamp":"2025-12-03 22:46:00","event":"backup_success","user":"11201123","details":{"file":"2025-12-03_22-45-59_full_backup.sql"}}
+{"timestamp":"2025-12-03 22:46:03","event":"restore_success","user":"11201123","details":{"file":"2025-12-03_22-45-59_full_backup.sql","sample_counts":{"activities":0,"activity_submissions":0,"announcements":0,"batch_assignment_status":0,"batch_assignments":0}}}
+{"timestamp":"2025-12-03 22:46:07","event":"restore_success","user":"11201123","details":{"file":"2025-12-03_22-45-59_full_backup.sql"}}
+{"timestamp":"2025-12-03 22:46:08","event":"backup_deleted","user":"11201123","details":{"file":"2025-12-03_22-45-59_full_backup.sql"}}

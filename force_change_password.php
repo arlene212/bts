@@ -42,19 +42,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $db = new DatabaseConnection();
-            $user_id = $_SESSION['user']['id'];
+            $user_id = $_SESSION['user']['user_id'];
             
             // Verify current password
-            $stmt = $db->getConnection()->prepare("SELECT password FROM users WHERE id = ?");
+            $stmt = $db->getConnection()->prepare("SELECT password FROM users WHERE user_id = ?");
             $stmt->execute([$user_id]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if (!$user || !password_verify($current_password, $user['password'])) {
                 $error = 'Current password is incorrect.';
+            } elseif (password_verify($new_password, $user['password'])) {
+                $error = 'New password cannot be the same as the current password.';
             } else {
                 // Update password
                 $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-                $stmt = $db->getConnection()->prepare("UPDATE users SET password = ?, password_changed_at = NOW() WHERE id = ?");
+                $stmt = $db->getConnection()->prepare("UPDATE users SET password = ?, password_changed_at = NOW() WHERE user_id = ?");
                 
                 if ($stmt->execute([$hashed_password, $user_id])) {
                     // Update session

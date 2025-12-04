@@ -228,7 +228,7 @@ function restore_latest_sql(&$message, &$trace = null) {
   </div>
 
   <div class="row g-4 mt-2">
-    <div class="col-md-6">
+    <div class="col-md-4">
       <div class="card h-100">
         <div class="card-body">
           <h5 class="card-title"><i class="fas fa-shield-alt text-primary"></i> Backup and Reset</h5>
@@ -250,8 +250,30 @@ function restore_latest_sql(&$message, &$trace = null) {
         </div>
       </div>
     </div>
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title"><i class="fas fa-save text-primary"></i> Backup Only</h5>
+          <p class="text-muted">Creates a full SQL backup without resetting any data.</p>
+          <hr>
+          <form method="POST" id="backupOnlyForm">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+            <input type="hidden" name="action" value="backup_only">
+            <input type="hidden" name="ajax" value="1">
+            <button type="submit" class="btn btn-outline-primary w-100">
+              <span class="spinner-border spinner-border-sm me-2 d-none" id="backupOnlySpinner" role="status" aria-hidden="true"></span>
+              <i class="fas fa-save"></i> Create System Backup
+            </button>
+          </form>
+          <div class="mt-3" id="backupOnlyProgress" aria-live="polite"></div>
+          <div class="mt-2">
+            <small class="text-muted"><i class="fas fa-info-circle"></i> Output: <code>*_full_backup.sql</code> in <code>/backups</code></small>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <div class="col-md-6">
+    <div class="col-md-4">
       <div class="card h-100">
         <div class="card-body">
           <h5 class="card-title"><i class="fas fa-rotate-right text-success"></i> Restore System</h5>
@@ -277,6 +299,30 @@ function restore_latest_sql(&$message, &$trace = null) {
 
   <div class="row mt-4">
     <div class="col-12">
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <h5 class="card-title mb-0"><i class="fas fa-list text-secondary"></i> Backups</h5>
+            <div>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshBackupsBtn"><i class="fas fa-sync"></i> Refresh</button>
+            </div>
+          </div>
+          <div class="table-responsive mt-3">
+            <table class="table table-sm" id="backupsTable">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Created</th>
+                  <th class="text-end">Size</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="small text-muted"><i class="fas fa-info-circle"></i> Backups are stored in <code>/backups</code>.</div>
+        </div>
+      </div>
       <div class="card">
         <div class="card-body">
           <h5 class="card-title"><i class="fas fa-info-circle text-info"></i> Guidelines</h5>
@@ -312,7 +358,8 @@ document.getElementById('backupResetForm')?.addEventListener('submit', function(
   const progress = document.getElementById('backupResetProgress');
   btn.disabled = true; if (sp) sp.classList.remove('d-none');
   const fd = new FormData(this);
-  fetch('actions/backup.php', { method: 'POST', body: fd })
+  openConfirm('Confirm Backup & Reset', 'This will create a full backup and then reset system data. Proceed?', 'Backup & Reset')
+  .then(ok=>{ if(!ok) throw new Error('cancel'); return fetch('actions/backup.php', { method: 'POST', body: fd }); })
   .then(r=>r.json())
   .then(data=>{
     renderSteps(progress, data.trace);
@@ -321,10 +368,10 @@ document.getElementById('backupResetForm')?.addEventListener('submit', function(
     alert.textContent = data.message || 'Completed';
     progress.appendChild(alert);
   })
-  .catch(err=>{
+  .catch(()=>{
     const alert = document.createElement('div');
     alert.className = 'alert alert-danger mt-2';
-    alert.textContent = 'Request failed';
+    alert.textContent = 'Action cancelled or request failed';
     progress.appendChild(alert);
   })
   .finally(()=>{ btn.disabled = false; if (sp) sp.classList.add('d-none'); });
@@ -336,7 +383,8 @@ document.getElementById('restoreLatestForm')?.addEventListener('submit', functio
   const progress = document.getElementById('restoreLatestProgress');
   btn.disabled = true; if (sp) sp.classList.remove('d-none');
   const fd = new FormData(this);
-  fetch('actions/backup.php', { method: 'POST', body: fd })
+  openConfirm('Confirm Restore', 'Restore the system from the latest backup?', 'Restore')
+  .then(ok=>{ if(!ok) throw new Error('cancel'); return fetch('actions/backup.php', { method: 'POST', body: fd }); })
   .then(r=>r.json())
   .then(data=>{
     renderSteps(progress, data.trace);
@@ -345,15 +393,154 @@ document.getElementById('restoreLatestForm')?.addEventListener('submit', functio
     alert.textContent = data.message || 'Completed';
     progress.appendChild(alert);
   })
-  .catch(err=>{
+  .catch(()=>{
     const alert = document.createElement('div');
     alert.className = 'alert alert-danger mt-2';
-    alert.textContent = 'Request failed';
+    alert.textContent = 'Action cancelled or request failed';
     progress.appendChild(alert);
   })
   .finally(()=>{ btn.disabled = false; if (sp) sp.classList.add('d-none'); });
 });
+
+document.getElementById('backupOnlyForm')?.addEventListener('submit', function(e){
+  e.preventDefault();
+  const btn = this.querySelector('button');
+  const sp = document.getElementById('backupOnlySpinner');
+  const progress = document.getElementById('backupOnlyProgress');
+  btn.disabled = true; if (sp) sp.classList.remove('d-none');
+  const fd = new FormData(this);
+  openConfirm('Confirm Backup', 'Create a full system backup now?', 'Create Backup')
+  .then(ok=>{ if(!ok) throw new Error('cancel'); return fetch('actions/backup.php', { method: 'POST', body: fd }); })
+    .then(r=>r.json())
+    .then(data=>{
+      const alert = document.createElement('div');
+      alert.className = 'alert alert-'+(data.type||'info')+' mt-2';
+      alert.textContent = data.message || 'Completed';
+      progress.innerHTML = '';
+      progress.appendChild(alert);
+      loadBackups();
+    })
+    .catch(()=>{
+      const alert = document.createElement('div');
+      alert.className = 'alert alert-danger mt-2';
+      alert.textContent = 'Action cancelled or request failed';
+      progress.innerHTML = '';
+      progress.appendChild(alert);
+    })
+    .finally(()=>{ btn.disabled = false; if (sp) sp.classList.add('d-none'); });
+});
+
+function formatBytes(bytes){
+  const sizes=['B','KB','MB','GB'];
+  if(bytes===0) return '0 B';
+  const i = Math.min(Math.floor(Math.log(bytes)/Math.log(1024)), sizes.length-1);
+  return (bytes/Math.pow(1024,i)).toFixed(i===0?0:2)+' '+sizes[i];
+}
+function renderBackups(rows){
+  const tbody = document.querySelector('#backupsTable tbody');
+  tbody.innerHTML = '';
+  if(!Array.isArray(rows) || rows.length===0){
+    const tr = document.createElement('tr');
+    const td = document.createElement('td'); td.colSpan = 4; td.className='text-muted'; td.textContent='No backups found'; tr.appendChild(td); tbody.appendChild(tr); return;
+  }
+  rows.forEach(b=>{
+    const tr = document.createElement('tr');
+    const created = new Date(b.mtime*1000);
+    tr.innerHTML = `
+      <td><code>${b.file}</code></td>
+      <td>${created.toLocaleString()}</td>
+      <td class="text-end">${formatBytes(b.size||0)}</td>
+      <td class="text-end">
+        <button class="btn btn-sm btn-outline-success me-2" data-action="restore" data-file="${b.file}"><i class="fas fa-rotate-right"></i> Restore</button>
+        <button class="btn btn-sm btn-outline-danger" data-action="delete" data-file="${b.file}"><i class="fas fa-trash"></i> Delete</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+function loadBackups(){
+  const fd = new FormData(); fd.append('csrf_token', '<?php echo htmlspecialchars($csrfToken); ?>'); fd.append('action','list_backups'); fd.append('ajax','1');
+  fetch('actions/backup.php', { method:'POST', body:fd })
+    .then(r=>r.json())
+    .then(data=>{ renderBackups(data.backups||[]); })
+    .catch(()=>{});
+}
+document.getElementById('refreshBackupsBtn')?.addEventListener('click', function(e){ e.preventDefault(); loadBackups(); });
+document.querySelector('#backupsTable tbody')?.addEventListener('click', function(e){
+  const btn = e.target.closest('button[data-action]'); if(!btn) return;
+  const action = btn.getAttribute('data-action'); const file = btn.getAttribute('data-file');
+  const fd = new FormData(); fd.append('csrf_token','<?php echo htmlspecialchars($csrfToken); ?>'); fd.append('ajax','1');
+  if(action==='restore'){ fd.append('action','restore_backup'); fd.append('file', file); }
+  else if(action==='delete'){ fd.append('action','delete_backup'); fd.append('file', file); }
+  else { return; }
+  btn.disabled = true;
+  const msg = action==='delete' ? ('Delete backup '+file+'?') : ('Restore backup '+file+'?');
+  const okLabel = action==='delete' ? 'Delete' : 'Restore';
+  openConfirm('Please Confirm', msg, okLabel)
+    .then(ok=>{ if(!ok){ throw new Error('cancel'); } return fetch('actions/backup.php', { method:'POST', body:fd }); })
+    .then(r=>r.json())
+    .then(data=>{
+      const alert = document.createElement('div');
+      alert.className = 'alert alert-'+(data.type||'info')+' mt-2';
+      alert.textContent = data.message || 'Completed';
+      document.querySelector('#backupsTable').parentElement.appendChild(alert);
+      loadBackups();
+    })
+    .catch(()=>{})
+    .finally(()=>{ btn.disabled = false; });
+});
+document.addEventListener('DOMContentLoaded', loadBackups);
+
 </script>
+
+<div class="cf-modal d-none" id="backupConfirmModal" aria-hidden="true">
+  <div class="cf-dialog" role="dialog" aria-modal="true" aria-labelledby="cfTitle">
+    <div class="cf-header"><h5 id="cfTitle"><i class="fas fa-question-circle"></i> Confirm Action</h5></div>
+    <div class="cf-body"><p id="cfMessage" class="mb-0"></p></div>
+    <div class="cf-footer">
+      <button type="button" class="btn btn-secondary" id="cfCancelBtn">Cancel</button>
+      <button type="button" class="btn btn-primary" id="cfOkBtn">Confirm</button>
+    </div>
+  </div>
+  <div class="cf-backdrop"></div>
+  <style>
+    .cf-modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+    .cf-modal.d-none{display:none;}
+    .cf-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.4);} 
+    .cf-dialog{position:relative;z-index:2;background:#fff;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.2);max-width:420px;width:92%;}
+    .cf-header{padding:12px 16px;border-bottom:1px solid #eee;}
+    .cf-body{padding:16px;}
+    .cf-footer{padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;justify-content:flex-end;}
+  </style>
+</div>
+
+<script>
+let cfResolve = null;
+function openConfirm(title, message, okLabel){
+  return new Promise((resolve)=>{
+    cfResolve = resolve;
+    const modal = document.getElementById('backupConfirmModal');
+    document.getElementById('cfTitle').textContent = title || 'Confirm';
+    document.getElementById('cfMessage').textContent = message || 'Proceed?';
+    document.getElementById('cfOkBtn').textContent = okLabel || 'Confirm';
+    modal.classList.remove('d-none');
+  });
+}
+document.getElementById('cfCancelBtn')?.addEventListener('click', function(){
+  document.getElementById('backupConfirmModal').classList.add('d-none');
+  if (cfResolve) cfResolve(false);
+});
+document.getElementById('cfOkBtn')?.addEventListener('click', function(){
+  document.getElementById('backupConfirmModal').classList.add('d-none');
+  if (cfResolve) cfResolve(true);
+});
+document.addEventListener('keydown', function(e){
+  const visible = !document.getElementById('backupConfirmModal').classList.contains('d-none');
+  if (!visible) return;
+  if (e.key === 'Escape') { document.getElementById('cfCancelBtn').click(); }
+});
+</script>
+
+<!-- Admin password modal removed: reverting to pre-password flow for backup actions -->
 
 <style>
 .sticky-top { position: sticky; top: 0; z-index: 10; }

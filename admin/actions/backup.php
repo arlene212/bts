@@ -105,5 +105,50 @@ if ($action === 'backup_and_reset') {
   $trace[]=['stage'=>'start_reset','ts'=>date('c')]; $msgRs=''; $okRs = reset_full($msgRs,$trace); $type = $okRs ? 'warning' : 'danger'; $finalMsg = $okRs ? ('Backup created and system reset: ' . basename($bkPath)) : $msgRs; echo json_encode(['ok'=>$okRs,'type'=>$type,'message'=>$finalMsg,'trace'=>$trace]); exit;
 } elseif ($action === 'restore_latest') {
   $trace=[]; $trace[]=['stage'=>'start_restore','ts'=>date('c')]; $msg=''; $ok = restore_latest_sql($msg,$trace); $type = $ok ? 'success':'danger'; echo json_encode(['ok'=>$ok,'type'=>$type,'message'=>$msg,'trace'=>$trace]); exit;
+} elseif ($action === 'backup_only') {
+  $trace=[]; $trace[]=['stage'=>'start_backup_only','ts'=>date('c')]; $msgBk=''; $okBk=false; $bkPath=null;
+  list($okBk,$bkPath) = backup_full($msgBk,$trace);
+  $type = $okBk ? 'success' : 'danger';
+  echo json_encode(['ok'=>$okBk,'type'=>$type,'message'=>$msgBk,'file'=>($bkPath?basename($bkPath):null),'trace'=>$trace]); exit;
+} elseif ($action === 'list_backups') {
+  $items = list_sql_backups();
+  $dir = ensure_backup_dir();
+  $backups = [];
+  foreach ($items as $it) {
+    $path = $it['path'];
+    if (strpos($path, $dir) !== 0) { continue; }
+    $backups[] = [
+      'file' => basename($path),
+      'mtime' => $it['mtime'],
+      'size' => @filesize($path) ?: 0
+    ];
+  }
+  echo json_encode(['ok'=>true,'type'=>'info','backups'=>$backups]); exit;
+} elseif ($action === 'restore_backup') {
+  $file = $_POST['file'] ?? '';
+  $dir = ensure_backup_dir();
+  $safe = basename($file);
+  if (!$safe || !preg_match('/_full_backup\.sql$/', $safe)) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Invalid file']); exit; }
+  $path = realpath($dir . DIRECTORY_SEPARATOR . $safe);
+  if (!$path || strpos($path, $dir) !== 0 || !file_exists($path)) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Backup not found']); exit; }
+  $vr=''; if (!verify_sql_dump($path,$vr)) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Backup verification failed: '.$vr]); exit; }
+  $mysql = find_mysql(); if (!$mysql) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'mysql client not found']); exit; }
+  $cmd = '"' . $mysql . '"' . ' --host=' . escapeshellarg(DB_HOST) . ' --user=' . escapeshellarg(DB_USER) . ' --password=' . escapeshellarg(DB_PASS) . ' ' . escapeshellarg(DB_NAME);
+  $proc = proc_open($cmd, [0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']], $pipes);
+  if (!is_resource($proc)) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Failed to start restore process']); exit; }
+  $fh = fopen($path,'rb'); if ($fh) { while (!feof($fh)) { fwrite($pipes[0], fread($fh,8192)); } fclose($fh); }
+  fclose($pipes[0]); $stdout = stream_get_contents($pipes[1]); $stderr = stream_get_contents($pipes[2]); fclose($pipes[1]); fclose($pipes[2]); $exit = proc_close($proc);
+  if ($exit !== 0) { backup_log('restore_failed', ['file'=>$safe,'stderr'=>$stderr??'']); echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Restore failed']); exit; }
+  backup_log('restore_success', ['file'=>$safe]);
+  echo json_encode(['ok'=>true,'type'=>'success','message'=>'System restored from backup: '.$safe]); exit;
+} elseif ($action === 'delete_backup') {
+  $file = $_POST['file'] ?? '';
+  $dir = ensure_backup_dir();
+  $safe = basename($file);
+  if (!$safe || !preg_match('/_full_backup\.sql$/', $safe)) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Invalid file']); exit; }
+  $path = realpath($dir . DIRECTORY_SEPARATOR . $safe);
+  if (!$path || strpos($path, $dir) !== 0 || !file_exists($path)) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Backup not found']); exit; }
+  if (@unlink($path)) { backup_log('backup_deleted', ['file'=>$safe]); echo json_encode(['ok'=>true,'type'=>'warning','message'=>'Backup deleted: '.$safe]); exit; }
+  echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Delete failed']); exit;
 }
 echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Invalid action']);

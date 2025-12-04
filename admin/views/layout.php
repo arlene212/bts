@@ -290,12 +290,7 @@ if (!isset($courseAssignments) || !is_array($courseAssignments)) { $courseAssign
   <script src="../js/admin/enrollments.js"></script>
   <script src="../js/admin/user.js"></script>
   <script src="../js/admin/batches.js"></script>
-  <script>
-    (function(){
-      function d(e){ e.preventDefault(); return false; }
-      ['copy','cut','paste','selectstart','dragstart'].forEach(function(ev){ document.addEventListener(ev, d, {capture:true}); });
-    })();
-  </script>
+  
   
 </body>
 </html>

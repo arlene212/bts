@@ -38,6 +38,10 @@
         <i class="fas fa-chart-bar"></i>
         <span>Grades</span>
       </a>
+      <a href="?current_tab=gradebook" class="tab-link <?php echo $currentTab === 'gradebook' ? 'active' : ''; ?>" data-tab="gradebook">
+        <i class="fas fa-book"></i>
+        <span>Grade Book</span>
+      </a>
     </div>
     
     <div class="nav-section">

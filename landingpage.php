@@ -171,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
 </head>
 
 <body id="top">
-    <style>*{ -webkit-user-select: none; -ms-user-select: none; user-select: none; }</style>
+    <style>*{ -webkit-user-select: none; -ms-user-select: none; user-select: none; } #loginModal, #loginModal *{ -webkit-user-select: text !important; user-select: text !important; }</style>
     <!-- Skip navigation for accessibility -->
     <a href="#main-content" class="skip-link">Skip to main content</a>
     <!-- Modern Header -->
@@ -700,8 +700,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
     <!-- Consolidated analytics and modal functionality -->
     <script>
         (function(){
-            function d(e){ e.preventDefault(); return false; }
-            ['copy','cut','paste','selectstart','dragstart'].forEach(function(ev){ document.addEventListener(ev, d, {capture:true}); });
+            function blocker(e){
+                var lm = document.getElementById('loginModal');
+                if (lm && lm.classList.contains('active') && lm.contains(e.target)) { return; }
+                e.preventDefault();
+                return false;
+            }
+            ['copy','cut','paste','selectstart','dragstart'].forEach(function(ev){ document.addEventListener(ev, blocker, {capture:true}); });
         })();
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Landing page scripts initializing...');

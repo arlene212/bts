@@ -46,6 +46,9 @@
           <div class="content-area <?php echo $currentTab === 'grades' ? 'active' : ''; ?>" id="content-grades">
             <?php include __DIR__ . '/sections/grades.php'; ?>
           </div>
+          <div class="content-area <?php echo $currentTab === 'gradebook' ? 'active' : ''; ?>" id="content-gradebook">
+            <?php include __DIR__ . '/sections/gradebook.php'; ?>
+          </div>
         </div>
         <aside class="announcements">
           <div class="announcements-header">

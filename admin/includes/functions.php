@@ -83,7 +83,7 @@ function resetPassword($pdo, $userId)
     $newPassword = generateTempPassword();
     $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
 
-    $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE user_id = ?");
+    $stmt = $pdo->prepare("UPDATE users SET password = ?, password_changed_at = NULL WHERE user_id = ?");
     $stmt->execute([$hashedPassword, $userId]);
 
     return [

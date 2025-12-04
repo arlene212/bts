@@ -14,6 +14,13 @@
   --admin-header-height: 80px;
 }
 
+/* ================= COPY/PASTE & SELECTION ================= */
+html, body, body * {
+  -webkit-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
 body {
   font-family: var(--font-family);
   color: var(--secondary-800);
