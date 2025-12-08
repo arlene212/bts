@@ -4,14 +4,7 @@ function openEnrollModal(courseCode, courseName) {
   const confirmEnroll = document.getElementById('confirmEnroll');
   const cancelEnroll = document.getElementById('cancelEnroll');
   const verificationSection = document.getElementById('verificationSection');
-  let batchSection = document.getElementById('batchSelectSection');
-  if (!batchSection && enrollModal) {
-    batchSection = document.createElement('div');
-    batchSection.id = 'batchSelectSection';
-    batchSection.className = 'batch-select-section';
-    batchSection.innerHTML = '<label for="batchSelect">Select Batch</label> <select id="batchSelect"><option value="">Loading...</option></select><div id="batchSelectError" class="error hidden">Please select a batch</div>';
-    enrollModal.querySelector('.modal-body') ? enrollModal.querySelector('.modal-body').appendChild(batchSection) : enrollModal.appendChild(batchSection);
-  }
+  const batchSection = document.getElementById('batchSelectSection');
   
   if (!enrollModal || !enrollCourseName || !confirmEnroll || !cancelEnroll) return;
   
@@ -34,8 +27,15 @@ function openEnrollModal(courseCode, courseName) {
   confirmEnroll.parentNode.replaceChild(newConfirmBtn, confirmEnroll);
   newConfirmBtn.onclick = function() { 
     if (validateEnrollment()) {
-      enrollInCourse(courseCode, courseName); 
-      closeModal(enrollModal); 
+      newConfirmBtn.disabled = true;
+      newConfirmBtn.classList.add('btn-loading');
+      // Keep modal open to show loading; close after request completes
+      enrollInCourse(courseCode, courseName)
+        .finally(function(){
+          newConfirmBtn.disabled = false;
+          newConfirmBtn.classList.remove('btn-loading');
+          closeModal(enrollModal);
+        }); 
     }
   };
   cancelEnroll.onclick = function() { closeModal(enrollModal); };
@@ -83,12 +83,16 @@ function validateEnrollment() {
   const verificationSection = document.getElementById('verificationSection');
   const batchSelect = document.getElementById('batchSelect');
   const batchError = document.getElementById('batchSelectError');
-  if (batchSelect && !batchSelect.value) {
-    if (batchError) batchError.classList.remove('hidden');
-    batchSelect.focus();
-    return false;
-  } else if (batchError) {
-    batchError.classList.add('hidden');
+  if (batchSelect) {
+    const nonEmptyOptions = Array.from(batchSelect.options).filter(o => o.value);
+    const requireSelection = nonEmptyOptions.length > 0;
+    if (requireSelection && !batchSelect.value) {
+      if (batchError) batchError.classList.remove('hidden');
+      batchSelect.focus();
+      return false;
+    } else if (batchError) {
+      batchError.classList.add('hidden');
+    }
   }
   if (verificationSection.classList.contains('hidden')) {
     return true;
@@ -131,8 +135,13 @@ function loadBatchesForCourse(courseCode) {
     .then(r => r.json())
     .then(rows => {
       while (batchSelect.firstChild) batchSelect.removeChild(batchSelect.firstChild);
-      const def = document.createElement('option'); def.value = ''; def.textContent = 'Select a batch'; batchSelect.appendChild(def);
-      (rows || []).forEach(r => { const opt = document.createElement('option'); opt.value = r.batch_name; opt.textContent = r.batch_name; batchSelect.appendChild(opt); });
+      const list = Array.isArray(rows) ? rows : [];
+      if (list.length > 0) {
+        const def = document.createElement('option'); def.value = ''; def.textContent = 'Select a batch'; batchSelect.appendChild(def);
+        list.forEach(r => { const opt = document.createElement('option'); opt.value = r.batch_name; opt.textContent = r.batch_name; batchSelect.appendChild(opt); });
+      } else {
+        const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'No batches available'; batchSelect.appendChild(opt);
+      }
     })
     .catch(() => {
       while (batchSelect.firstChild) batchSelect.removeChild(batchSelect.firstChild);
@@ -174,23 +183,32 @@ function enrollInCourse(courseCode, courseName) {
     }
   }
   
-  fetch('../php/enhanced_enrollment.php', { method: 'POST', body: formData })
+  fetch('../guest/handlers/ajax_handlers.php', { method: 'POST', body: formData })
     .then(response => { if (!response.ok) throw new Error('Network response was not ok'); return response.json(); })
     .then(data => {
       if (data.success) {
         showNotification(data.message, 'success');
         const courseCard = document.querySelector(`.course-card[data-course="${courseCode}"]`) || document.querySelector(`.batch-card[data-course-code="${courseCode}"]`);
         if (courseCard) {
-          const btn = courseCard.querySelector('.enroll-btn');
-          if (btn) { btn.disabled = true; btn.classList.add('pending'); btn.textContent = 'Pending Approval'; }
+          const actions = courseCard.querySelector('.batch-actions');
+          if (actions) {
+            actions.innerHTML = `
+              <button class="btn btn-outline-danger unenroll-btn" 
+                      data-course-code="${courseCode}" 
+                      data-course-name="${courseName}">
+                <i class="fas fa-times"></i> Unenroll
+              </button>
+            `;
+          }
         }
+        const newUrl = window.location.pathname + '?current_tab=enrolled';
+        window.location.assign(newUrl);
         // Removed auto redirect to avoid interrupting user actions; stay on current view
       } else {
         showNotification(data.message || 'Enrollment failed. Please try again.', 'error');
         if (enrollBtn) { 
           enrollBtn.disabled = false; 
           enrollBtn.textContent = 'Enroll'; 
-          enrollBtn.classList.remove('pending'); 
         }
       }
     })
@@ -199,7 +217,6 @@ function enrollInCourse(courseCode, courseName) {
       if (enrollBtn) { 
         enrollBtn.disabled = false; 
         enrollBtn.textContent = 'Enroll'; 
-        enrollBtn.classList.remove('pending'); 
       } 
     });
 }
@@ -208,7 +225,7 @@ function unenrollFromCourse(courseCode, button) {
   button.disabled = true; button.textContent = 'Unenrolling...';
   fetch('../guest/handlers/ajax_handlers.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `action=unenroll&course_code=${encodeURIComponent(courseCode)}` })
     .then(response => response.json())
-    .then(data => { if (data.success) { showNotification(data.message, 'success'); } else { showNotification(data.message, 'error'); button.disabled = false; button.textContent = 'Yes, Unenroll'; } });
+    .then(data => { if (data.success) { showNotification(data.message, 'success'); const newUrl = window.location.pathname + '?current_tab=enrolled'; window.location.assign(newUrl); } else { showNotification(data.message, 'error'); button.disabled = false; button.textContent = 'Yes, Unenroll'; } });
 }
 
 // Initialize enrollment buttons when DOM is ready

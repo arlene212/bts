@@ -8,6 +8,15 @@ function validateProfileForm() {
   const confirmPassword = document.getElementById('confirmPassword');
   const passwordError = document.getElementById('passwordError');
   if (newPassword && confirmPassword && passwordError) { if (newPassword.value !== confirmPassword.value) { passwordError.classList.remove('hidden'); isValid = false; } }
+  const contactNumber = document.getElementById('contactNumber');
+  const contactError = document.getElementById('contactError');
+  if (contactNumber && contactError && contactNumber.value.trim() !== '') {
+    const phoneRegex = /^(09\d{9}|\+639\d{9})$/;
+    if (!phoneRegex.test(contactNumber.value.trim())) {
+      contactError.classList.remove('hidden');
+      isValid = false;
+    }
+  }
   return isValid;
 }
 
@@ -24,6 +33,22 @@ function saveProfileData() {
     .then(data => {
       if (data.success) {
         showNotification(data.message, 'success');
+        if (data.user) {
+          const nameEl = document.querySelector('.user-name');
+          if (nameEl && data.user.first_name && data.user.last_name) {
+            nameEl.textContent = `${data.user.first_name} ${data.user.last_name}`;
+          }
+          const avatarEl = document.querySelector('.user-avatar');
+          if (avatarEl) {
+            if (data.user.profile_picture) {
+              avatarEl.src = `../uploads/profiles/${data.user.profile_picture}`;
+            }
+          }
+          const previewEl = document.getElementById('profilePreview');
+          if (previewEl && data.user.profile_picture) {
+            previewEl.src = `../uploads/profiles/${data.user.profile_picture}`;
+          }
+        }
       } else { showNotification(data.message, 'error'); }
     })
     .catch(() => { showNotification('An error occurred while updating your profile.', 'error'); })
@@ -41,7 +66,7 @@ function setupProfileModal() {
   const closeProfileModalBtn = document.getElementById('closeProfileModal');
   const cancelProfileChangesBtn = document.getElementById('cancelProfileChanges');
   const saveProfileChangesBtn = document.getElementById('saveProfileChanges');
-  if (editProfileBtn) editProfileBtn.addEventListener('click', () => openModal(profileModal));
+  if (editProfileBtn) editProfileBtn.addEventListener('click', () => { openModal(profileModal); const firstInput = document.getElementById('firstName'); if (firstInput) { setTimeout(() => firstInput.focus(), 50); } });
   if (closeProfileModalBtn) closeProfileModalBtn.addEventListener('click', () => closeModal(profileModal));
   if (cancelProfileChangesBtn) cancelProfileChangesBtn.addEventListener('click', () => closeModal(profileModal));
   if (saveProfileChangesBtn) { saveProfileChangesBtn.addEventListener('click', function() { if (validateProfileForm()) { saveProfileData(); } }); }

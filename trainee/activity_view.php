@@ -14,7 +14,7 @@ date_default_timezone_set('UTC');
 require_once '../php/DatabaseConnection.php';
 
 $user = SessionManager::getCurrentUser();
-$activity_id = $_GET['id'] ?? null;
+$activity_id = $_GET['id'] ?? ($_GET['activity_id'] ?? null);
 
 if (!$activity_id) {
     header("Location: /bts/trainee/index.php");

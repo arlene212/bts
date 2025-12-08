@@ -35,6 +35,17 @@ if (SessionManager::isLoggedIn()) {
     }
 }
 
+$availableCourses = [];
+try {
+    $db = new DatabaseConnection();
+    $conn = $db->getConnection();
+    $stmt = $conn->prepare("SELECT course_name, course_code, description, COALESCE(NULLIF(nominal_hours,0), hours) AS display_hours, image FROM courses WHERE status = 'active' AND course_status = 'published' ORDER BY date_created DESC");
+    $stmt->execute();
+    $availableCourses = $stmt->fetchAll();
+} catch (PDOException $__e) {
+    $availableCourses = [];
+}
+
 $register_error = '';
 
 // Handle registration form submission
@@ -220,94 +231,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
             <p class="section-subtitle">Choose from our industry-certified programs designed to equip you with in-demand technical skills for today's job market.</p>
         </div>
         <div id="course-grid" class="course-grid">
-            <div class="course-card">
-                <img src="images/agriculture.jpg" alt="Agricultural Crops Production" loading="lazy" />
-                <div class="course-card-content">
-                    <h3 class="course-card-title">Agricultural Crops Production NC II</h3>
-                    <p class="course-card-description">Master crop production, farm tools usage, and sustainable agriculture techniques for modern farming.</p>
-                    <div class="course-card-footer">
-                        <span class="course-duration"><i class="fas fa-clock"></i> 300 Hours</span>
-                        <span class="course-level">NC II</span>
+            <?php if (!empty($availableCourses)): ?>
+                <?php foreach ($availableCourses as $course): ?>
+                    <?php
+                        $imgFile = isset($course['image']) && $course['image'] ? ('uploads/courses/' . $course['image']) : 'images/school.png';
+                        $title = htmlspecialchars($course['course_name'] ?? 'Course');
+                        $desc = htmlspecialchars($course['description'] ?? '');
+                        $hours = (int)($course['display_hours'] ?? 0);
+                    ?>
+                    <div class="course-card">
+                        <img src="<?php echo $imgFile; ?>" alt="<?php echo $title; ?>" loading="lazy" />
+                        <div class="course-card-content">
+                            <h3 class="course-card-title"><?php echo $title; ?></h3>
+                            <p class="course-card-description"><?php echo $desc !== '' ? $desc : 'This course is published and currently available.'; ?></p>
+                            <div class="course-card-footer">
+                                <span class="course-duration"><i class="fas fa-clock"></i> <?php echo $hours > 0 ? $hours : '—'; ?> Hours</span>
+                                <span class="course-level">Published</span>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="course-card">
+                    <div class="course-card-content">
+                        <h3 class="course-card-title">No courses available</h3>
+                        <p class="course-card-description">Please check back later. Courses will appear here when published by admin.</p>
                     </div>
                 </div>
-            </div>
-            <div class="course-card">
-                <img src="images/automotive.jpg" alt="Automotive Servicing" loading="lazy" />
-                <div class="course-card-content">
-                    <h3 class="course-card-title">Automotive Servicing NC II</h3>
-                    <p class="course-card-description">Master vehicle maintenance, diagnostics, and repair techniques for various automotive systems.</p>
-                    <div class="course-card-footer">
-                        <span class="course-duration"><i class="fas fa-clock"></i> 400 Hours</span>
-                        <span class="course-level">NC II</span>
-                    </div>
-                </div>
-            </div>
-            <div class="course-card">
-                <img src="images/breadandpastry.jpg" alt="Bread and Pastry Production" loading="lazy" />
-                <div class="course-card-content">
-                    <h3 class="course-card-title">Bread and Pastry Production NC II</h3>
-                    <p class="course-card-description">Learn professional baking techniques, dough preparation, and pastry decoration for commercial production.</p>
-                    <div class="course-card-footer">
-                        <span class="course-duration"><i class="fas fa-clock"></i> 250 Hours</span>
-                        <span class="course-level">NC II</span>
-                    </div>
-                </div>
-            </div>
-            <div class="course-card">
-                <img src="images/dressmaking.jpg" alt="Dressmaking" loading="lazy" />
-                <div class="course-card-content">
-                    <h3 class="course-card-title">Dressmaking NC II</h3>
-                    <p class="course-card-description">Acquire professional skills in garment construction, fabric selection, and sewing techniques for custom clothing.</p>
-                    <div class="course-card-footer">
-                        <span class="course-duration"><i class="fas fa-clock"></i> 350 Hours</span>
-                        <span class="course-level">NC II</span>
-                    </div>
-                </div>
-            </div>
-            <div class="course-card">
-                <img src="images/hairdressing.jpg" alt="Hairdressing" loading="lazy" />
-                <div class="course-card-content">
-                    <h3 class="course-card-title">Hairdressing NC II</h3>
-                    <p class="course-card-description">Master haircutting, styling, and hair treatment techniques for various hair types and professional salon services.</p>
-                    <div class="course-card-footer">
-                        <span class="course-duration"><i class="fas fa-clock"></i> 280 Hours</span>
-                        <span class="course-level">NC II</span>
-                    </div>
-                </div>
-            </div>
-            <div class="course-card">
-                <img src="images/japanese.jpg" alt="Japanese Language and Culture" loading="lazy" />
-                <div class="course-card-content">
-                    <h3 class="course-card-title">Japanese Language and Culture</h3>
-                    <p class="course-card-description">Learn Japanese language skills and cultural understanding for effective communication in professional settings.</p>
-                    <div class="course-card-footer">
-                        <span class="course-duration"><i class="fas fa-clock"></i> 200 Hours</span>
-                        <span class="course-level">Language</span>
-                    </div>
-                </div>
-            </div>
-            <div class="course-card">
-                <img src="images/driving.jpg" alt="Driving" loading="lazy" />
-                <div class="course-card-content">
-                    <h3 class="course-card-title">Driving NC II</h3>
-                    <p class="course-card-description">Gain comprehensive skills in vehicle operation, road safety, and defensive driving techniques for professional driving.</p>
-                    <div class="course-card-footer">
-                        <span class="course-duration"><i class="fas fa-clock"></i> 150 Hours</span>
-                        <span class="course-level">NC II</span>
-                    </div>
-                </div>
-            </div>
-            <div class="course-card">
-                <img src="images/tailoring.jpg" alt="Tailoring" loading="lazy" />
-                <div class="course-card-content">
-                    <h3 class="course-card-title">Tailoring NC II</h3>
-                    <p class="course-card-description">Master advanced garment construction, fabric selection, and professional sewing techniques for custom tailoring.</p>
-                    <div class="course-card-footer">
-                        <span class="course-duration"><i class="fas fa-clock"></i> 320 Hours</span>
-                        <span class="course-level">NC II</span>
-                    </div>
-                </div>
-            </div>
+            <?php endif; ?>
         </div>
     </section>
 

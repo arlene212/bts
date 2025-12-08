@@ -384,8 +384,8 @@ document.getElementById('restoreLatestForm')?.addEventListener('submit', functio
   const progress = document.getElementById('restoreLatestProgress');
   btn.disabled = true; if (sp) sp.classList.remove('d-none');
   const fd = new FormData(this);
-  openConfirm('Confirm Restore', 'Restore the system from the latest backup?', 'Restore')
-  .then(ok=>{ if(!ok) throw new Error('cancel'); return fetch('actions/backup.php', { method: 'POST', body: fd }); })
+  openConfirmWithPassword('Confirm Restore', 'Restore the system from the latest backup. Please enter admin password to confirm.', 'Restore')
+  .then(pwd=>{ if(!pwd) throw new Error('cancel'); fd.append('admin_password', pwd); return fetch('actions/backup.php', { method: 'POST', body: fd }); })
   .then(r=>r.json())
   .then(data=>{
     renderSteps(progress, data.trace);
@@ -411,8 +411,8 @@ document.getElementById('backupOnlyForm')?.addEventListener('submit', function(e
   const progress = document.getElementById('backupOnlyProgress');
   btn.disabled = true; if (sp) sp.classList.remove('d-none');
   const fd = new FormData(this);
-  openConfirm('Confirm Backup', 'Create a full system backup now?', 'Create Backup')
-  .then(ok=>{ if(!ok) throw new Error('cancel'); return fetch('actions/backup.php', { method: 'POST', body: fd }); })
+  openConfirmWithPassword('Confirm Backup', 'Create a full system backup now. Please enter admin password to confirm.', 'Create Backup')
+  .then(pwd=>{ if(!pwd) throw new Error('cancel'); fd.append('admin_password', pwd); return fetch('actions/backup.php', { method: 'POST', body: fd }); })
     .then(r=>r.json())
     .then(data=>{
       const alert = document.createElement('div');
@@ -477,8 +477,8 @@ document.querySelector('#backupsTable tbody')?.addEventListener('click', functio
   btn.disabled = true;
   const msg = action==='delete' ? ('Delete backup '+file+'?') : ('Restore backup '+file+'?');
   const okLabel = action==='delete' ? 'Delete' : 'Restore';
-  openConfirm('Please Confirm', msg, okLabel)
-    .then(ok=>{ if(!ok){ throw new Error('cancel'); } return fetch('actions/backup.php', { method:'POST', body:fd }); })
+  openConfirmWithPassword('Please Confirm', msg + ' Please enter admin password to confirm.', okLabel)
+    .then(pwd=>{ if(!pwd){ throw new Error('cancel'); } fd.append('admin_password', pwd); return fetch('actions/backup.php', { method:'POST', body:fd }); })
     .then(r=>r.json())
     .then(data=>{
       const alert = document.createElement('div');

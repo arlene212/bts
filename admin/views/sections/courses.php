@@ -220,6 +220,7 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
             <form method="POST" style="display:inline-block;" class="course-restore-form">
               <input type="hidden" name="current_tab" value="courses">
               <input type="hidden" name="course_code" value="<?php echo htmlspecialchars($course['course_code']); ?>">
+              <input type="hidden" name="restore_course" value="1">
               <button type="submit" name="restore_course" class="btn btn-success">
                 <i class="fas fa-box-open"></i> Restore
               </button>
@@ -228,6 +229,7 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
             <form method="POST" style="display:inline-block;" class="course-archive-form">
               <input type="hidden" name="current_tab" value="courses">
               <input type="hidden" name="course_code" value="<?php echo htmlspecialchars($course['course_code']); ?>">
+              <input type="hidden" name="archive_course" value="1">
               <button type="submit" name="archive_course" class="btn btn-outline-danger">
                 <i class="fas fa-archive"></i> Archive
               </button>
@@ -281,6 +283,7 @@ if (!isset($courseBatches) || !is_array($courseBatches)) { $courseBatches = []; 
           <form method="POST" style="display:inline-block;" class="course-restore-form">
             <input type="hidden" name="current_tab" value="courses">
             <input type="hidden" name="course_code" value="<?php echo htmlspecialchars($course['course_code']); ?>">
+            <input type="hidden" name="restore_course" value="1">
             <button type="submit" name="restore_course" class="btn btn-success">
               <i class="fas fa-box-open"></i> Restore
             </button>

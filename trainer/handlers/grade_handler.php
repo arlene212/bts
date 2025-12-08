@@ -181,50 +181,6 @@ try {
       ];
     }
 
-    $hasHrd = false;
-    foreach ($activitiesOut as $a) {
-      if (($a['course_code'] ?? '') === 'HRD-NCII') { $hasHrd = true; break; }
-    }
-    if (!$hasHrd) {
-      $demoActivities = [
-        ['id' => 'DEMO-HRD-01', 'title' => 'Basic Hair Coloring Quiz', 'course_code' => 'HRD-NCII', 'course_name' => 'Hairdressing', 'max_score' => 50],
-        ['id' => 'DEMO-HRD-02', 'title' => 'Pre/Post Hair Care Assignment', 'course_code' => 'HRD-NCII', 'course_name' => 'Hairdressing', 'max_score' => 100],
-        ['id' => 'DEMO-HRD-03', 'title' => 'Scalp Treatment Assessment', 'course_code' => 'HRD-NCII', 'course_name' => 'Hairdressing', 'max_score' => 75],
-      ];
-      $activitiesOut = array_merge($activitiesOut, $demoActivities);
-      $demoStudents = [
-        ['id' => 'HRD-DEMO-01', 'name' => 'Cruz, Maria'],
-        ['id' => 'HRD-DEMO-02', 'name' => 'Santos, Juan'],
-        ['id' => 'HRD-DEMO-03', 'name' => 'Reyes, Ana'],
-      ];
-      $existingIds = array_map(function($s){ return $s['id']; }, $students);
-      foreach ($demoStudents as $ds) { if (!in_array($ds['id'], $existingIds, true)) { $students[] = $ds; } }
-      $demoScores = [
-        ['student_id' => 'HRD-DEMO-01', 'activity_id' => 'DEMO-HRD-01', 'percentage' => 92.0],
-        ['student_id' => 'HRD-DEMO-01', 'activity_id' => 'DEMO-HRD-02', 'percentage' => 88.0],
-        ['student_id' => 'HRD-DEMO-01', 'activity_id' => 'DEMO-HRD-03', 'percentage' => 95.0],
-        ['student_id' => 'HRD-DEMO-02', 'activity_id' => 'DEMO-HRD-01', 'percentage' => 76.0],
-        ['student_id' => 'HRD-DEMO-02', 'activity_id' => 'DEMO-HRD-02', 'percentage' => 82.0],
-        ['student_id' => 'HRD-DEMO-02', 'activity_id' => 'DEMO-HRD-03', 'percentage' => 68.0],
-        ['student_id' => 'HRD-DEMO-03', 'activity_id' => 'DEMO-HRD-01', 'percentage' => 64.0],
-        ['student_id' => 'HRD-DEMO-03', 'activity_id' => 'DEMO-HRD-02', 'percentage' => 91.0],
-        ['student_id' => 'HRD-DEMO-03', 'activity_id' => 'DEMO-HRD-03', 'percentage' => 73.0],
-      ];
-      $maxMapDemo = [];
-      foreach ($activitiesOut as $a) { if (($a['course_code'] ?? '') === 'HRD-NCII') { $maxMapDemo[$a['id']] = (int)$a['max_score']; } }
-      foreach ($demoScores as $ds) {
-        $max = isset($maxMapDemo[$ds['activity_id']]) ? $maxMapDemo[$ds['activity_id']] : 100;
-        $points = $max > 0 ? round(($ds['percentage'] / 100) * $max) : 0;
-        $scores[] = [
-          'student_id' => $ds['student_id'],
-          'activity_id' => $ds['activity_id'],
-          'points' => $points,
-          'max_score' => $max,
-          'percentage' => round($ds['percentage'], 1),
-          'grade' => letterGrade($ds['percentage']),
-        ];
-      }
-    }
 
     // Build enrollments and batches
     $enrollStmt = $pdo->prepare(
@@ -244,18 +200,6 @@ try {
       if ($bn !== null && $bn !== '') { if (!in_array($bn, $batches[$cc], true)) { $batches[$cc][] = $bn; } }
     }
 
-    // If demo Hairdressing was injected, also provide demo enrollments and batches
-    $hrdActivities = array_filter($activitiesOut, function($a){ return ($a['course_code'] ?? '') === 'HRD-NCII'; });
-    if (!empty($hrdActivities)) {
-      $demoEnroll = [
-        ['trainee_id' => 'HRD-DEMO-01', 'course_code' => 'HRD-NCII', 'batch_name' => 'Batch A'],
-        ['trainee_id' => 'HRD-DEMO-02', 'course_code' => 'HRD-NCII', 'batch_name' => 'Batch A'],
-        ['trainee_id' => 'HRD-DEMO-03', 'course_code' => 'HRD-NCII', 'batch_name' => 'Batch B'],
-      ];
-      foreach ($demoEnroll as $de) { $enrollments[] = $de; }
-      if (!isset($batches['HRD-NCII'])) { $batches['HRD-NCII'] = []; }
-      foreach (['Batch A', 'Batch B'] as $bn) { if (!in_array($bn, $batches['HRD-NCII'], true)) { $batches['HRD-NCII'][] = $bn; } }
-    }
 
     echo json_encode(['success' => true, 'students' => $students, 'activities' => $activitiesOut, 'scores' => $scores, 'enrollments' => $enrollments, 'batches' => $batches]);
     exit;

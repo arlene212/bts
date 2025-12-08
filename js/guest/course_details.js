@@ -57,11 +57,10 @@ function viewCourseDetails(courseCode, courseName, hours, description, credited)
       if (descEl && data.course && data.course.description) {
         descEl.textContent = data.course.description;
       }
-      let contentHtml = `<h2>Basic Competencies</h2>`;
-      const basicCompetencies = (data.competencies || []);
-      if (basicCompetencies.length > 0) {
-        contentHtml += '<h4>Basic Competencies</h4>';
-        basicCompetencies.forEach(comp => {
+      let contentHtml = `<h2>Competencies</h2>`;
+      const competencies = (data.competencies || []);
+      if (competencies.length > 0) {
+        competencies.forEach(comp => {
           contentHtml += `<div class="competency-box">`;
           contentHtml += `<div class="competency-header"><h4>${comp.name}</h4></div>`;
           if (comp.topics && comp.topics.length > 0) {
@@ -88,7 +87,7 @@ function viewCourseDetails(courseCode, courseName, hours, description, credited)
           } else { contentHtml += '<p class="no-materials">No topics for this competency.</p>'; }
           contentHtml += `</div>`;
         });
-      } else { contentHtml += '<p>No basic competency materials are available for this course.</p>'; }
+      } else { contentHtml += '<p>No competency materials are available for this course.</p>'; }
       courseContentContainer.innerHTML = contentHtml;
     })
     .catch(() => { courseContentContainer.innerHTML = '<div class="error-message">Failed to load course content.</div>'; });

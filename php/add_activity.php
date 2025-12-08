@@ -106,7 +106,7 @@ try {
         'resource_id' => $activityId
     ]);
 
-    echo json_encode(['success' => true, 'message' => 'Activity added successfully.']);
+    echo json_encode(['success' => true, 'message' => 'Activity added successfully.', 'created_quiz_id' => $parentQuizId ?: null, 'activity_id' => $activityId]);
 
 } catch (Exception $e) {
     error_log("Error in add_activity.php: " . $e->getMessage());

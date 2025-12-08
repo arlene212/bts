@@ -2112,6 +2112,13 @@ body::before {
   pointer-events: none;
 }
 
+/* Ensure confirmation modal covers the screen with overlay */
+#confirmationModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+}
+
 #profileModal .modal-content {
   max-width: 640px;
 }
@@ -2354,14 +2361,14 @@ body::before {
    Course Detail Overlay & Panel
 =========================== */
 #courses #course-detail {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: rgba(0, 0, 0, 0.35);
+  position: static;
+  inset: auto;
+  z-index: auto;
+  background: transparent;
   display: none;
-  align-items: flex-start;
-  justify-content: center;
-  overflow: auto;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: visible;
 }
 
 /* Modal Button Styling (map legacy classes to modern .btn look) */
@@ -2408,9 +2415,9 @@ body::before {
 #courses #course-detail:not(.hidden) { display: flex; }
 
 .course-detail-panel {
-  margin: 40px auto;
-  width: 96%;
-  max-width: 1000px;
+  margin: 0;
+  width: 100%;
+  max-width: none;
   background: white;
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
@@ -2747,6 +2754,65 @@ body.modal-open { overflow: hidden; }
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
 }
+
+/* Dark Module Cards */
+.modules-list { display: flex; flex-direction: column; gap: var(--spacing-4); }
+.module-card { background: #ffffff; border: 1px solid var(--secondary-200); border-radius: 20px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); color: var(--secondary-800); }
+.module-header { display:flex; align-items:center; gap: 16px; padding: 18px 20px; }
+.module-actions { display:flex; align-items:center; gap: 8px; margin-left:auto; }
+.module-thumb { width: 120px; height: 84px; border-radius: 12px; object-fit: cover; background: var(--secondary-200); }
+.module-title-area { display:flex; flex-direction:column; gap: 6px; flex:1; }
+.module-title { font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--primary-800); }
+.module-status { display:flex; align-items:center; gap: 8px; color: var(--secondary-600); }
+.toggle-sections { display:flex; align-items:center; gap: 10px; margin-left:auto; background: transparent; border: 1px solid var(--secondary-300); color: var(--secondary-800); padding: 8px 12px; border-radius: 10px; }
+.toggle-sections .sections-count { font-weight: 600; }
+.module-sections { border-top: 1px solid var(--secondary-200); padding: 0 12px 12px 12px; }
+.sections-table { background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid var(--secondary-200); }
+.sections-header { display:grid; grid-template-columns: 1fr 120px 120px 120px 160px; background: var(--secondary-100); color: var(--secondary-800); padding: 12px 16px; font-weight: 600; }
+.sections-row { display:grid; grid-template-columns: 1fr 120px 120px 120px 160px; padding: 14px 16px; border-top: 1px solid var(--secondary-200); align-items:center; background: #ffffff; }
+.sec-cell { color: var(--secondary-700); }
+.sec-title { display:flex; align-items:center; gap: 10px; }
+.status-check { color: #22c55e; }
+.give-toggle { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; border:1px solid var(--secondary-300); background: transparent; color: var(--secondary-700); cursor:pointer; }
+.give-toggle[data-given="true"] { border-color:#22c55e; color:#22c55e; }
+.row-actions { display:flex; justify-content:flex-end; align-items:center; gap:8px; }
+.row-actions .icon-btn { background: transparent; border: 1px solid var(--secondary-300); color: var(--secondary-700); padding:6px; border-radius:8px; }
+.row-actions .icon-btn:hover { border-color:#3b82f6; color:#3b82f6; }
+
+/* Improve contrast for Add Module button on dark cards */
+.module-card .module-actions .btn-outline-secondary {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.85) !important;
+  background: transparent !important;
+  opacity: 1 !important;
+}
+.module-card .module-actions .btn-outline-secondary * { color: #ffffff !important; }
+.module-card .module-actions .btn-outline-secondary:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+/* Utility class to force white on dark backgrounds */
+.btn-on-dark {
+  background: #ffffff !important;
+  color: var(--secondary-800) !important;
+  border-color: #ffffff !important;
+}
+.btn-on-dark * { color: var(--secondary-800) !important; }
+.btn-on-dark:hover {
+  background: #ffffff !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* Force ADD MODULE text/icon to white specifically */
+.module-card .module-actions .add-material-btn {
+  background: #ffffff !important;
+  color: var(--secondary-800) !important;
+  border-color: #ffffff !important;
+}
+.module-card .module-actions .add-material-btn i { color: var(--secondary-800) !important; }
+.module-card .module-actions .add-material-btn:hover { box-shadow: var(--shadow-md) !important; }
+
 
 .close-lightbox {
   position: absolute;

@@ -77,7 +77,6 @@
               <th>Type</th>
               <th>Score</th>
               <th>Grade</th>
-              <th>Status</th>
               <th>Date</th>
               <th>Actions</th>
             </tr>
@@ -283,9 +282,6 @@
 .grade-d { background: #fecaca; color: #dc2626; }
 .grade-f { background: #fee2e2; color: #991b1b; }
 
-.status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--radius-md);
   font-size: var(--font-size-xs);
   font-weight: 500;
 }
@@ -457,18 +453,10 @@ function updateGradesTable() {
           ${grade.grade}
         </span>
       </td>
-      <td>
-        <span class="status-badge status-${grade.status}">
-          ${grade.status}
-        </span>
-      </td>
       <td>${formatDate(grade.submitted_date)}</td>
       <td>
         <button class="btn btn-sm btn-outline-primary" onclick="viewGradeDetails('${grade.id}')">
           <i class="fas fa-eye"></i>
-        </button>
-        <button class="btn btn-sm btn-outline-secondary" onclick="editGrade('${grade.id}')">
-          <i class="fas fa-edit"></i>
         </button>
       </td>
     </tr>

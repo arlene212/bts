@@ -101,8 +101,8 @@ function renderSummary(){
           <div class="assignment-cell">
             <div class="assignment-icon"><i class="fas ${i.icon}"></i></div>
             <div class="assignment-titles">
-              <a href="#" class="assignment-title">${escapeHtml(i.activity_title)}</a>
-              <a href="#" class="assignment-subtitle">${escapeHtml(i.topic_name || i.course_name || '')}</a>
+              <a href="../trainee/activity_view.php?id=${i.activity_id}" target="_blank" class="assignment-title">${escapeHtml(i.activity_title)}</a>
+              <a href="../trainee/index.php?current_tab=mycourses" class="assignment-subtitle">${escapeHtml(i.topic_name || i.course_name || '')}</a>
             </div>
           </div>
         </td>

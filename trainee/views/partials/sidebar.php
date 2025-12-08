@@ -27,9 +27,13 @@
         <i class="fas fa-book"></i>
         <span>My Courses</span>
       </a>
-      <a href="#" class="tab-link <?php echo $currentTab === 'offered-courses' ? 'active' : ''; ?>" data-tab="offered-courses">
-        <i class="fas fa-graduation-cap"></i>
-        <span>Browse Courses</span>
+      <a href="#" class="tab-link <?php echo $currentTab === 'quizzes' ? 'active' : ''; ?>" data-tab="quizzes">
+        <i class="fas fa-question-circle"></i>
+        <span>Activities</span>
+      </a>
+      <a href="#" class="tab-link <?php echo $currentTab === 'activities-summary' ? 'active' : ''; ?>" data-tab="activities-summary">
+        <i class="fas fa-list-check"></i>
+        <span>Activities Summary</span>
       </a>
     </div>
     
@@ -42,13 +46,9 @@
           <span class="nav-badge"><?php echo $pending_requests; ?></span>
         <?php endif; ?>
       </a>
-      <a href="#" class="tab-link <?php echo $currentTab === 'quizzes' ? 'active' : ''; ?>" data-tab="quizzes">
-        <i class="fas fa-question-circle"></i>
-        <span>Quizzes</span>
-      </a>
-      <a href="#" class="tab-link <?php echo $currentTab === 'activities-summary' ? 'active' : ''; ?>" data-tab="activities-summary">
-        <i class="fas fa-list-check"></i>
-        <span>Activities Summary</span>
+      <a href="#" class="tab-link <?php echo $currentTab === 'offered-courses' ? 'active' : ''; ?>" data-tab="offered-courses">
+        <i class="fas fa-graduation-cap"></i>
+        <span>Browse Courses</span>
       </a>
     </div>
   </nav>

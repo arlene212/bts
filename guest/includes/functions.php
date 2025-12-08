@@ -7,13 +7,18 @@ function enrollGuest($db, $userId, $courseCode, $batchName = null)
   if ($existing && $existing['status'] === 'approved') {
     return ['success' => false, 'message' => 'Already enrolled in this course'];
   }
+  if ($existing && $existing['status'] === 'pending') {
+    $u = $db->prepare("UPDATE enrollments SET status = 'approved' WHERE trainee_id = ? AND course_code = ? AND status = 'pending'");
+    $u->execute([$userId, $courseCode]);
+    return ['success' => true, 'message' => 'Enrollment successful. You are now enrolled.'];
+  }
   $cstmt = $db->prepare("SELECT course_name FROM courses WHERE course_code = ?");
   $cstmt->execute([$courseCode]);
   $c = $cstmt->fetch(PDO::FETCH_ASSOC);
   if (!$c) { return ['success' => false, 'message' => 'Course not found']; }
-  $stmt = $db->prepare("INSERT INTO enrollments (trainee_id, course_code, course_name, batch_name, status, date_requested) VALUES (?, ?, ?, ?, 'pending', NOW())");
+  $stmt = $db->prepare("INSERT INTO enrollments (trainee_id, course_code, course_name, batch_name, status, date_requested) VALUES (?, ?, ?, ?, 'approved', NOW())");
   $stmt->execute([$userId, $courseCode, $c['course_name'], $batchName]);
-  return ['success' => true, 'message' => 'Enrollment request submitted. Awaiting approval.'];
+  return ['success' => true, 'message' => 'Enrollment successful. You are now enrolled.'];
 }
 
 function unenrollGuest($db, $userId, $courseCode)

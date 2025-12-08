@@ -113,17 +113,21 @@ try {
             $tempTopics[$topicId]['activities'] = [];
         }
 
-        if ($hasBatchResourcesTbl ? ($row['material_id'] && $row['br_material_id']) : $row['material_id']) {
+        if ($row['material_id']) {
             $materialId = $row['material_id'];
             if (!isset($tempTopics[$topicId]['materials'][$materialId])) {
-                $tempTopics[$topicId]['materials'][$materialId] = array_intersect_key($row, array_flip(['material_id', 'material_title', 'material_description', 'material_file_path', 'uploaded_at']));
+                $m = array_intersect_key($row, array_flip(['material_id', 'material_title', 'material_description', 'material_file_path', 'uploaded_at']));
+                $m['given'] = $hasBatchResourcesTbl ? (bool)$row['br_material_id'] : true;
+                $tempTopics[$topicId]['materials'][$materialId] = $m;
             }
         }
 
-        if ($hasBatchResourcesTbl ? ($row['activity_id'] && $row['br_activity_id']) : $row['activity_id']) {
+        if ($row['activity_id']) {
             $activityId = $row['activity_id'];
             if (!isset($tempTopics[$topicId]['activities'][$activityId])) {
-                $tempTopics[$topicId]['activities'][$activityId] = array_intersect_key($row, array_flip(['activity_id', 'activity_title', 'activity_description', 'activity_type', 'due_date', 'max_score']));
+                $a = array_intersect_key($row, array_flip(['activity_id', 'activity_title', 'activity_description', 'activity_type', 'due_date', 'max_score']));
+                $a['given'] = $hasBatchResourcesTbl ? (bool)$row['br_activity_id'] : true;
+                $tempTopics[$topicId]['activities'][$activityId] = $a;
                 $tempTopics[$topicId]['activities'][$activityId]['submissions'] = [];
             }
 

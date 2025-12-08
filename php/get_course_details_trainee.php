@@ -59,6 +59,27 @@ try {
     try {
         $stmt->execute([$traineeId, $courseCode]);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Determine batch and allowed resources for filtering
+        $batchName = null; $filterOnBatch = false; $allowedMaterials = []; $allowedActivities = [];
+        try {
+            $bnStmt = $pdo->prepare("SELECT COALESCE(ba.batch_name, e.batch_name) AS batch_name FROM enrollments e LEFT JOIN batch_assignments ba ON ba.trainee_id = e.trainee_id AND ba.course_code = e.course_code WHERE e.course_code = ? AND e.trainee_id = ? LIMIT 1");
+            $bnStmt->execute([$courseCode, $traineeId]);
+            $batchName = $bnStmt->fetchColumn() ?: null;
+        } catch (Exception $__) {}
+        try {
+            $tchk = $pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'batch_resources'");
+            $tchk->execute();
+            $hasBatchTbl = ((int)$tchk->fetchColumn() > 0);
+            $filterOnBatch = $hasBatchTbl && !empty($batchName);
+        } catch (Exception $__) { $filterOnBatch = false; }
+        if ($filterOnBatch) {
+            $brStmt = $pdo->prepare("SELECT resource_type, resource_id FROM batch_resources WHERE course_code = ? AND batch_name = ?");
+            $brStmt->execute([$courseCode, $batchName]);
+            foreach ($brStmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                if (($r['resource_type'] ?? '') === 'material') { $allowedMaterials[(int)$r['resource_id']] = true; }
+                if (($r['resource_type'] ?? '') === 'activity') { $allowedActivities[(int)$r['resource_id']] = true; }
+            }
+        }
     } catch (PDOException $e) {
         error_log("Query execution failed: " . $e->getMessage());
         error_log("Parameters: traineeId=$traineeId, courseCode=$courseCode");
@@ -99,8 +120,9 @@ try {
             ];
         }
 
-        // Group materials under topics
-        if ($row['material_id'] && !isset($topics[$row['topic_id']]['materials'][$row['material_id']])) {
+        // Group materials under topics (respect batch mapping if present)
+        $matMapped = isset($filterOnBatch) && $filterOnBatch ? ($row['material_id'] && isset($allowedMaterials[(int)$row['material_id']])) : (bool)$row['material_id'];
+        if ($matMapped && !isset($topics[$row['topic_id']]['materials'][$row['material_id']])) {
             $topics[$row['topic_id']]['materials'][$row['material_id']] = [
                 'id' => $row['material_id'],
                 'title' => $row['material_title'],
@@ -109,8 +131,9 @@ try {
             ];
         }
 
-        // Group activities under topics and also create a flat list of activities
-        if ($row['activity_id'] && !isset($topics[$row['topic_id']]['activities'][$row['activity_id']])) {
+        // Group activities under topics and also create a flat list of activities (respect batch mapping if present)
+        $actMapped = isset($filterOnBatch) && $filterOnBatch ? ($row['activity_id'] && isset($allowedActivities[(int)$row['activity_id']])) : (bool)$row['activity_id'];
+        if ($actMapped && !isset($topics[$row['topic_id']]['activities'][$row['activity_id']])) {
             $activity = [
                 'id' => $row['activity_id'],
                 'title' => $row['activity_title'],
@@ -150,7 +173,8 @@ try {
     echo json_encode([
         'course' => $course,
         'competencies' => array_values($competencies),
-        'activities' => array_values($activities)
+        'activities' => array_values($activities),
+        'selectedBatch' => isset($batchName) ? $batchName : null
     ]);
 
 } catch (PDOException $e) {

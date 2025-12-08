@@ -75,17 +75,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function loadCourseDetails(courseCode) {
     const competenciesCard = document.getElementById('competencies-card');
-    if (!competenciesCard) return;
-    competenciesCard.innerHTML = '<div>Loading competencies...</div>';
+    if (competenciesCard) { competenciesCard.innerHTML = '<div>Loading competencies...</div>'; }
 
     fetch(`../php/get_course_details_trainee.php?course_code=${encodeURIComponent(courseCode)}`)
       .then(r => r.json())
       .then(data => {
         if (data.error) {
-          competenciesCard.innerHTML = `<div class="error-message">${data.error}</div>`;
+          if (competenciesCard) competenciesCard.innerHTML = `<div class="error-message">${data.error}</div>`;
           return;
         }
-        renderCompetenciesSummary(data.competencies || [], competenciesCard);
+        if (competenciesCard) renderCompetenciesSummary(data.competencies || [], competenciesCard);
         const totalHours = (data.competencies || []).reduce((sum, c) => sum + (parseInt(c.hours || 0, 10) || 0), 0);
         const hoursChip = document.getElementById('course-detail-hours');
         if (hoursChip) hoursChip.textContent = `Hours: ${totalHours} hrs`;
@@ -165,17 +164,257 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderModulesFromCompetencies(competencies, container) {
     container.innerHTML = '';
-    const topics = (competencies || []).flatMap(c => c.topics || []);
-    if (!topics.length) { container.innerHTML = '<p class="no-materials">No modules found for this course.</p>'; return; }
-    container.innerHTML = topics.map(t => `
-      <div class="topic-container">
-        <h4 class="topic-title">${t.topic_name || t.name || 'Unnamed Topic'}</h4>
-        <div class="topic-content-section">
-          <h6 class="content-divider">Materials</h6>
-          ${renderMaterials(t.materials || [])}
+    const byType = { basic: [], common: [], core: [] };
+    (competencies || []).forEach(c => {
+      const t = String(c.type || '').toLowerCase();
+      if (t in byType) byType[t].push(c);
+    });
+    const total = Object.values(byType).reduce((sum, arr) => sum + arr.length, 0);
+    if (!total) { container.innerHTML = '<p class="no-materials">No modules found for this course.</p>'; return; }
+    container.classList.add('modules-ui');
+    const groupOrder = ['basic', 'common', 'core'];
+    container.innerHTML = groupOrder.map(type => {
+      const comps = byType[type];
+      if (!comps.length) return '';
+      const title = type.charAt(0).toUpperCase() + type.slice(1) + ' Competencies';
+      return `
+        <div class="module-group" data-group="${type}">
+          <div class="group-header">
+            <h3>${title}</h3>
+          </div>
+          <div class="group-list">
+            ${comps.map(c => moduleCardHtmlCompetency(c)).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function moduleCardHtmlCompetency(comp) {
+    const title = comp.module_title || comp.name || 'Unnamed Module';
+    const sections = buildSectionsFromCompetency(comp);
+    const sectionsCount = sections.length;
+    const allActivities = (comp.topics || []).flatMap(t => t.activities || []);
+    const submitted = allActivities.filter(a => !!a.submission).length;
+    const progress = allActivities.length ? Math.round((submitted / allActivities.length) * 100) : 0;
+    const isCompleted = progress === 100 && allActivities.length > 0;
+    const imgSrc = '../images/school.png';
+    return `
+      <div class="module-card" data-expanded="false">
+        <div class="module-header">
+          <img class="module-thumb" src="${imgSrc}" alt="Module">
+          <div class="module-title-area">
+            <h4 class="module-title">${escapeHtml(title)}</h4>
+            ${isCompleted ? `
+              <div class="module-status"><span>Completed</span> <i class="fas fa-check text-success"></i></div>
+            ` : `
+              <div class="module-status"><i class="fas fa-circle-notch text-success"></i> <span>${progress}% Resume</span> <i class="fas fa-play"></i></div>
+            `}
+          </div>
+          <button class="toggle-sections btn btn-outline-secondary" aria-expanded="false">
+            <span class="sections-count">${sectionsCount} section${sectionsCount !== 1 ? 's' : ''}</span>
+            <i class="fas fa-chevron-down"></i>
+          </button>
+        </div>
+        <div class="module-sections hidden">
+          ${sectionsTableHtml(sections)}
         </div>
       </div>
-    `).join('');
+    `;
+  }
+
+  function moduleCardHtml(topic) {
+    const imgSrc = topic.image || '../images/school.png';
+    const title = topic.topic_name || topic.name || 'Unnamed Module';
+    const sections = buildSections(topic);
+    const acts = Array.isArray(topic.activities) ? topic.activities : [];
+    const submitted = acts.filter(a => !!a.submission).length;
+    const progress = acts.length ? Math.round((submitted / acts.length) * 100) : 0;
+    const isCompleted = progress === 100 && acts.length > 0;
+    const sectionsCount = sections.length;
+    return `
+      <div class="module-card" data-expanded="false">
+        <div class="module-header">
+          <img class="module-thumb" src="${imgSrc}" alt="Module">
+          <div class="module-title-area">
+            <h4 class="module-title">${escapeHtml(title)}</h4>
+            ${isCompleted ? `
+              <div class="module-status"><span>Completed</span> <i class="fas fa-check text-success"></i></div>
+            ` : `
+              <div class="module-status"><i class="fas fa-circle-notch text-success"></i> <span>${progress}% Resume</span> <i class="fas fa-play"></i></div>
+            `}
+          </div>
+          <button class="toggle-sections btn btn-outline-secondary" aria-expanded="false">
+            <span class="sections-count">${sectionsCount} section${sectionsCount !== 1 ? 's' : ''}</span>
+            <i class="fas fa-chevron-down"></i>
+          </button>
+        </div>
+        <div class="module-sections hidden">
+          ${sectionsTableHtml(sections)}
+        </div>
+      </div>
+    `;
+  }
+
+  function buildSections(topic) {
+    const mats = (topic.materials || []).map(m => ({
+      icon: 'fa-file',
+      title: m.material_title || m.title || 'Material',
+      submitted: null,
+      score: null,
+      max: null,
+      due: null,
+      status: false,
+      type: 'material',
+      id: m.id,
+      path: m.file_path
+    }));
+    const acts = (topic.activities || []).map(a => ({
+      icon: 'fa-folder-open',
+      title: a.activity_title || a.title || 'Activity',
+      submitted: !!a.submission,
+      score: a.submission && a.submission.score !== null ? a.submission.score : null,
+      max: a.max_score || null,
+      due: a.due_date || null,
+      status: a.submission ? true : false,
+      type: 'activity',
+      id: a.id
+    }));
+    return [...mats, ...acts];
+  }
+
+  function materialKey(idOrPath) {
+    return 'material_opened_' + String(idOrPath || 'unknown');
+  }
+  function isMaterialOpened(idOrPath) {
+    try { return localStorage.getItem(materialKey(idOrPath)) === '1'; } catch (e) { return false; }
+  }
+  function markMaterialOpened(idOrPath) {
+    try { localStorage.setItem(materialKey(idOrPath), '1'); } catch (e) {}
+  }
+
+  function sectionsTableHtml(sections) {
+    if (!sections || sections.length === 0) {
+      return `<div class="sections-table"><div class="sections-header"><div>Section</div><div>Submitted</div><div>Score</div><div>Due</div><div>Status</div></div><div class="sections-row"><div class="sec-cell sec-title"><span>No sections available.</span></div><div class="sec-cell">—</div><div class="sec-cell">—</div><div class="sec-cell">—</div><div class="sec-cell">—</div></div></div>`;
+    }
+    return `
+      <div class="sections-table">
+        <div class="sections-header">
+          <div>Section</div>
+          <div>Submitted</div>
+          <div>Score</div>
+          <div>Due</div>
+          <div>Status</div>
+        </div>
+        ${sections.map(s => {
+          const isLink = s.type === 'material' && s.path && (String(s.path).startsWith('http://') || String(s.path).startsWith('https://'));
+          const href = s.type === 'material' ? (isLink ? s.path : (s.path ? `../uploads/courses/${s.path}` : '')) : (s.type === 'activity' && s.id ? `../trainee/activity_view.php?id=${s.id}` : '');
+          const linkOpen = href ? `<a href="${href}" target="_blank" class="section-link">` : '';
+          const linkClose = href ? `</a>` : '';
+
+          // Compute display values based on type and state
+          let submittedDisplay = '—';
+          let scoreDisplay = '—';
+          let dueDisplay = '—';
+          let statusDisplay = '-';
+
+          if (s.type === 'material') {
+            const opened = isMaterialOpened(s.id || s.path);
+            statusDisplay = opened ? '<i class="fas fa-check text-success"></i>' : '-';
+          } else if (s.type === 'activity') {
+            const now = new Date();
+            const due = s.due ? new Date(String(s.due).replace(' ', 'T')) : null;
+            const missed = !s.submitted && !!due && now > due;
+            const pendingScore = !!s.submitted && s.score === null;
+
+            // Submitted column rules
+            if (missed) {
+              submittedDisplay = '0';
+            } else if (pendingScore) {
+              submittedDisplay = '~';
+            } else if (s.submitted) {
+              submittedDisplay = '<i class="fas fa-check text-success"></i>';
+            } else {
+              submittedDisplay = '<i class="fas fa-flag"></i>';
+            }
+
+            // Score column rules
+            if (missed) {
+              scoreDisplay = 'M';
+            } else if (pendingScore) {
+              scoreDisplay = '~';
+            } else {
+              scoreDisplay = (s.score !== null && s.max !== null) ? `${s.score}/${s.max}` : '—';
+            }
+
+            // Due column shows actual due date/time
+            dueDisplay = s.due || '—';
+
+            // Status: check if submitted, flag if not
+            statusDisplay = s.submitted ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-flag"></i>';
+          }
+          return `
+          <div class="sections-row" data-resource-type="${s.type || ''}" data-resource-id="${s.id || ''}">
+            <div class="sec-cell sec-title">${linkOpen}<i class="fas ${s.icon}"></i> <span>${escapeHtml(s.title)}</span>${linkClose}</div>
+            <div class="sec-cell">${submittedDisplay}</div>
+            <div class="sec-cell">${scoreDisplay}</div>
+            <div class="sec-cell">${dueDisplay}</div>
+            <div class="sec-cell">${statusDisplay}</div>
+          </div>
+        `}).join('')}
+      </div>
+    `;
+  }
+
+  document.getElementById('modules-pane')?.addEventListener('click', function(e){
+    const toggle = e.target.closest('.toggle-sections');
+    if (toggle) {
+      const card = toggle.closest('.module-card');
+      const sec = card.querySelector('.module-sections');
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', String(!expanded));
+      sec.classList.toggle('hidden');
+      const icon = toggle.querySelector('i');
+      if (icon) { icon.classList.toggle('fa-chevron-down'); icon.classList.toggle('fa-chevron-up'); }
+    }
+    const rowLink = e.target.closest('.sections-row .section-link');
+    if (rowLink) {
+      const row = rowLink.closest('.sections-row');
+      const type = row?.getAttribute('data-resource-type');
+      const id = row?.getAttribute('data-resource-id');
+      if (type === 'material') {
+        markMaterialOpened(id || rowLink.getAttribute('href'));
+        const statusCell = row.querySelector('.sec-cell:nth-child(5)');
+        if (statusCell) statusCell.innerHTML = '<i class="fas fa-check text-success"></i>';
+      }
+      return;
+    }
+    const row = e.target.closest('.sections-row');
+    if (row) {
+      const type = row.getAttribute('data-resource-type');
+      const id = row.getAttribute('data-resource-id');
+      if (type === 'material') {
+        // Try to find the material path in the inner link if present
+        const linkEl = row.querySelector('.section-link');
+        const href = linkEl?.getAttribute('href');
+        if (href) {
+          window.open(href, '_blank');
+          markMaterialOpened(id || href);
+          const statusCell = row.querySelector('.sec-cell:nth-child(5)');
+          if (statusCell) statusCell.innerHTML = '<i class="fas fa-check text-success"></i>';
+          return;
+        }
+      }
+      if (type === 'activity' && id) { window.open(`../trainee/activity_view.php?id=${id}`, '_blank'); }
+    }
+  });
+
+  if (typeof escapeHtml !== 'function') {
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text == null ? '' : String(text);
+      return div.innerHTML;
+    }
   }
 
   function renderMaterials(materials) {
@@ -213,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <p>Due: ${formatDisplayDate(a.due_date)}</p>
             </div>
             <div class="activity-actions">
-              <a href="../trainee/activity_view.php?activity_id=${a.id}" target="_blank" class="btn btn-outline-primary view-activity-btn">View Activity</a>
+              <a href="../trainee/activity_view.php?id=${a.id}" target="_blank" class="btn btn-outline-primary view-activity-btn">View Activity</a>
             </div>
           </div>
           <div class="activity-content hidden">
@@ -417,11 +656,11 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const modulesCountEl = document.getElementById('modules-count');
       const activitiesCountEl = document.getElementById('activities-count');
-      modulesCountEl && (modulesCountEl.textContent = (modulesList?.querySelectorAll('.module-item:not([style*="display: none"])')?.length || 0));
+      modulesCountEl && (modulesCountEl.textContent = (modulesList?.querySelectorAll('.module-card:not([style*="display: none"])')?.length || 0));
       activitiesCountEl && (activitiesCountEl.textContent = (activitiesList?.querySelectorAll('.activity-item:not([style*="display: none"]), .topic-activity-item:not([style*="display: none"])')?.length || 0));
     });
   }
-  attachFilter(modulesSearch, modulesList, '.module-item');
+  attachFilter(modulesSearch, modulesList, '.module-card');
   attachFilter(activitiesSearch, activitiesList, '.activity-item, .topic-activity-item');
   function openCompetencyModal(comp) {
     const modal = document.getElementById('competencyModal');
@@ -467,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   <p>Due: ${formatDisplayDate(a.due_date)}</p>
                 </div>
                 <div class="activity-actions">
-                  <a href="../trainee/activity_view.php?activity_id=${a.id}" target="_blank" class="btn btn-outline-primary view-activity-btn">View Activity</a>
+                  <a href="../trainee/activity_view.php?id=${a.id}" target="_blank" class="btn btn-outline-primary view-activity-btn">View Activity</a>
                 </div>
               </div>
               <div class="activity-content hidden">
@@ -492,3 +731,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof closeModal === 'function') closeModal(m); else { m.classList.add('hidden'); m.style.display = 'none'; }
   });
 });
+  function buildSectionsFromCompetency(comp) {
+    const topics = Array.isArray(comp.topics) ? comp.topics : [];
+    const mats = topics.flatMap(t => (t.materials || []).map(m => ({
+      icon: 'fa-file',
+      title: m.material_title || m.title || 'Material',
+      submitted: null,
+      score: null,
+      max: null,
+      due: null,
+      status: false,
+      type: 'material',
+      id: m.id,
+      path: m.file_path
+    })));
+    const acts = topics.flatMap(t => (t.activities || []).map(a => ({
+      icon: 'fa-folder-open',
+      title: a.activity_title || a.title || 'Activity',
+      submitted: !!a.submission,
+      score: a.submission && a.submission.score !== null ? a.submission.score : null,
+      max: a.max_score || null,
+      due: a.due_date || null,
+      status: a.submission ? true : false,
+      type: 'activity',
+      id: a.id
+    })));
+    return [...mats, ...acts];
+  }

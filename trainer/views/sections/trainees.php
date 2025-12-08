@@ -37,14 +37,25 @@
     </form>
   </div>
   <div id="trainees-table-container">
-    <div class="table-responsive"><table class="table table-striped table-hover trainees-table"><thead><tr><th>Trainee Name</th><th>Email</th><th>Contact Number</th><th>Enrolled Course</th><th>Batch</th><th>Status</th><th>Last Login</th></tr></thead><tbody>
+    <div class="table-responsive"><table class="table table-striped table-hover trainees-table"><thead><tr><th>Trainee Name</th><th>Email</th><th>Contact Number</th><th>Enrolled Courses</th><th>Batch</th><th>Status</th><th>Last Login</th></tr></thead><tbody>
     <?php foreach ($trainees as $trainee): ?>
       <tr>
         <td><?php echo htmlspecialchars($trainee['first_name'] . ' ' . $trainee['last_name']); ?></td>
         <td><?php echo htmlspecialchars($trainee['email']); ?></td>
         <td><?php echo htmlspecialchars($trainee['contact_number'] ?: '-'); ?></td>
-        <td><?php echo htmlspecialchars($trainee['course_name'] ?: '-'); ?></td>
-        <td><?php echo htmlspecialchars($trainee['batch_name'] ?: 'Not Assigned'); ?></td>
+        <td>
+          <?php
+            $count = isset($trainee['course_count']) ? (int)$trainee['course_count'] : 0;
+            $list = isset($trainee['courses_list']) ? trim($trainee['courses_list']) : '';
+            if ($count > 0) {
+              echo $count . ' course' . ($count > 1 ? 's' : '');
+              if ($list !== '') { echo '<br><small class="text-muted">' . htmlspecialchars($list) . '</small>'; }
+            } else {
+              echo 'None';
+            }
+          ?>
+        </td>
+        <td><?php echo htmlspecialchars(($trainee['batches_list'] ?? '') !== '' ? $trainee['batches_list'] : 'Not Assigned'); ?></td>
         <td>
           <?php 
           $statusClass = '';

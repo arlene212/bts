@@ -11,7 +11,19 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(r => r.json())
         .then(d => {
           if (d.success) {
-            alert('Profile updated successfully')
+            const u = d.user || {};
+            const name = [u.first_name, u.last_name].filter(Boolean).join(' ');
+            const avatarUrl = u.profile_picture ? ('../uploads/profiles/' + u.profile_picture) : null;
+            const nameEl = document.querySelector('.user-card .user-name');
+            const avatarEl = document.querySelector('.user-card .user-avatar');
+            const previewEl = document.getElementById('profilePreview');
+            if (nameEl && name) nameEl.textContent = name;
+            if (avatarUrl) {
+              if (avatarEl) avatarEl.src = avatarUrl;
+              if (previewEl) previewEl.src = avatarUrl;
+            }
+            closeModal('profileModal');
+            alert('Profile updated successfully');
           } else { alert(d.message || 'Update failed'); }
         });
     });

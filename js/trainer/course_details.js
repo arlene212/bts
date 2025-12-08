@@ -4,31 +4,41 @@ document.addEventListener('DOMContentLoaded', () => {
   const courseDetail = document.getElementById('course-detail');
   const courseBackBtn = courseDetail ? courseDetail.querySelector('.back-btn') : null;
 
-  document.querySelectorAll('#enrolled .batch-card').forEach(batch => {
-    batch.addEventListener('click', () => {
-      const courseName = batch.dataset.course;
-      const courseCode = batch.dataset.code;
-      const courseHours = batch.dataset.hours;
-      populateTrainerBatches(courseCode).then(() => {
-        if (!currentBatchName) {
-          const sel = document.getElementById('trainer-batch-select');
-          currentBatchName = sel && sel.value ? sel.value : '';
-        }
-        if (!currentBatchName) {
-          const comps = document.getElementById('competencies-list');
-          const subs = document.getElementById('submissions-list');
-          const cd = document.getElementById('course-description');
-          if (cd) cd.textContent = 'No batches assigned to you for this course';
-          if (comps) comps.innerHTML = '<div class="error-message">No batches assigned to you for this course</div>';
-          if (subs) subs.innerHTML = '<div class="error-message">No batches assigned to you for this course</div>';
-          return;
-        }
-        loadCourseDetails(courseCode, courseName, courseHours);
-      });
-      enrolledTab && enrolledTab.classList.add('hidden');
-      courseDetail && courseDetail.classList.remove('hidden');
-      document.body.classList.add('modal-open');
+  function openCourseDetailFromCard(batch){
+    const courseName = batch.dataset.course;
+    const courseCode = batch.dataset.code;
+    const courseHours = batch.dataset.hours;
+    populateTrainerBatches(courseCode).then(() => {
+      if (!currentBatchName) {
+        const sel = document.getElementById('trainer-batch-select');
+        currentBatchName = sel && sel.value ? sel.value : '';
+      }
+      if (!currentBatchName) {
+        const comps = document.getElementById('competencies-list');
+        const subs = document.getElementById('submissions-list');
+        const cd = document.getElementById('course-description');
+        if (cd) cd.textContent = 'No batches assigned to you for this course';
+        if (comps) comps.innerHTML = '<div class="error-message">No batches assigned to you for this course</div>';
+        if (subs) subs.innerHTML = '<div class="error-message">No batches assigned to you for this course</div>';
+        return;
+      }
+      loadCourseDetails(courseCode, courseName, courseHours);
     });
+    enrolledTab && enrolledTab.classList.add('hidden');
+    courseDetail && courseDetail.classList.remove('hidden');
+    if (courseDetail && courseDetail.style) courseDetail.style.display = 'flex';
+  }
+
+  document.querySelectorAll('#enrolled .batch-card').forEach(batch => {
+    batch.addEventListener('click', () => openCourseDetailFromCard(batch));
+  });
+
+  document.addEventListener('click', function(e){
+    const batch = e.target.closest('#enrolled .batch-card');
+    if (batch) {
+      e.preventDefault();
+      openCourseDetailFromCard(batch);
+    }
   });
 
   const toggleWrapper = document.querySelector('.course-detail-toggle');
@@ -268,10 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <p>${m.content || ''}</p>
               ${href ? `<small><a href="${href}" target="_blank">View Material</a></small>` : ''}
             </div>
-            <div class="material-actions">
-            <button type="button" class="icon-btn edit-comp-material-btn" data-material-id="${m.id}" data-material-title="${m.title}" data-material-description="${m.content || ''}" data-material-path="${m.file_path || ''}" onclick="window.__editCompMaterial(this)"><i class="fas fa-edit"></i></button>
-              <button type="button" class="icon-btn delete-comp-material-btn" data-material-id="${m.id}" data-material-title="${m.title}" onclick="window.__deleteCompMaterial(this)"><i class="fas fa-trash"></i></button>
-            </div>
+            <div class="material-actions"></div>
           </div>
         </div>`;
     }).join('')}</div>`;
@@ -281,27 +288,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!topics.length) {
       return '<div class="no-topics"><p>No topics added yet.</p></div>';
     }
-    return topics.map(topic => `
-      <div class="topic-item" data-topic-id="${topic.id}">
-        <div class="topic-header">
-          <div class="topic-info">
-            <h5>${topic.topic_name}</h5>
-            ${topic.topic_description ? `<p class="topic-description">${topic.topic_description}</p>` : ''}
-            ${topic.learning_objectives ? `<p class="learning-objectives"><strong>Learning Objectives:</strong> ${topic.learning_objectives}</p>` : ''}
-          </div>
-          <div class="topic-actions">
-            <button class="btn btn-outline-primary btn-sm add-material-btn" data-topic-id="${topic.id}"><i class="fas fa-plus-circle"></i> Add Material</button>
-            <button class="btn btn-outline-primary btn-sm add-activity-btn" data-topic-id="${topic.id}"><i class="fas fa-tasks"></i> Add Activity</button>
-            <button class="btn btn-icon toggle-materials-btn" title="Show/Hide"><i class="fas fa-chevron-down"></i></button>
-          </div>
-        </div>
-        <div class="materials-container hidden">
-          ${renderMaterials(topic.materials || [])}
-          <h6 class="content-divider">Activities</h6>
-          ${renderActivities(topic.activities || [])}
-        </div>
-      </div>
-    `).join('');
+    const cards = topics.map(t => moduleCardHtmlTrainer(t)).join('');
+    return `<div class="modules-list" id="modules-pane">${cards}</div>`;
   }
 
   function renderMaterials(materials) {
@@ -317,10 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ${m.material_file_path ? `<small><a class="attachment-link" href="${String(m.material_file_path).startsWith('http') ? m.material_file_path : ('../uploads/courses/' + m.material_file_path)}" target="_blank">View Material</a></small>` : ''}
             </div>
           </div>
-          <div class="material-actions">
-            <button type="button" class="icon-btn edit-material-btn" data-material-id="${m.material_id}" data-material-title="${m.material_title}" data-material-description="${m.material_description || ''}" data-material-path="${m.material_file_path || ''}" onclick="window.__editTopicMaterial(this)"><i class="fas fa-edit"></i></button>
-            <button type="button" class="icon-btn delete-material-btn" data-material-id="${m.material_id}" data-material-title="${m.material_title}" onclick="window.__deleteTopicMaterial(this)"><i class="fas fa-trash"></i></button>
-          </div>
+          <div class="material-actions"></div>
         </div>
       </div>`).join('')}</div>`;
   }
@@ -334,20 +319,144 @@ document.addEventListener('DOMContentLoaded', () => {
             <strong>${a.activity_title}</strong>
             <span class="activity-type ${a.activity_type}">${a.activity_type}</span>
           </div>
-          <div class="activity-meta">
-            <small>Due: ${new Date(a.due_date).toLocaleString()}</small>
-            <small>Max Score: ${a.max_score}</small>
-            ${a.attachment_path ? `<small><a href="${String(a.attachment_path).startsWith('http') ? a.attachment_path : ('../uploads/activities/' + a.attachment_path)}" target="_blank" class="attachment-link"><i class="fas fa-paperclip"></i> View Attachment</a></small>` : ''}
-          </div>
         </div>
         <div class="activity-actions">
           ${a.activity_type === 'quiz' ? `<button type="button" class="btn btn-outline-primary btn-sm manage-quiz-btn" title="Manage in Activities"><i class="fas fa-list"></i> Manage</button>` : ''}
-          <button type="button" class="icon-btn edit-activity-btn" data-activity-id="${a.activity_id}" data-activity-title="${a.activity_title}" data-activity-description="${a.activity_description || ''}" data-due-date="${a.due_date || ''}" data-max-score="${a.max_score || 100}"><i class="fas fa-edit"></i></button>
-          <button type="button" class="icon-btn delete-activity-btn" data-activity-id="${a.activity_id}" data-activity-title="${a.activity_title}"><i class="fas fa-trash"></i></button>
         </div>
       </div>
     `).join('');
   }
+
+  function buildTrainerSections(topic){
+    const mats = (topic.materials || []).map(m => ({
+      type: 'material',
+      id: m.material_id,
+      icon: 'fa-file',
+      title: m.material_title || 'Material',
+      submitted: false,
+      score: null,
+      max: null,
+      due: null,
+      given: !!m.given,
+      editPayload: { materialId: m.material_id, materialTitle: m.material_title, materialDescription: m.material_description || '', materialPath: m.material_file_path || '' }
+    }));
+    const acts = (topic.activities || []).map(a => ({
+      type: 'activity',
+      id: a.activity_id,
+      icon: 'fa-cube',
+      title: a.activity_title || 'Activity',
+      submitted: Array.isArray(a.submissions) && a.submissions.length > 0,
+      score: null,
+      max: a.max_score || null,
+      due: a.due_date || null,
+      given: !!a.given,
+      editPayload: { activityId: a.activity_id, activityTitle: a.activity_title, activityDescription: a.activity_description || '', dueDate: a.due_date || '', maxScore: a.max_score || 100 }
+    }));
+    return [...mats, ...acts];
+  }
+
+  function sectionsTableHtmlTrainer(courseCode, topicId, sections){
+    if (!sections || sections.length === 0) {
+      return `<div class="sections-table"><div class="sections-header"><div>Section</div></div><div class="sections-row"><div class="sec-cell sec-title"><span>No sections available.</span></div></div></div>`;
+    }
+    const bn = document.getElementById('trainer-batch-select')?.value || '';
+    return `
+      <div class="sections-table">
+        <div class="sections-header">
+          <div>Section</div>
+        </div>
+        ${sections.map(s => `
+          <div class="sections-row" data-resource-type="${s.type}" data-resource-id="${s.id}" data-course-code="${courseCode}" data-batch-name="${bn}" data-topic-id="${topicId}">
+            <div class="sec-cell sec-title"><i class="fas ${s.icon}"></i> ${
+              s.type === 'material' && s.editPayload.materialPath
+                ? `<a href="${String(s.editPayload.materialPath).startsWith('http') ? s.editPayload.materialPath : ('../uploads/courses/' + s.editPayload.materialPath)}" target="_blank" rel="noopener noreferrer" class="open-material-link">${s.title}</a>`
+                : (s.type === 'activity'
+                    ? `<a href="#" class="open-activity-link" data-activity-id="${s.id}">${s.title}</a>`
+                    : `<span>${s.title}</span>`)
+            }</div>
+            
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function moduleCardHtmlTrainer(topic){
+    const imgSrc = '../images/school.png';
+    const acts = Array.isArray(topic.activities) ? topic.activities : [];
+    const submitted = acts.reduce((acc,a)=>acc + ((Array.isArray(a.submissions) && a.submissions.length>0)?1:0),0);
+    const progress = acts.length ? Math.round((submitted/acts.length)*100) : 0;
+    const isCompleted = progress === 100 && acts.length>0;
+    const sections = buildTrainerSections(topic);
+    const sectionsCount = sections.length;
+    const code = document.getElementById('course-code')?.textContent || '';
+    return `
+      <div class="module-card" data-expanded="false">
+        <div class="module-header">
+          <img class="module-thumb" src="${imgSrc}" alt="Module">
+          <div class="module-title-area">
+            <h4 class="module-title">${topic.topic_name || 'Module'}</h4>
+          </div>
+          <div class="module-actions">
+            <button type="button" class="btn btn-outline-secondary btn-sm add-material-btn btn-on-dark" data-topic-id="${topic.id}"><i class="fas fa-file"></i> Add Module</button>
+          </div>
+          <button class="toggle-sections" aria-expanded="false"><span class="sections-count">${sectionsCount} section${sectionsCount!==1?'s':''}</span><i class="fas fa-chevron-down"></i></button>
+        </div>
+        <div class="module-sections hidden">
+          ${sectionsTableHtmlTrainer(code, topic.id, sections)}
+        </div>
+      </div>
+    `;
+  }
+
+  document.addEventListener('click', function(e){
+    const openMat = e.target.closest('.open-material-link');
+    if (openMat) { return; }
+    const openAct = e.target.closest('.open-activity-link');
+    if (openAct) {
+      e.preventDefault();
+      if (typeof switchToTab === 'function') { switchToTab('quizzes'); }
+      else {
+        const url = new URL(window.location.href);
+        url.searchParams.set('current_tab', 'quizzes');
+        window.location.href = url.toString();
+      }
+      return;
+    }
+    const tog = e.target.closest('.toggle-sections');
+    if (tog) {
+      const card = tog.closest('.module-card');
+      const sec = card.querySelector('.module-sections');
+      const expanded = tog.getAttribute('aria-expanded') === 'true';
+      tog.setAttribute('aria-expanded', String(!expanded));
+      sec.classList.toggle('hidden');
+      const icon = tog.querySelector('i');
+      if (icon) { icon.classList.toggle('fa-chevron-down'); icon.classList.toggle('fa-chevron-up'); }
+      return;
+    }
+    const giveBtn = e.target.closest('.give-toggle');
+    if (giveBtn) {
+      const row = giveBtn.closest('.sections-row');
+      const resourceType = row?.getAttribute('data-resource-type') || '';
+      const resourceId = row?.getAttribute('data-resource-id') || '';
+      const courseCode = row?.getAttribute('data-course-code') || '';
+      const batchName = row?.getAttribute('data-batch-name') || '';
+      if (!resourceType || !resourceId || !courseCode || !batchName) return;
+      const action = giveBtn.getAttribute('data-given') === 'true' ? 'ungive' : 'give';
+      const btn = giveBtn;
+      btn.disabled = true;
+      fetch('../php/toggle_batch_resource.php', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-Requested-With':'XMLHttpRequest' }, body: JSON.stringify({ course_code: courseCode, batch_name: batchName, resource_type: resourceType, resource_id: parseInt(resourceId,10), action }) })
+        .then(r=>r.json())
+        .then(d=>{
+          if (d.success) {
+            const nowGiven = action === 'give';
+            btn.setAttribute('data-given', nowGiven ? 'true' : 'false');
+            btn.textContent = nowGiven ? 'Ungive' : 'Give';
+          }
+        })
+        .finally(()=>{ btn.disabled = false; });
+    }
+  });
 
   function renderSubmissionsView(topicsByCompetency) {
     const container = document.getElementById('submissions-list');
@@ -839,61 +948,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Add Activity modal interactions
-  const addActivityForm = document.getElementById('addActivityForm');
-  const activityAttachmentSel = document.getElementById('activity_attachment_type');
-  const activityFileGroup = document.getElementById('activity_file_input_group');
-  const activityLinkGroup = document.getElementById('activity_link_input_group');
-  document.getElementById('cancelActivity')?.addEventListener('click', () => {
-    document.getElementById('addActivityModal')?.classList.add('hidden');
-  });
-  document.getElementById('closeActivityModal')?.addEventListener('click', () => {
-    document.getElementById('addActivityModal')?.classList.add('hidden');
-  });
-  activityAttachmentSel?.addEventListener('change', function() {
-    const type = this.value;
-    if (type === 'file') {
-      activityFileGroup?.classList.remove('hidden');
-      activityLinkGroup?.classList.add('hidden');
-    } else if (type === 'link') {
-      activityLinkGroup?.classList.remove('hidden');
-      activityFileGroup?.classList.add('hidden');
-    } else {
-      activityFileGroup?.classList.add('hidden');
-      activityLinkGroup?.classList.add('hidden');
-    }
-  });
-  addActivityForm?.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const startDateDate = document.getElementById('start_date_date')?.value || '';
-    const startDateTime = document.getElementById('start_date_time')?.value || '';
-    const dueDateDate = document.getElementById('due_date_date')?.value || '';
-    const dueDateTime = document.getElementById('due_date_time')?.value || '';
-    const startHidden = document.getElementById('start_date');
-    const dueHidden = document.getElementById('due_date');
-    if (startHidden) startHidden.value = (startDateDate && startDateTime) ? `${startDateDate} ${startDateTime}:00` : '';
-    if (dueHidden) dueHidden.value = (dueDateDate && dueDateTime) ? `${dueDateDate} ${dueDateTime}:00` : '';
-    const formData = new FormData(addActivityForm);
-    const submitBtn = addActivityForm.querySelector('button[type="submit"]');
-    submitBtn.disabled = true; submitBtn.textContent = 'Adding...';
-    formData.append('batch_name', document.getElementById('trainer-batch-select')?.value || currentBatchName);
-    fetch('../php/add_activity.php', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData })
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) {
-          document.getElementById('addActivityModal')?.classList.add('hidden');
-          openConfirm('Confirm Action', 'Activity added successfully.', () => {
-            const code = document.getElementById('course-code')?.textContent || '';
-            const name = document.getElementById('course-detail-title')?.textContent || '';
-            const hours = document.getElementById('course-hours')?.textContent || '';
-            loadCourseDetails(code, name, hours);
-          }, { confirmText: 'Confirm' });
-        } else {
-          openConfirm('Error', 'Add activity failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
-        }
-      })
-      .catch(() => { openConfirm('Error', 'Network error while adding activity', () => {}, { confirmText: 'OK', showCancel: false }); })
-      .finally(() => { submitBtn.disabled = false; submitBtn.textContent = 'Add Activity'; addActivityForm.reset(); });
-  });
+    // Add Activity modal and handlers removed per request
 
   // Connect quiz-type activities to Quizzes management tab
   document.getElementById('competencies-list')?.addEventListener('click', function(e) {
@@ -1356,6 +1411,49 @@ document.addEventListener('click', function(e){
           .then(r => r.json())
           .then(d => { if (d.success) { window.__openConfirm('Confirm Action', 'Material deleted.', () => { const code = document.getElementById('course-code')?.textContent || ''; const name = document.getElementById('course-detail-title')?.textContent || ''; const hours = document.getElementById('course-hours')?.textContent || ''; if (typeof window.loadCourseDetails === 'function') { window.loadCourseDetails(code, name, hours); } else { window.location.reload(); } }, { confirmText: 'Confirm' }); } else { window.__openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false }); } })
           .catch(() => window.__openConfirm('Error', 'Network error while deleting material', () => {}, { confirmText: 'OK', showCancel: false }));
+      }, { confirmText: 'Delete' });
+    };
+  }
+  if (!window.__toggleGive) {
+    window.__toggleGive = function(el){
+      const btn = el.closest('.give-toggle');
+      if (!btn) return;
+      const row = btn.closest('.sections-row');
+      const resourceType = row?.getAttribute('data-resource-type') || '';
+      const resourceId = row?.getAttribute('data-resource-id') || '';
+      const courseCode = row?.getAttribute('data-course-code') || '';
+      let batchName = row?.getAttribute('data-batch-name') || '';
+      if (!batchName) batchName = document.getElementById('trainer-batch-select')?.value || '';
+      if (!resourceType || !resourceId || !courseCode || !batchName) return;
+      const action = btn.getAttribute('data-given') === 'true' ? 'ungive' : 'give';
+      btn.disabled = true;
+      fetch('../php/toggle_batch_resource.php', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-Requested-With':'XMLHttpRequest' }, body: JSON.stringify({ course_code: courseCode, batch_name: batchName, resource_type: resourceType, resource_id: parseInt(resourceId,10), action }) })
+        .then(r=>r.json())
+        .then(d=>{ if (d.success) { const nowGiven = action === 'give'; btn.setAttribute('data-given', nowGiven ? 'true' : 'false'); btn.textContent = nowGiven ? 'Ungive' : 'Give'; } })
+        .finally(()=>{ btn.disabled = false; });
+    };
+  }
+  if (!window.__editActivity) {
+    window.__editActivity = function(el){
+      const btn = el.closest('.edit-activity-btn');
+      if (!btn) return;
+      const payload = { id: btn.dataset.activityId, title: btn.dataset.activityTitle, description: btn.dataset.activityDescription, due: btn.dataset.dueDate, max: btn.dataset.maxScore };
+      if (typeof window.openEditActivityModal === 'function') { window.openEditActivityModal(payload); }
+      else if (typeof openEditActivityModal === 'function') { openEditActivityModal(payload); }
+    };
+  }
+  if (!window.__deleteActivity) {
+    window.__deleteActivity = function(el){
+      const btn = el.closest('.delete-activity-btn');
+      if (!btn) return;
+      const id = btn.dataset.activityId;
+      window.__openConfirm('Confirm Delete', 'Delete activity: ' + (btn.dataset.activityTitle || '') + '?', () => {
+        const bnC = document.getElementById('trainer-batch-select')?.value || '';
+        if (!bnC) { window.__openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+        fetch('../php/delete_activity.php', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ activity_id: id, batch_name: bnC }) })
+          .then(r => r.json())
+          .then(d => { if (d.success) { window.__openConfirm('Confirm Action', 'Activity deleted.', () => { const code = document.getElementById('course-code')?.textContent || ''; const name = document.getElementById('course-detail-title')?.textContent || ''; const hours = document.getElementById('course-hours')?.textContent || ''; if (typeof window.loadCourseDetails === 'function') { window.loadCourseDetails(code, name, hours); } else { window.location.reload(); } }, { confirmText: 'Confirm' }); } else { window.__openConfirm('Error', 'Delete failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false }); } })
+          .catch(() => window.__openConfirm('Error', 'Network error while deleting activity', () => {}, { confirmText: 'OK', showCancel: false }));
       }, { confirmText: 'Delete' });
     };
   }

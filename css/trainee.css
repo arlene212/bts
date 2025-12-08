@@ -2590,6 +2590,35 @@ body::before {
 #courseDetail .count-pill { background: #eef2ff; color: #3730a3; border: 1px solid #e6e8ff; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 #courseDetail .search-input { padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 999px; font-size: 12px; width: 220px; }
 #courseDetail .search-input:focus { outline: none; border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96,165,250,.2); }
+
+/* Style actual search inputs used in Modules and Activities headers */
+#courseDetail #modules-search,
+#courseDetail #activities-search {
+  padding: 8px 12px;
+  height: 36px;
+  line-height: 1;
+  border: 2px solid var(--secondary-200);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--secondary-800);
+  font-size: 14px;
+  width: 260px;
+}
+
+#courseDetail #modules-search::placeholder,
+#courseDetail #activities-search::placeholder { color: var(--secondary-500); }
+
+#courseDetail #modules-search:focus,
+#courseDetail #activities-search:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+}
+
+@media (max-width: 640px) {
+  #courseDetail #modules-search,
+  #courseDetail #activities-search { width: 200px; }
+}
 #courseDetail .modules-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
 #courseDetail .activities-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
 #courseDetail .module-item, #courseDetail .activity-item { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; box-shadow: 0 2px 10px rgba(0,0,0,.04); transition: transform .15s, box-shadow .15s; min-height: 140px; display: flex; flex-direction: column; gap: 8px; }

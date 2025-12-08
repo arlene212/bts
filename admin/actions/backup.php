@@ -116,9 +116,33 @@ if ($action === 'backup_and_reset') {
   } catch (Exception $e) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Password verification failed','trace'=>$trace]); exit; }
   $trace[]=['stage'=>'start_reset','ts'=>date('c')]; $msgRs=''; $okRs = reset_full($msgRs,$trace); $type = $okRs ? 'warning' : 'danger'; $finalMsg = $okRs ? ('Backup created and system reset: ' . basename($bkPath)) : $msgRs; echo json_encode(['ok'=>$okRs,'type'=>$type,'message'=>$finalMsg,'trace'=>$trace]); exit;
 } elseif ($action === 'restore_latest') {
-  $trace=[]; $trace[]=['stage'=>'start_restore','ts'=>date('c')]; $msg=''; $ok = restore_latest_sql($msg,$trace); $type = $ok ? 'success':'danger'; echo json_encode(['ok'=>$ok,'type'=>$type,'message'=>$msg,'trace'=>$trace]); exit;
+  $trace=[]; $trace[]=['stage'=>'start_restore','ts'=>date('c')];
+  $adminPassword = $_POST['admin_password'] ?? '';
+  if (trim($adminPassword) === '') { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Admin password is required to proceed','trace'=>$trace]); exit; }
+  try {
+    $db = new DatabaseConnection();
+    $pdo = $db->getConnection();
+    $userId = $_SESSION['user']['user_id'] ?? '';
+    $stmt = $pdo->prepare('SELECT password FROM users WHERE user_id = ? AND role = "admin" AND status = "active"');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row || !password_verify($adminPassword, $row['password'])) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Invalid admin password','trace'=>$trace]); exit; }
+  } catch (Exception $e) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Password verification failed','trace'=>$trace]); exit; }
+  $msg=''; $ok = restore_latest_sql($msg,$trace); $type = $ok ? 'success':'danger'; echo json_encode(['ok'=>$ok,'type'=>$type,'message'=>$msg,'trace'=>$trace]); exit;
 } elseif ($action === 'backup_only') {
-  $trace=[]; $trace[]=['stage'=>'start_backup_only','ts'=>date('c')]; $msgBk=''; $okBk=false; $bkPath=null;
+  $trace=[]; $trace[]=['stage'=>'start_backup_only','ts'=>date('c')];
+  $adminPassword = $_POST['admin_password'] ?? '';
+  if (trim($adminPassword) === '') { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Admin password is required to proceed','trace'=>$trace]); exit; }
+  try {
+    $db = new DatabaseConnection();
+    $pdo = $db->getConnection();
+    $userId = $_SESSION['user']['user_id'] ?? '';
+    $stmt = $pdo->prepare('SELECT password FROM users WHERE user_id = ? AND role = "admin" AND status = "active"');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row || !password_verify($adminPassword, $row['password'])) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Invalid admin password','trace'=>$trace]); exit; }
+  } catch (Exception $e) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Password verification failed','trace'=>$trace]); exit; }
+  $msgBk=''; $okBk=false; $bkPath=null;
   list($okBk,$bkPath) = backup_full($msgBk,$trace);
   $type = $okBk ? 'success' : 'danger';
   echo json_encode(['ok'=>$okBk,'type'=>$type,'message'=>$msgBk,'file'=>($bkPath?basename($bkPath):null),'trace'=>$trace]); exit;
@@ -143,6 +167,17 @@ if ($action === 'backup_and_reset') {
   if (!$safe || !preg_match('/_full_backup\.sql$/', $safe)) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Invalid file']); exit; }
   $path = realpath($dir . DIRECTORY_SEPARATOR . $safe);
   if (!$path || strpos($path, $dir) !== 0 || !file_exists($path)) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Backup not found']); exit; }
+  $adminPassword = $_POST['admin_password'] ?? '';
+  if (trim($adminPassword) === '') { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Admin password is required to proceed']); exit; }
+  try {
+    $db = new DatabaseConnection();
+    $pdo = $db->getConnection();
+    $userId = $_SESSION['user']['user_id'] ?? '';
+    $stmt = $pdo->prepare('SELECT password FROM users WHERE user_id = ? AND role = "admin" AND status = "active"');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row || !password_verify($adminPassword, $row['password'])) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Invalid admin password']); exit; }
+  } catch (Exception $e) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Password verification failed']); exit; }
   $vr=''; if (!verify_sql_dump($path,$vr)) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Backup verification failed: '.$vr]); exit; }
   $mysql = find_mysql(); if (!$mysql) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'mysql client not found']); exit; }
   $cmd = '"' . $mysql . '"' . ' --host=' . escapeshellarg(DB_HOST) . ' --user=' . escapeshellarg(DB_USER) . ' --password=' . escapeshellarg(DB_PASS) . ' ' . escapeshellarg(DB_NAME);
@@ -160,6 +195,17 @@ if ($action === 'backup_and_reset') {
   if (!$safe || !preg_match('/_full_backup\.sql$/', $safe)) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Invalid file']); exit; }
   $path = realpath($dir . DIRECTORY_SEPARATOR . $safe);
   if (!$path || strpos($path, $dir) !== 0 || !file_exists($path)) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Backup not found']); exit; }
+  $adminPassword = $_POST['admin_password'] ?? '';
+  if (trim($adminPassword) === '') { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Admin password is required to proceed']); exit; }
+  try {
+    $db = new DatabaseConnection();
+    $pdo = $db->getConnection();
+    $userId = $_SESSION['user']['user_id'] ?? '';
+    $stmt = $pdo->prepare('SELECT password FROM users WHERE user_id = ? AND role = "admin" AND status = "active"');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row || !password_verify($adminPassword, $row['password'])) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Invalid admin password']); exit; }
+  } catch (Exception $e) { echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Password verification failed']); exit; }
   if (@unlink($path)) { backup_log('backup_deleted', ['file'=>$safe]); echo json_encode(['ok'=>true,'type'=>'warning','message'=>'Backup deleted: '.$safe]); exit; }
   echo json_encode(['ok'=>false,'type'=>'danger','message'=>'Delete failed']); exit;
 }

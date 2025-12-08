@@ -75,7 +75,13 @@ try {
   $total_activities = (int)$stmt->fetch(PDO::FETCH_ASSOC)['count'];
 
   $trainees_count_query = "SELECT COUNT(DISTINCT u.user_id) " . $trainees_base_query;
-  $trainees_data_query = "SELECT DISTINCT u.*, e.course_name, COALESCE(ba.batch_name, e.batch_name) as batch_name, e.status as enrollment_status " . $trainees_base_query;
+  $trainees_data_query = "SELECT 
+      u.*, 
+      GROUP_CONCAT(DISTINCT e.course_name ORDER BY e.course_name SEPARATOR ', ') AS courses_list,
+      COUNT(DISTINCT e.course_code) AS course_count,
+      GROUP_CONCAT(DISTINCT COALESCE(ba.batch_name, e.batch_name) ORDER BY COALESCE(ba.batch_name, e.batch_name) SEPARATOR ', ') AS batches_list,
+      CASE WHEN SUM(CASE WHEN e.status <> 'approved' THEN 1 ELSE 0 END) > 0 THEN 'pending' ELSE 'approved' END AS enrollment_status
+    " . $trainees_base_query . " GROUP BY u.user_id";
   if (!empty($traineeSearch)) {
     $search_condition = " AND (u.first_name LIKE :search OR u.last_name LIKE :search OR u.email LIKE :search OR u.user_id LIKE :search OR e.course_name LIKE :search)";
     $trainees_count_query .= $search_condition;

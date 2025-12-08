@@ -32,13 +32,13 @@ function setupBrowseCourseDetailView() {
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (data.error) { contentEl.innerHTML = '<div class="error-message">Error: ' + data.error + '</div>'; return; }
-      var comps = (data.competencies || []).filter(function(c){ return c.type === 'basic'; });
+      var comps = (data.competencies || []);
       var html = '';
       if (data.course && data.course.description) {
         html += '<p class="course-description-detail">' + data.course.description + '</p>';
       }
       if (comps.length > 0) {
-        html += '<h4>Basic Competencies</h4>';
+        html += '<h4>Competencies</h4>';
         comps.forEach(function(comp){
           html += '<div class="competency-box">';
           html += '<div class="competency-header"><h4>' + comp.name + '</h4></div>';

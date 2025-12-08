@@ -40,6 +40,18 @@ class AccessControl {
         $stmt->execute([$courseCode, $batchName, $resourceType, $resourceId, $trainerId]);
     }
 
+    public static function unmapResourceFromBatch(PDO $pdo, string $courseCode, string $batchName, string $resourceType, int $resourceId): void {
+        try {
+            $tchk = $pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'batch_resources'");
+            $tchk->execute();
+            if ((int)$tchk->fetchColumn() === 0) {
+                return;
+            }
+        } catch (Exception $__){ return; }
+        $stmt = $pdo->prepare("DELETE FROM batch_resources WHERE course_code = ? AND batch_name = ? AND resource_type = ? AND resource_id = ?");
+        $stmt->execute([$courseCode, $batchName, $resourceType, $resourceId]);
+    }
+
     public static function traineeInBatch(PDO $pdo, string $traineeId, string $courseCode, string $batchName): bool {
         $stmt = $pdo->prepare("SELECT 1 FROM batch_assignments WHERE trainee_id = ? AND course_code = ? AND batch_name = ? LIMIT 1");
         $stmt->execute([$traineeId, $courseCode, $batchName]);

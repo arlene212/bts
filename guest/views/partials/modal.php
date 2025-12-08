@@ -79,6 +79,13 @@
     <h3>⚠️ Enrollment Confirmation</h3>
     <div class="modal-body">
       <p>Are you sure you want to enroll in <strong id="enrollCourseName"></strong>?</p>
+      <div id="batchSelectSection" class="batch-select-section">
+        <label for="batchSelect">Select Batch</label>
+        <select id="batchSelect" class="form-select">
+          <option value="">Loading...</option>
+        </select>
+        <div id="batchSelectError" class="validation-error hidden">Please select a batch</div>
+      </div>
       <div id="verificationSection" class="verification-section hidden">
         <h4>Verification Required</h4>
         <p id="verificationMessage"></p>
