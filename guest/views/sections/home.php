@@ -1,8 +1,10 @@
 <?php 
 // Calculate statistics for the dashboard
-$total_enrolled = count($enrolled_courses);
-$pending_requests = count(array_filter($enrollment_requests, function ($r) { return $r['status'] == 'pending'; }));
-$total_available = count($offered_courses);
+$total_enrolled = is_array($enrolled_courses) ? count($enrolled_courses) : 0;
+$total_available = is_array($offered_courses) ? count($offered_courses) : 0;
+$completed_count = is_array($enrolled_courses) ? count(array_filter($enrolled_courses, function($course){
+  return isset($course['status']) && $course['status'] === 'completed';
+})) : 0;
 ?>
 <div class="dashboard tab-inner active" id="dashboard">
   <h1 class="section-header">Dashboard Overview</h1>
@@ -16,8 +18,8 @@ $total_available = count($offered_courses);
       <div class="label-text">Available Courses</div>
     </div>
     <div class="dashboard-card clickable-card" data-target="enrolled">
-      <div class="number-circle"><?php echo $pending_requests; ?></div>
-      <div class="label-text">Pending Requests</div>
+      <div class="number-circle"><?php echo $completed_count; ?></div>
+      <div class="label-text">Completed Courses</div>
     </div>
   </div>
   

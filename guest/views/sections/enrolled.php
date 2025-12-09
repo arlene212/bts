@@ -18,10 +18,10 @@ $completed_courses_list = is_array($enrolled_courses) ? array_filter($enrolled_c
   </p>
 
   <div class="news-switch-wrapper">
-    <div class="switch-oval" id="courseSwitchContainer">
+    <div class="switch-oval" id="courseSwitchContainer" role="tablist" aria-label="My Courses Switch">
       <div class="switch-inner" id="myCourseSwitchInner"></div>
-      <button type="button" class="switch-btn active" data-target="active">Active</button>
-      <button type="button" class="switch-btn" data-target="completed">Completed</button>
+      <button type="button" class="switch-btn active" data-target="active" role="tab" aria-selected="true" aria-controls="enrolled-active-courses">Active</button>
+      <button type="button" class="switch-btn" data-target="completed" role="tab" aria-selected="false" aria-controls="enrolled-completed-courses">Completed</button>
     </div>
   </div>
 
@@ -133,56 +133,56 @@ $completed_courses_list = is_array($enrolled_courses) ? array_filter($enrolled_c
 </div>
 
 <script>
-// Match trainee UI switch behavior
 document.addEventListener('DOMContentLoaded', function() {
   const courseSwitchContainer = document.getElementById('courseSwitchContainer');
   if (!courseSwitchContainer) return;
 
   const switchButtons = courseSwitchContainer.querySelectorAll('.switch-btn');
   const switchInner = document.getElementById('myCourseSwitchInner');
-  const activeCoursesContent = document.getElementById('enrolled-active-courses');
-  const completedCoursesContent = document.getElementById('enrolled-completed-courses');
+  const activePane = document.getElementById('enrolled-active-courses');
+  const completedPane = document.getElementById('enrolled-completed-courses');
 
+  const buttonWidth = 100 / switchButtons.length;
   if (switchInner) {
+    switchInner.style.width = `${buttonWidth}%`;
     switchInner.style.transform = 'translateX(0%)';
-    switchInner.style.width = '50%';
   }
+
+  const setState = (target) => {
+    switchButtons.forEach(btn => {
+      const isActive = btn.getAttribute('data-target') === target;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    const index = target === 'completed' ? 1 : 0;
+    if (switchInner) {
+      switchInner.style.transform = `translateX(${index * 100}%)`;
+      switchInner.style.width = `${buttonWidth}%`;
+    }
+
+    if (activePane && completedPane) {
+      activePane.classList.toggle('active', target === 'active');
+      completedPane.classList.toggle('active', target === 'completed');
+    }
+  };
 
   switchButtons.forEach(button => {
     button.addEventListener('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
-
       const target = this.getAttribute('data-target');
-
-      switchButtons.forEach(btn => btn.classList.remove('active'));
-      this.classList.add('active');
-
-      const buttonIndex = Array.from(switchButtons).indexOf(this);
-      const buttonWidth = 100 / switchButtons.length;
-      if (switchInner) {
-        switchInner.style.transform = `translateX(${buttonIndex * 100}%)`;
-        switchInner.style.width = `${buttonWidth}%`;
-      }
-
-      if (target === 'active') {
-        if (activeCoursesContent) {
-          activeCoursesContent.classList.add('active');
-          activeCoursesContent.style.display = 'block';
-        }
-        if (completedCoursesContent) {
-          completedCoursesContent.classList.remove('active');
-          completedCoursesContent.style.display = 'none';
-        }
-      } else {
-        if (activeCoursesContent) {
-          activeCoursesContent.classList.remove('active');
-          activeCoursesContent.style.display = 'none';
-        }
-        if (completedCoursesContent) {
-          completedCoursesContent.classList.add('active');
-          completedCoursesContent.style.display = 'block';
-        }
+      setState(target);
+    });
+    button.addEventListener('keydown', function(e) {
+      const key = e.key;
+      if (key === 'ArrowRight' || key === 'ArrowLeft') {
+        e.preventDefault();
+        const currentIndex = Array.from(switchButtons).indexOf(document.querySelector('.switch-btn.active'));
+        const nextIndex = key === 'ArrowRight' ? Math.min(currentIndex + 1, switchButtons.length - 1) : Math.max(currentIndex - 1, 0);
+        const nextTarget = switchButtons[nextIndex].getAttribute('data-target');
+        switchButtons[nextIndex].focus();
+        setState(nextTarget);
       }
     });
   });

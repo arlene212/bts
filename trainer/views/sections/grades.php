@@ -282,8 +282,94 @@
 .grade-d { background: #fecaca; color: #dc2626; }
 .grade-f { background: #fee2e2; color: #991b1b; }
 
-  font-size: var(--font-size-xs);
+.activity-type-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-md);
   font-weight: 500;
+  font-size: var(--font-size-xs);
+}
+.activity-type-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+}
+.status-completed { background: var(--success-500); color: white; }
+.status-pending { background: var(--warning-500); color: white; }
+.status-missing { background: var(--error-500); color: white; }
+
+.no-data-message {
+  text-align: center;
+  padding: 3rem;
+  color: var(--secondary-500);
+}
+
+.no-data-message i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-data-message p {
+  font-size: var(--font-size-lg);
+  margin-bottom: 0.5rem;
+}
+
+.modal.large-modal .modal-content {
+  max-width: 800px;
+}
+
+.file-upload-area {
+  border: 2px dashed var(--secondary-300);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.file-upload-area:hover {
+  border-color: var(--primary-400);
+}
+
+.file-upload-area i {
+  font-size: 2rem;
+  color: var(--secondary-400);
+  margin-bottom: 0.5rem;
+}
+
+.import-instructions ul {
+  text-align: left;
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.import-instructions li {
+  margin-bottom: 0.5rem;
+  color: var(--secondary-600);
+}
+
+@media (max-width: 768px) {
+  .grades-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .grades-controls {
+    flex-direction: column;
+  }
+  
+  .summary-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .grades-table {
+    font-size: var(--font-size-xs);
+  }
+  
+  .grades-table th,
+  .grades-table td {
+    padding: 0.5rem;
+  }
 }
 
 .status-completed { background: var(--success-500); color: white; }

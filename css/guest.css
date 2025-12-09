@@ -2439,6 +2439,7 @@ body::after {
   gap: var(--spacing-1);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--secondary-200);
+  min-width: fit-content;
 }
 #enrolledCoursesContainer .switch-oval .switch-inner {
   position: absolute;
@@ -2473,6 +2474,10 @@ body::after {
   background: transparent !important;
   box-shadow: none;
   transform: translateY(-1px);
+}
+#enrolledCoursesContainer .switch-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
 }
 #enrolledCoursesContainer .switch-btn:hover:not(.active) {
   color: var(--primary-600);
