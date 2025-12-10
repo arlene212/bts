@@ -376,7 +376,6 @@ function displayQuestions(questions) {
                 <div class="question-header">
                     <span class="question-number">Question ${index + 1}</span>
                     <span class="question-points">${question.points} points</span>
-                    <span class="question-difficulty difficulty-${question.difficulty}">${question.difficulty}</span>
                 </div>
                 <div class="question-text">${question.question_text}</div>
                 <div class="question-type">Type: ${question.question_type.replace('_', ' ')}</div>

@@ -308,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         ${sections.map(s => {
           const isLink = s.type === 'material' && s.path && (String(s.path).startsWith('http://') || String(s.path).startsWith('https://'));
-          const href = s.type === 'material' ? (isLink ? s.path : (s.path ? `../uploads/courses/${s.path}` : '')) : (s.type === 'activity' && s.id ? `../trainee/activity_view.php?id=${s.id}` : '');
+          const href = s.type === 'material' ? (isLink ? s.path : (s.path ? `../uploads/courses/${s.path}` : '')) : '';
           const linkOpen = href ? `<a href="${href}" target="_blank" class="section-link">` : '';
           const linkClose = href ? `</a>` : '';
 
@@ -405,7 +405,19 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
       }
-      if (type === 'activity' && id) { window.open(`../trainee/activity_view.php?id=${id}`, '_blank'); }
+      if (type === 'activity' && id) {
+        const tabLink = document.querySelector(`.tab-link[data-tab="quizzes"]`);
+        if (tabLink) { tabLink.click(); }
+        setTimeout(() => {
+          const targetRow = document.querySelector(`#activities-pane .sections-row[data-resource-id="${CSS.escape(id)}"]`) ||
+                            document.querySelector(`#activities-pane .topic-activity-item[data-activity-id="${CSS.escape(id)}"]`);
+          if (targetRow) {
+            targetRow.classList.add('row-highlight');
+            try { targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+            setTimeout(() => targetRow.classList.remove('row-highlight'), 2000);
+          }
+        }, 150);
+      }
     }
   });
 
@@ -441,29 +453,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderActivitiesInteractive(activities, container) {
     if (!activities || activities.length === 0) { container.innerHTML = '<p>No activities found for this course.</p>'; return; }
-    let html = '<div class="activities-list">';
-    activities.forEach(a => {
-      html += `
-        <div class="topic-activity-item" data-activity-id="${a.id}">
-          <div class="activity-header">
-            <div class="activity-info-cleaned">
-              <strong>${a.activity_title || a.title || 'Unnamed Activity'}</strong>
-              <p>Date Given: ${formatDisplayDate(a.start_date)}</p>
-              <p>Due: ${formatDisplayDate(a.due_date)}</p>
-            </div>
-            <div class="activity-actions">
-              <a href="../trainee/activity_view.php?id=${a.id}" target="_blank" class="btn btn-outline-primary view-activity-btn">View Activity</a>
-            </div>
-          </div>
-          <div class="activity-content hidden">
-            <div class="activity-instructions"><h4><i class="fas fa-info-circle"></i> Instructions</h4><p>${a.activity_description || a.description || 'No instructions provided.'}</p></div>
-            ${a.submission ? renderSubmissionHistory(a) : renderSubmissionForm(a)}
-          </div>
+    const rows = activities.map(a => {
+      const s = a.submission;
+      const now = new Date();
+      const due = a.due_date ? new Date(String(a.due_date).replace(' ', 'T')) : null;
+      const missed = !s && !!due && now > due;
+      const pendingScore = !!s && s.score === null;
+      let submittedDisplay = '—';
+      let scoreDisplay = '—';
+      let dueDisplay = a.due_date || '—';
+      let statusDisplay = '-';
+      if (missed) {
+        submittedDisplay = '0';
+        scoreDisplay = 'M';
+        statusDisplay = '<i class="fas fa-flag"></i>';
+      } else if (pendingScore) {
+        submittedDisplay = '~';
+        scoreDisplay = '~';
+        statusDisplay = '<i class="fas fa-check text-success"></i>';
+      } else if (s) {
+        submittedDisplay = '<i class="fas fa-check text-success"></i>';
+        scoreDisplay = (s.score !== null && a.max_score !== null) ? `${s.score}/${a.max_score}` : '—';
+        statusDisplay = '<i class="fas fa-check text-success"></i>';
+      } else {
+        submittedDisplay = '<i class="fas fa-flag"></i>';
+        statusDisplay = '<i class="fas fa-flag"></i>';
+      }
+      const title = a.activity_title || a.title || 'Activity';
+      return `
+        <div class="sections-row" data-resource-type="activity" data-resource-id="${a.id}">
+          <div class="sec-cell sec-title"><i class="fas fa-folder-open"></i> <span>${escapeHtml(title)}</span></div>
+          <div class="sec-cell">${submittedDisplay}</div>
+          <div class="sec-cell">${scoreDisplay}</div>
+          <div class="sec-cell">${dueDisplay}</div>
+          <div class="sec-cell">${statusDisplay}</div>
         </div>
       `;
-    });
-    html += '</div>';
-    container.innerHTML = html;
+    }).join('');
+    container.innerHTML = `
+      <div class="sections-table">
+        <div class="sections-header">
+          <div>Section</div>
+          <div>Submitted</div>
+          <div>Score</div>
+          <div>Due</div>
+          <div>Status</div>
+        </div>
+        ${rows}
+      </div>
+    `;
   }
 
   function renderSubmissionHistory(activity) {
@@ -734,8 +772,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function buildSectionsFromCompetency(comp) {
     const topics = Array.isArray(comp.topics) ? comp.topics : [];
     const mats = topics.flatMap(t => (t.materials || []).map(m => ({
-      icon: 'fa-file',
-      title: m.material_title || m.title || 'Material',
+      icon: 'fa-folder',
+      title: t.topic_name || t.name || m.material_title || m.title || 'Material',
       submitted: null,
       score: null,
       max: null,
@@ -746,7 +784,7 @@ document.addEventListener('DOMContentLoaded', () => {
       path: m.file_path
     })));
     const acts = topics.flatMap(t => (t.activities || []).map(a => ({
-      icon: 'fa-folder-open',
+      icon: 'fa-folder',
       title: a.activity_title || a.title || 'Activity',
       submitted: !!a.submission,
       score: a.submission && a.submission.score !== null ? a.submission.score : null,

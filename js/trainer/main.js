@@ -55,11 +55,62 @@ document.addEventListener('DOMContentLoaded', function () {
   // Hamburger toggle
   const hamburger = document.getElementById('hamburger');
   const sidebar = document.querySelector('.sidebar');
+  const sidebarBackdrop = document.getElementById('sidebarBackdrop');
   if (hamburger && sidebar) {
     hamburger.addEventListener('click', function () {
+      const willOpen = !sidebar.classList.contains('open');
       sidebar.classList.toggle('open');
+      if (sidebarBackdrop) sidebarBackdrop.classList.toggle('active', willOpen);
+      document.body.classList.toggle('no-scroll', willOpen);
+      if (hamburger) hamburger.setAttribute('aria-expanded', String(willOpen));
     });
   }
+
+  function closeSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.remove('open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+    document.body.classList.remove('no-scroll');
+    if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
+  }
+
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener('click', closeSidebar);
+    sidebarBackdrop.addEventListener('touchstart', function(){ closeSidebar(); }, { passive: true });
+    sidebarBackdrop.addEventListener('pointerdown', function(){ closeSidebar(); });
+  }
+
+  // Close on ESC
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && sidebar && sidebar.classList.contains('open')) {
+      closeSidebar();
+    }
+  });
+
+  function outsideHandler(e) {
+    const isOpen = sidebar && sidebar.classList.contains('open');
+    const backdropActive = sidebarBackdrop && sidebarBackdrop.classList.contains('active');
+    if (isOpen && (window.innerWidth <= 1024 || backdropActive)) {
+      const clickedInsideSidebar = e.target.closest('.sidebar');
+      const clickedHamburger = e.target.closest('#hamburger');
+      if (!clickedInsideSidebar && !clickedHamburger) {
+        closeSidebar();
+      }
+    }
+  }
+  document.addEventListener('click', outsideHandler, true);
+  document.addEventListener('touchstart', outsideHandler, { passive: true });
+  document.addEventListener('pointerdown', outsideHandler);
+
+  // Ensure state resets on resize to desktop
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 1024) {
+      if (sidebar) sidebar.classList.remove('open');
+      if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+      document.body.classList.remove('no-scroll');
+      if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
+    }
+  });
 
   // Dashboard card click functionality
   document.addEventListener('click', function (e) {

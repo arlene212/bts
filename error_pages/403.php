@@ -24,7 +24,7 @@ body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
       <p class="text-muted">You do not have permission to access this resource.</p>
       <div class="actions">
         <button class="btn" onclick="history.back()">Go Back</button>
-        <a class="btn btn-outline" href="/bts/landingpage.php">Home</a>
+        <a class="btn btn-outline" href="../landingpage.php">Home</a>
       </div>
     </div>
   </div>

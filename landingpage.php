@@ -11,21 +11,21 @@ if (SessionManager::isLoggedIn()) {
         $role = $user['role'] ?? '';
         $mustChange = in_array($role, ['trainer', 'trainee']) && isset($user['password_changed_at']) && $user['password_changed_at'] === null;
         if ($mustChange) {
-            header('Location: /bts/force_change_password.php');
+            header('Location: force_change_password.php');
             exit;
         }
         switch ($role) {
             case 'admin':
-                header('Location: /bts/admin/index.php');
+                header('Location: admin/index.php');
                 break;
             case 'trainer':
-                header('Location: /bts/trainer/index.php');
+                header('Location: trainer/index.php');
                 break;
             case 'trainee':
-                header('Location: /bts/trainee/index.php');
+                header('Location: trainee/index.php');
                 break;
             case 'guest':
-                header('Location: /bts/guest/index.php');
+                header('Location: guest/index.php');
                 break;
             default:
                 // fall through to show landing page
@@ -112,22 +112,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
                         $role = $newUser['role'] ?? 'guest';
                         $mustChange = in_array($role, ['trainer', 'trainee']) && isset($newUser['password_changed_at']) && $newUser['password_changed_at'] === null;
                         if ($mustChange) {
-                            header('Location: /bts/force_change_password.php');
+                            header('Location: force_change_password.php');
                             exit();
                         }
                         switch ($role) {
                             case 'admin':
-                                header('Location: /bts/admin/index.php');
+                                header('Location: admin/index.php');
                                 break;
                             case 'trainer':
-                                header('Location: /bts/trainer/index.php');
+                                header('Location: trainer/index.php');
                                 break;
                             case 'trainee':
-                                header('Location: /bts/trainee/index.php');
+                                header('Location: trainee/index.php');
                                 break;
                             case 'guest':
                             default:
-                                header('Location: /bts/guest/index.php');
+                                header('Location: guest/index.php');
                                 break;
                         }
                         exit();

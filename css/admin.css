@@ -68,6 +68,8 @@ body::before {
   overflow-y: auto;
   box-shadow: var(--shadow-xl);
   backdrop-filter: blur(10px);
+  transition: transform 0.3s ease;
+  will-change: transform;
 }
 
 .user-card {
@@ -286,6 +288,9 @@ body::before {
   flex-direction: column;
   justify-content: space-between;
   transition: all 0.3s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  padding: 8px;
 }
 
 .hamburger span {
@@ -294,6 +299,7 @@ body::before {
   background: #374151;
   border-radius: 2px;
   transition: all 0.3s ease;
+  will-change: transform, opacity;
 }
 
 .hamburger:hover span {
@@ -325,7 +331,30 @@ body::before {
   background: #374151;
   border-radius: 2px;
   transition: all 0.3s ease;
+  will-change: transform, opacity;
 }
+
+.hamburger.active span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.hamburger.active span:nth-child(2) { opacity: 0; }
+.hamburger.active span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  z-index: 900;
+  cursor: pointer;
+}
+
+body.sidebar-open { overflow: hidden; }
+body.sidebar-open .sidebar-overlay { opacity: 1; visibility: visible; }
+body.sidebar-open .sidebar { transform: translateX(0); }
 
 .hamburger:hover span {
   background: #3b82f6;
@@ -1028,9 +1057,6 @@ body::before {
     transition: transform 0.3s ease;
   }
   
-  .sidebar.active {
-    transform: translateX(0);
-  }
   
   .main {
     margin-left: 0;
@@ -1055,6 +1081,10 @@ body::before {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+}
+
+@media (min-width: 769px) {
+  .sidebar-overlay { display: none; }
 }
 
 .form-control:focus {
@@ -1990,6 +2020,10 @@ body div.modal .modal-content .modal-footer button.submit-btn:hover {
     gap: 1rem 1.5rem;
 }
 
+@media (max-width: 768px) {
+    #addCourseForm .modal-body > .form-group { grid-template-columns: 1fr; }
+}
+
 /* Make description and image fields span the full width */
 #addCourseForm .form-group-full,
 #editCourseForm .form-group-full {
@@ -2338,7 +2372,18 @@ input[type="file"] {
     padding: 0 !important; /* Remove padding to allow sections to control spacing */
 }
 
+#addCourseModal .modal-content {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+}
+
 #editCourseModal .modal-body {
+    flex: 1 !important;
+    overflow-y: auto !important;
+}
+
+#addCourseModal .modal-body {
     flex: 1 !important;
     overflow-y: auto !important;
 }
@@ -2352,6 +2397,16 @@ input[type="file"] {
     padding: 1rem 2rem !important;
     margin-top: auto !important;
     min-height: 70px !important; /* Ensure minimum height for buttons */
+}
+
+#addCourseModal .modal-footer {
+    position: sticky !important;
+    bottom: 0 !important;
+    background: #f8f9fa !important;
+    border-top: 2px solid #e9ecef !important;
+    padding: 1rem 2rem !important;
+    margin-top: auto !important;
+    min-height: 70px !important;
 }
 
 /* Responsive adjustments */
@@ -2379,6 +2434,16 @@ input[type="file"] {
     .modal-footer {
         flex-direction: column;
     }
+
+    #addCourseModal .modal-header {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 3;
+    }
+
+    .competency-fields { flex-direction: column; }
+    .competency-field-group, .competency-edit-row { min-width: 100%; }
 }
 
 
@@ -2483,15 +2548,9 @@ input[type="file"] {
   }
 }
 
-@media (max-width: 1024px) {
-  .sidebar {
-    width: 220px;
-  }
-  
-  .main {
-    margin-left: 220px;
-    width: calc(100% - 220px);
-  }
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar { width: 220px; }
+  .main { margin-left: 220px; width: calc(100% - 220px); }
 }
   
   .home-content-wrapper {

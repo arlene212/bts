@@ -532,17 +532,20 @@ function updateGradesTable() {
       </td>
       <td>
         <strong>${grade.score}/${grade.max_score}</strong>
-        <small>(${grade.percentage}%)</small>
+        <small>${grade.status === 'pending' ? '(Pending)' : `(${grade.percentage}%)`}</small>
       </td>
       <td>
-        <span class="grade-badge grade-${grade.grade.toLowerCase()}">
-          ${grade.grade}
-        </span>
+        ${grade.status === 'pending' 
+          ? '<span class="status-pending">Pending</span>' 
+          : `<span class="grade-badge grade-${grade.grade.toLowerCase()}">${grade.grade}</span>`}
       </td>
       <td>${formatDate(grade.submitted_date)}</td>
       <td>
         <button class="btn btn-sm btn-outline-primary" onclick="viewGradeDetails('${grade.id}')">
           <i class="fas fa-eye"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="editGrade('${grade.id}')" style="margin-left:6px">
+          <i class="fas fa-edit"></i>
         </button>
       </td>
     </tr>
@@ -623,9 +626,34 @@ function viewGradeDetails(gradeId) {
         </div>
       ` : ''}
     </div>
+    <div class="answers-section">
+      <h5>Essay Answers</h5>
+      <div id="answersList"><div class="loading">Loading answers...</div></div>
+    </div>
   `;
   
   openModal(modal);
+
+  // Fetch per-question answers and render essay responses
+  fetch(`../trainer/handlers/grade_handler.php?action=get_attempt_details&id=${encodeURIComponent(grade.id)}`)
+    .then(r => r.json())
+    .then(data => {
+      const el = document.getElementById('answersList');
+      if (!el) return;
+      if (!data.success) { el.innerHTML = `<div class="error-message">Failed to load answers</div>`; return; }
+      const essays = (data.details || []).filter(d => d.question_type === 'essay');
+      if (essays.length === 0) { el.innerHTML = '<p class="no-data">No essay answers in this attempt.</p>'; return; }
+      el.innerHTML = essays.map(d => `
+        <div class="essay-answer">
+          <div class="essay-question"><strong>Q:</strong> ${escapeHtml(d.question_text)}</div>
+          <div class="essay-response"><strong>A:</strong> ${escapeHtml(d.trainee_answer || '(no answer)')}</div>
+        </div>
+      `).join('');
+    })
+    .catch(() => {
+      const el = document.getElementById('answersList');
+      if (el) el.innerHTML = `<div class="error-message">Network error while loading answers</div>`;
+    });
 }
 
 function editGrade(gradeId) {
@@ -663,6 +691,10 @@ function editGrade(gradeId) {
             </div>
           </div>
         </div>
+        <div class="answers-section">
+          <h5>Essay Answers</h5>
+          <div id="answersListEdit"><div class="loading">Loading answers...</div></div>
+        </div>
         <input type="hidden" name="grade_id" value="${grade.id}">
       </div>
     </form>
@@ -684,6 +716,7 @@ function editGrade(gradeId) {
               filteredGrades[idx].max_score = parseFloat(fd.get('max_score'));
               filteredGrades[idx].percentage = (filteredGrades[idx].score / filteredGrades[idx].max_score * 100).toFixed(1);
               filteredGrades[idx].feedback = fd.get('feedback');
+              filteredGrades[idx].status = 'completed';
               updateGradesTable();
               updateSummaryCards();
             }
@@ -698,6 +731,27 @@ function editGrade(gradeId) {
   }
   if (cancelBtn) { cancelBtn.textContent = 'Cancel'; cancelBtn.style.display = 'inline-flex'; cancelBtn.onclick = function(){ closeModal(modal); }; }
   openModal(modal);
+
+  // Load essay answers in edit view
+  fetch(`../trainer/handlers/grade_handler.php?action=get_attempt_details&id=${encodeURIComponent(grade.id)}`)
+    .then(r => r.json())
+    .then(data => {
+      const el = document.getElementById('answersListEdit');
+      if (!el) return;
+      if (!data.success) { el.innerHTML = `<div class="error-message">Failed to load answers</div>`; return; }
+      const essays = (data.details || []).filter(d => d.question_type === 'essay');
+      if (essays.length === 0) { el.innerHTML = '<p class="no-data">No essay answers in this attempt.</p>'; return; }
+      el.innerHTML = essays.map(d => `
+        <div class="essay-answer">
+          <div class="essay-question"><strong>Q:</strong> ${escapeHtml(d.question_text)}</div>
+          <div class="essay-response"><strong>A:</strong> ${escapeHtml(d.trainee_answer || '(no answer)')}</div>
+        </div>
+      `).join('');
+    })
+    .catch(() => {
+      const el = document.getElementById('answersListEdit');
+      if (el) el.innerHTML = `<div class="error-message">Network error while loading answers</div>`;
+    });
 }
 
 function exportGrades() {

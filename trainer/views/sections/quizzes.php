@@ -183,11 +183,6 @@ try {
                             title="View activity results">
                             <i class="fas fa-chart-bar"></i> Results
                         </button>
-                        <button class="btn btn-info duplicate-quiz-btn"
-                            data-quiz-id="<?php echo $quiz['id']; ?>"
-                            title="Duplicate this activity">
-                            <i class="fas fa-copy"></i> Duplicate
-                        </button>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -279,12 +274,6 @@ try {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Add event listeners for quiz action buttons
-    document.querySelectorAll('.duplicate-quiz-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const quizId = this.getAttribute('data-quiz-id');
-            duplicateQuiz(quizId);
-        });
-    });
 
     document.querySelectorAll('.publish-quiz-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -305,10 +294,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (addQuizForm) {
         const courseSelectEl = addQuizForm.querySelector('#quiz_course');
         const competencySelectEl = addQuizForm.querySelector('#quiz_competency');
+        const topicSelectEl = addQuizForm.querySelector('#quiz_topic');
         const loadCompetenciesForCourse = (code) => {
             if (!competencySelectEl) return;
             competencySelectEl.innerHTML = '<option value="">Loading...</option>';
             competencySelectEl.disabled = true;
+            if (topicSelectEl) { topicSelectEl.innerHTML = '<option value="">Select Topic</option>'; topicSelectEl.disabled = true; }
             if (!code) {
                 competencySelectEl.innerHTML = '<option value="">Select Competency</option>';
                 competencySelectEl.disabled = true;
@@ -338,9 +329,48 @@ document.addEventListener('DOMContentLoaded', function() {
               });
         };
 
+        const loadTopicsForCompetency = (code, compId) => {
+            if (!topicSelectEl) return;
+            topicSelectEl.innerHTML = '<option value="">Loading...</option>';
+            topicSelectEl.disabled = true;
+            if (!code || !compId) {
+                topicSelectEl.innerHTML = '<option value="">Select Topic</option>';
+                topicSelectEl.disabled = true;
+                return;
+            }
+            fetch('../php/get_topics_by_competency.php?course_code=' + encodeURIComponent(code) + '&competency_id=' + encodeURIComponent(compId))
+              .then(r=>r.json())
+              .then(list=>{
+                const opts = Array.isArray(list) ? list : [];
+                if (opts.length === 0) {
+                    topicSelectEl.innerHTML = '<option value="">No topics found</option>';
+                    topicSelectEl.disabled = true;
+                } else {
+                    topicSelectEl.innerHTML = '<option value="">Select Topic</option>';
+                    opts.forEach(t=>{
+                        const opt = document.createElement('option');
+                        opt.value = String(t.id);
+                        opt.textContent = t.topic_name || t.name || 'Topic';
+                        topicSelectEl.appendChild(opt);
+                    });
+                    topicSelectEl.disabled = false;
+                }
+              })
+              .catch(()=>{
+                topicSelectEl.innerHTML = '<option value="">Failed to load</option>';
+                topicSelectEl.disabled = true;
+              });
+        };
+
         if (courseSelectEl) {
             courseSelectEl.addEventListener('change', function(){
                 loadCompetenciesForCourse(courseSelectEl.value);
+            });
+        }
+        if (competencySelectEl) {
+            competencySelectEl.addEventListener('change', function(){
+                const code = courseSelectEl ? courseSelectEl.value : '';
+                loadTopicsForCompetency(code, this.value);
             });
         }
         addQuizForm.addEventListener('submit', function(e) {
@@ -352,6 +382,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (submitBtnEl) { submitBtnEl.disabled = true; submitBtnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; }
             const fd = new FormData(addQuizForm);
             const compVal = competencySelectEl ? competencySelectEl.value : '';
+            const topicVal = topicSelectEl ? topicSelectEl.value : '';
             const quizIdField = addQuizForm.querySelector('input[name="quiz_id"]');
             const quizIdVal = quizIdField ? quizIdField.value : '';
             const isEdit = addQuizForm.dataset.mode === 'edit' && !!quizIdVal;
@@ -363,6 +394,7 @@ document.addEventListener('DOMContentLoaded', function() {
               fd.set('action', 'create_quiz');
             }
             if (compVal) { fd.set('quiz_competency', compVal); }
+            if (topicVal) { fd.set('quiz_topic_id', topicVal); }
             fetch('../trainer/handlers/quiz_handler.php', { method:'POST', body: fd })
               .then(r=>r.json())
               .then(data=>{
@@ -444,49 +476,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function duplicateQuiz(quizId) {
-    // Show confirmation dialog
-    const confirmed = confirm('Are you sure you want to duplicate this quiz? This will create a copy with "(Copy)" appended to the title.');
-    if (!confirmed) return;
-    
-    // Show loading state
-    const btn = document.querySelector(`[data-quiz-id="${quizId}"].duplicate-quiz-btn`);
-    const originalHTML = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Copying...';
-    btn.disabled = true;
-    
-    fetch('../trainer/handlers/quiz_handler.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'action=duplicate_quiz&quiz_id=' + quizId
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Quiz duplicated successfully! The copy has been created and is now available for editing.');
-            // Reload the page to show the new quiz
-            location.reload();
-        } else {
-            alert('Error duplicating quiz: ' + data.message);
-            // Reset button state
-            btn.innerHTML = originalHTML;
-            btn.disabled = false;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error duplicating quiz. Please try again.');
-        // Reset button state
-        btn.innerHTML = originalHTML;
-        btn.disabled = false;
-    });
-}
 
 function publishQuiz(quizId, buttonEl) {
-    const confirmed = confirm('Publish this quiz? It will become available to trainees.');
-    if (!confirmed) return;
     const original = buttonEl.innerHTML;
     buttonEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
     buttonEl.disabled = true;
@@ -498,16 +489,15 @@ function publishQuiz(quizId, buttonEl) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            alert('Quiz published successfully.');
             location.reload();
         } else {
-            alert('Error publishing quiz: ' + data.message);
+            console.error('Error publishing quiz:', data.message);
             buttonEl.innerHTML = original;
             buttonEl.disabled = false;
         }
     })
-    .catch(() => {
-        alert('Error publishing quiz. Please try again.');
+    .catch((err) => {
+        console.error('Error publishing quiz:', err);
         buttonEl.innerHTML = original;
         buttonEl.disabled = false;
     });
@@ -598,6 +588,13 @@ document.addEventListener('click', function(e){
                         <label for="quiz_competency">Competency <span class="required">*</span></label>
                         <select id="quiz_competency" name="quiz_competency" required class="form-control" disabled>
                             <option value="">Select Competency</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quiz_topic">Topic <span class="required">*</span></label>
+                        <select id="quiz_topic" name="quiz_topic_id" required class="form-control" disabled>
+                            <option value="">Select Topic</option>
                         </select>
                     </div>
 
@@ -699,7 +696,6 @@ document.addEventListener('click', function(e){
                             <select id="question_type" name="question_type" required class="form-control">
                                 <option value="multiple_choice">Multiple Choice</option>
                                 <option value="true_false">True/False</option>
-                                <option value="short_answer">Short Answer</option>
                                 <option value="essay">Essay</option>
                             </select>
                         </div>
@@ -707,15 +703,6 @@ document.addEventListener('click', function(e){
                         <div class="form-group">
                             <label for="question_points">Points <span class="required">*</span></label>
                             <input type="number" id="question_points" name="question_points" min="1" max="100" value="1" class="form-control">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="question_difficulty">Difficulty</label>
-                            <select id="question_difficulty" name="question_difficulty" class="form-control">
-                                <option value="easy">Easy</option>
-                                <option value="medium" selected>Medium</option>
-                                <option value="hard">Hard</option>
-                            </select>
                         </div>
                     </div>
                 </div>

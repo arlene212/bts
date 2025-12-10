@@ -112,6 +112,7 @@ function submitQuiz($pdo, $user) {
     $total_score = 0;
     $max_score = 0;
     $processed_answers = [];
+    $has_manual = false;
     
     foreach ($questions as $question) {
         $max_score += $question['points'];
@@ -123,6 +124,8 @@ function submitQuiz($pdo, $user) {
                 $is_correct = ($user_answer === $question['correct_answer']);
             } elseif ($question['question_type'] === 'short_answer') {
                 $is_correct = (strtolower(trim($user_answer)) === strtolower(trim($question['correct_answer'])));
+            } elseif ($question['question_type'] === 'essay') {
+                $has_manual = true;
             }
             if ($is_correct) {
                 $total_score += $question['points'];
@@ -137,12 +140,17 @@ function submitQuiz($pdo, $user) {
     $stmt->execute([$quiz_id, $user['user_id']]);
     $attempt_info = $stmt->fetch(PDO::FETCH_ASSOC);
     $attempt_number = $attempt_info['attempt_count'] + 1;
-    
+
     $stmt = $pdo->prepare("INSERT INTO quiz_attempts (quiz_id, trainee_id, answers, score, max_score, attempt_number, time_spent) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $percentage_score = ($max_score > 0) ? round(($total_score / $max_score) * 100) : 0;
-    $stmt->execute([$quiz_id, $user['user_id'], json_encode($processed_answers), $percentage_score, $max_score, $attempt_number, $time_spent]);
-    $passed = ($percentage_score >= $quiz['passing_score']) ? 1 : 0;
-    echo json_encode(['success' => true, 'score' => $percentage_score, 'passed' => $passed]);
+    if ($has_manual) {
+        $stmt->execute([$quiz_id, $user['user_id'], json_encode($processed_answers), null, $max_score, $attempt_number, $time_spent]);
+        echo json_encode(['success' => true, 'pending' => true]);
+    } else {
+        $percentage_score = ($max_score > 0) ? round(($total_score / $max_score) * 100) : 0;
+        $stmt->execute([$quiz_id, $user['user_id'], json_encode($processed_answers), $percentage_score, $max_score, $attempt_number, $time_spent]);
+        $passed = ($percentage_score >= $quiz['passing_score']) ? 1 : 0;
+        echo json_encode(['success' => true, 'score' => $percentage_score, 'passed' => $passed]);
+    }
 }
 
 function getQuizResults($pdo, $user) {
@@ -175,5 +183,10 @@ function getQuizResults($pdo, $user) {
     $stmt->execute([$quiz_id, $user['user_id']]);
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    echo json_encode(['success' => true, 'results' => $results]);
+    // Detect presence of manually graded questions (essay)
+    $mq = $pdo->prepare("SELECT COUNT(*) FROM quiz_questions WHERE quiz_id = ? AND question_type = 'essay'");
+    $mq->execute([$quiz_id]);
+    $has_manual = ((int)$mq->fetchColumn() > 0);
+
+    echo json_encode(['success' => true, 'results' => $results, 'has_manual_questions' => $has_manual]);
 }

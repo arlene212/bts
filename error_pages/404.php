@@ -24,7 +24,7 @@ body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
       <p class="text-muted">The page you are looking for does not exist or has been moved.</p>
       <div class="actions">
         <button class="btn" onclick="history.back()">Go Back</button>
-        <a class="btn btn-outline" href="/bts/landingpage.php">Home</a>
+        <a class="btn btn-outline" href="../landingpage.php">Home</a>
       </div>
     </div>
   </div>

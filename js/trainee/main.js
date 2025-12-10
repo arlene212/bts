@@ -52,6 +52,15 @@ document.addEventListener('DOMContentLoaded', function () {
   const hamburger = document.getElementById('hamburger');
   const sidebar = document.querySelector('.sidebar');
   if (hamburger && sidebar) { hamburger.addEventListener('click', function() { sidebar.classList.toggle('active'); }); }
+  document.addEventListener('click', function(e) {
+    if (window.innerWidth <= 1024 && sidebar && sidebar.classList.contains('active')) {
+      const withinSidebar = e.target.closest('.sidebar');
+      const isHamburger = e.target.closest('#hamburger');
+      if (!withinSidebar && !isHamburger) {
+        sidebar.classList.remove('active');
+      }
+    }
+  });
   
   // Tab switch functionality
   document.addEventListener('click', function(e) {

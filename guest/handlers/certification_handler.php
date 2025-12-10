@@ -29,7 +29,7 @@ try {
     $result = cert_evaluate($pdo, $user['user_id'], $courseCode);
     if (!$result['eligible']) { echo json_encode(['success' => false, 'message' => 'Not eligible', 'codes' => $result['codes'], 'details' => $result['details']]); exit; }
     cert_store_record($user['user_id'], $courseCode, $result);
-    echo json_encode(['success' => true, 'redirect' => '/bts/guest/certificate.php?course_code=' . urlencode($courseCode)]);
+    echo json_encode(['success' => true, 'redirect' => '../certificate.php?course_code=' . urlencode($courseCode)]);
   } else {
     echo json_encode(['success' => false, 'message' => 'Invalid action']);
   }

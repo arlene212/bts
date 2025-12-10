@@ -580,6 +580,8 @@ body::before {
   pointer-events: none;
 }
 
+body.no-scroll { overflow: hidden; }
+
 /* ===========================
    Layout Structure
 =========================== */
@@ -589,6 +591,7 @@ body::before {
   max-width: 100% !important;
   width: 100% !important;
   padding: 0;
+  position: relative;
 }
 
 .main {
@@ -619,6 +622,20 @@ body::before {
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   transition: transform var(--transition-normal);
 }
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+  z-index: 900;
+}
+
+.sidebar-backdrop.active { display: block; }
 
 .sidebar::before {
   content: "";
@@ -2762,6 +2779,7 @@ body.modal-open { overflow: hidden; }
 .module-actions { display:flex; align-items:center; gap: 8px; margin-left:auto; }
 .module-thumb { width: 120px; height: 84px; border-radius: 12px; object-fit: cover; background: var(--secondary-200); }
 .module-title-area { display:flex; flex-direction:column; gap: 6px; flex:1; }
+.module-title-area { min-width: 0; }
 .module-title { font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--primary-800); }
 .module-status { display:flex; align-items:center; gap: 8px; color: var(--secondary-600); }
 .toggle-sections { display:flex; align-items:center; gap: 10px; margin-left:auto; background: transparent; border: 1px solid var(--secondary-300); color: var(--secondary-800); padding: 8px 12px; border-radius: 10px; }
@@ -2909,6 +2927,8 @@ body.modal-open { overflow: hidden; }
   .sidebar.open {
     transform: translateX(0);
   }
+
+  .announcements { width: auto; position: static; top: auto; }
   
   .hamburger {
     display: flex;
@@ -2965,6 +2985,21 @@ body.modal-open { overflow: hidden; }
     align-self: stretch;
     justify-content: flex-end;
   }
+
+  /* Mobile layout for module header and actions */
+  .module-header { flex-direction: column; align-items: stretch; gap: 12px; }
+  .module-title-area { order: 1; }
+  .module-actions { order: 3; display: flex; justify-content: flex-start; }
+  .toggle-sections { order: 2; width: 100%; }
+  .add-material-btn { width: 100%; }
+  .module-thumb { width: 100%; height: auto; max-height: 160px; object-fit: cover; }
+
+  /* Ensure text wraps normally on small screens */
+  .module-title, .topic-header h5, .section-header, .competency-title h4 { white-space: normal; word-break: break-word; overflow-wrap: anywhere; }
+  
+  /* Simplify sections table layout for mobile */
+  .sections-header { grid-template-columns: 1fr; }
+  .sections-row { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {

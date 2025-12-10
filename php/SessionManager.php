@@ -29,7 +29,7 @@ class SessionManager {
     
                 // Only redirect if it's a normal page load and not the password change page
                 if (!$isAjax && $currentPage !== 'force_change_password.php' && $currentPage !== 'logout.php') {
-                    header('Location: /bts/force_change_password.php');
+                    header('Location: ../force_change_password.php');
                     exit;
                 } 
                 // If it's an AJAX request and not on the password change script, block it.
@@ -83,25 +83,25 @@ class SessionManager {
             $userRole = $_SESSION['user']['role'] ?? '';
             if (in_array($userRole, ['trainer', 'trainee']) && 
                 isset($_SESSION['user']['password_changed_at']) && $_SESSION['user']['password_changed_at'] === null) {
-                header('Location: /bts/force_change_password.php');
+                header('Location: ../force_change_password.php');
                 exit;
             }
             
             switch ($_SESSION['user']['role']) {
                 case 'admin': 
-                    header('Location: /bts/admin/index.php'); 
+                    header('Location: ../admin/index.php'); 
                     break;
                 case 'trainer': 
-                    header('Location: /bts/trainer/index.php'); 
+                    header('Location: ../trainer/index.php'); 
                     break;
                 case 'trainee': 
-                    header('Location: /bts/trainee/index.php'); 
+                    header('Location: ../trainee/index.php'); 
                     break;
                 case 'guest': 
-                    header('Location: /bts/guest/index.php'); 
+                    header('Location: ../guest/index.php'); 
                     break;
                 default: 
-                    header('Location: /bts/landingpage.php');
+                    header('Location: ../landingpage.php');
             }
             exit;
         }
@@ -110,15 +110,15 @@ class SessionManager {
     public static function getRedirectUrlByRole($role) {
         switch ($role) {
             case 'admin':
-                return '/bts/admin/index.php';
+                return '../admin/index.php';
             case 'trainer':
-                return '/bts/trainer/index.php';
+                return '../trainer/index.php';
             case 'trainee':
-                return '/bts/trainee/index.php';
+                return '../trainee/index.php';
             case 'guest':
-                return '/bts/guest/index.php';
+                return '../guest/index.php';
             default:
-                return '/bts/landingpage.php';
+                return '../landingpage.php';
         }
     }
     

@@ -79,7 +79,9 @@ function sendEmailVerification($pdo, $userId) {
     
     // In a real implementation, you would send an email here
     // For now, we'll simulate the email sending
-    $verificationUrl = "http://localhost/bts/verify_email.php?token=" . $token;
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $verificationUrl = $scheme . '://' . $host . '/verify_email.php?token=' . $token;
     
     // Log the verification URL (in production, this would be sent via email)
     error_log("Email verification URL for " . $user['email'] . ": " . $verificationUrl);

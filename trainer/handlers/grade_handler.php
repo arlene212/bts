@@ -37,9 +37,10 @@ try {
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $grades = [];
         foreach ($rows as $r) {
-            $pct = (float)$r['score'];
             $max = (int)$r['max_score'];
-            $points = $max > 0 ? round(($pct / 100) * $max) : 0;
+            $isPending = ($r['score'] === null);
+            $pct = $isPending ? null : (float)$r['score'];
+            $points = (!$isPending && $max > 0) ? round(($pct / 100) * $max) : 0;
             $grades[] = [
                 'id' => (string)$r['id'],
                 'student_name' => trim(($r['last_name'] ?? '') . ', ' . ($r['first_name'] ?? '')),
@@ -50,9 +51,9 @@ try {
                 'activity_type' => 'quiz',
                 'score' => $points,
                 'max_score' => $max,
-                'percentage' => round($pct, 1),
-                'grade' => letterGrade($pct),
-                'status' => 'completed',
+                'percentage' => $pct !== null ? round($pct, 1) : null,
+                'grade' => $pct !== null ? letterGrade($pct) : '-',
+                'status' => $isPending ? 'pending' : 'completed',
                 'submitted_date' => $r['completed_at'],
                 'feedback' => '',
                 'time_taken' => ($r['time_spent'] !== null ? ($r['time_spent'] . 's') : 'N/A'),
@@ -225,6 +226,70 @@ try {
     $upd = $pdo->prepare("UPDATE quiz_attempts SET score = ?, max_score = ? WHERE id = ?");
     $upd->execute([$pct, $max, $gradeId]);
     echo json_encode(['success' => true, 'percentage' => round($pct, 1)]);
+    exit;
+  }
+
+  if ($action === 'get_attempt_details') {
+    $attemptId = isset($_GET['id']) ? (int)$_GET['id'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
+    if ($attemptId <= 0) {
+      echo json_encode(['success' => false, 'message' => 'Invalid attempt id']);
+      exit;
+    }
+    // Ensure trainer owns the course for this attempt
+    $ownStmt = $pdo->prepare(
+      "SELECT qa.quiz_id, q.course_code, q.title AS quiz_title
+       FROM quiz_attempts qa
+       JOIN quizzes q ON qa.quiz_id = q.id
+       WHERE qa.id = ? AND q.course_code IN (
+         SELECT course_code FROM course_assignments WHERE trainer_id = ?
+       )"
+    );
+    $ownStmt->execute([$attemptId, $user['user_id']]);
+    $own = $ownStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$own) {
+      echo json_encode(['success' => false, 'message' => 'Unauthorized or attempt not found']);
+      exit;
+    }
+    $quizId = (int)$own['quiz_id'];
+    // Get questions
+    $qStmt = $pdo->prepare("SELECT id, question_text, question_type, points FROM quiz_questions WHERE quiz_id = ? ORDER BY question_order, id");
+    $qStmt->execute([$quizId]);
+    $questions = $qStmt->fetchAll(PDO::FETCH_ASSOC);
+    // Get answers
+    $aStmt = $pdo->prepare("SELECT answers, trainee_id, completed_at, time_spent FROM quiz_attempts WHERE id = ?");
+    $aStmt->execute([$attemptId]);
+    $aRow = $aStmt->fetch(PDO::FETCH_ASSOC);
+    $answersJson = $aRow ? $aRow['answers'] : null;
+    $answers = [];
+    if ($answersJson) {
+      $decoded = json_decode($answersJson, true);
+      if (is_array($decoded)) { $answers = $decoded; }
+    }
+    // Merge questions with answers
+    $details = [];
+    foreach ($questions as $q) {
+      $qid = (string)$q['id'];
+      $ans = isset($answers[$qid]) ? $answers[$qid] : null;
+      $details[] = [
+        'question_id' => (int)$q['id'],
+        'question_text' => (string)$q['question_text'],
+        'question_type' => (string)$q['question_type'],
+        'points' => (int)$q['points'],
+        'trainee_answer' => $ans && isset($ans['answer']) ? (string)$ans['answer'] : null,
+        'correct' => $ans && isset($ans['correct']) ? (bool)$ans['correct'] : null,
+        'awarded_points' => $ans && isset($ans['points']) ? (int)$ans['points'] : 0,
+      ];
+    }
+    echo json_encode([
+      'success' => true,
+      'quiz_title' => (string)$own['quiz_title'],
+      'attempt' => [
+        'trainee_id' => (string)($aRow['trainee_id'] ?? ''),
+        'completed_at' => $aRow['completed_at'] ?? null,
+        'time_spent' => $aRow['time_spent'] ?? null,
+      ],
+      'details' => $details,
+    ]);
     exit;
   }
 

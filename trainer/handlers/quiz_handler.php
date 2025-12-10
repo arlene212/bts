@@ -74,6 +74,36 @@ try {
             $ins = $pdo->prepare("INSERT INTO quiz_settings (quiz_id, setting_key, setting_value) VALUES (?, 'due_date', ?)");
             $ins->execute([$quizId, $dueDate]);
         }
+        // Optionally link quiz to a specific topic as an activity
+        $topicId = isset($_POST['quiz_topic_id']) ? intval($_POST['quiz_topic_id']) : 0;
+        if ($topicId > 0) {
+            // Validate topic belongs to course and trainer has access
+            $tchk = $pdo->prepare("SELECT ct.id FROM course_topics ct JOIN course_assignments ca ON ct.course_code = ca.course_code WHERE ct.id = ? AND ct.course_code = ? AND ca.trainer_id = ? LIMIT 1");
+            $tchk->execute([$topicId, $courseCode, $user['user_id']]);
+            if ($tchk->fetchColumn()) {
+                $dueDate = null;
+                if (!empty($dueDateRaw)) { $dueDate = str_replace('T',' ', $dueDateRaw); if (strlen($dueDate)===16) { $dueDate .= ':00'; } }
+                $insAct = $pdo->prepare("INSERT INTO topic_activities (topic_id, activity_title, activity_description, activity_type, due_date, max_score, attachment_path, created_by, start_date, parent_activity_id) VALUES (?, ?, ?, 'quiz', ?, ?, NULL, ?, NULL, ?)");
+                $insAct->execute([$topicId, $title, $description, $dueDate, 100, $user['user_id'], $quizId]);
+                $newActivityId = (int)$pdo->lastInsertId();
+
+                // Map activity to all batches the trainer handles for this course (so it appears in Activities tab)
+                try {
+                    $batchesStmt = $pdo->prepare("SELECT batch_name FROM course_batches WHERE course_code = ? AND trainer_id = ?");
+                    $batchesStmt->execute([$courseCode, $user['user_id']]);
+                    foreach ($batchesStmt->fetchAll(PDO::FETCH_ASSOC) as $br) {
+                        $bn = $br['batch_name'];
+                        if (!$bn) continue;
+                        $exists = $pdo->prepare("SELECT 1 FROM batch_resources WHERE course_code = ? AND batch_name = ? AND resource_type = 'activity' AND resource_id = ? LIMIT 1");
+                        $exists->execute([$courseCode, $bn, $newActivityId]);
+                        if (!$exists->fetchColumn()) {
+                            $map = $pdo->prepare("INSERT INTO batch_resources (course_code, batch_name, resource_type, resource_id, created_at) VALUES (?, ?, 'activity', ?, NOW())");
+                            $map->execute([$courseCode, $bn, $newActivityId]);
+                        }
+                    }
+                } catch (Throwable $__) {}
+            }
+        }
         echo json_encode(['success' => true, 'message' => 'Quiz created successfully', 'quiz_id' => $quizId]);
         exit;
     }
@@ -131,7 +161,6 @@ try {
         $questionText = $_POST['question_text'] ?? '';
         $questionType = $_POST['question_type'] ?? 'multiple_choice';
         $points = intval($_POST['question_points'] ?? 1);
-        $difficulty = $_POST['question_difficulty'] ?? 'medium';
         $explanation = $_POST['question_explanation'] ?? '';
         
         if (empty($quizId) || empty($questionText)) {
@@ -196,14 +225,9 @@ try {
                 break;
         }
         
-        $stmt = $pdo->prepare("
-            INSERT INTO quiz_questions (quiz_id, course_code, question_text, question_type, options, 
-                                       correct_answer, points, difficulty, explanation, created_by, created_at) 
-            SELECT ?, q.course_code, ?, ?, ?, ?, ?, ?, ?, ?, NOW() 
-            FROM quizzes q WHERE q.id = ?
-        ");
+        $stmt = $pdo->prepare("\n            INSERT INTO quiz_questions (quiz_id, course_code, question_text, question_type, options, \n                                       correct_answer, points, explanation, created_by, created_at) \n            SELECT ?, q.course_code, ?, ?, ?, ?, ?, ?, ?, NOW() \n            FROM quizzes q WHERE q.id = ?\n        ");
         $stmt->execute([$quizId, $questionText, $questionType, $options, $correctAnswer, $points, 
-                       $difficulty, $explanation, $user['user_id'], $quizId]);
+                       $explanation, $user['user_id'], $quizId]);
         
         echo json_encode(['success' => true, 'message' => 'Question added successfully']);
         exit;

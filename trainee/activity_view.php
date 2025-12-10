@@ -17,7 +17,7 @@ $user = SessionManager::getCurrentUser();
 $activity_id = $_GET['id'] ?? ($_GET['activity_id'] ?? null);
 
 if (!$activity_id) {
-    header("Location: /bts/trainee/index.php");
+    header("Location: trainee/index.php");
     exit;
 }
 
@@ -85,7 +85,7 @@ try {
 <body>
     <div class="activity-container">
         <div class="activity-header">
-            <a href="/bts/trainee/index.php" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+            <a href="index.php" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
             <h1><?php echo htmlspecialchars($activity['activity_title']); ?></h1>
             <div class="activity-meta">
                 <span><i class="fas fa-book"></i> <?php echo htmlspecialchars($activity['course_name']); ?></span>

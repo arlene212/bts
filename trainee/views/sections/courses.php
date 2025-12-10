@@ -199,5 +199,12 @@ try {
 .module-group[data-group="core"] .competency-marker { border-color:#c4b5fd; background:#fbf7ff; }
 /* Courses list white override */
 .mycourses .batch-card { background:#fff; border-color: var(--secondary-200); }
+/* Section link styling like reference */
+.sections-row .section-link { color:#1d4ed8; text-decoration:none; font-weight:500; }
+.sections-row .section-link:hover { text-decoration:underline; }
+.sections-row[data-resource-type="material"] .sec-title i { color:#1d4ed8; }
+.sections-row[data-resource-type="activity"] .sec-title i { color:var(--secondary-600); }
+/* Highlight target activity row when redirected */
+.row-highlight { background:#fff8db !important; box-shadow: inset 0 0 0 2px #fde68a; }
 </style>
   

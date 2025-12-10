@@ -123,6 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
           topics: (data.topicsByCompetency && data.topicsByCompetency[c.id]) ? data.topicsByCompetency[c.id] : (c.topics || [])
         }));
         const materialsByComp = data.materialsByCompetency || {};
+        window.__trainerCourseData = { courseCode, batchName: data.selectedBatch, competencies, topicsByCompetency: data.topicsByCompetency || {} };
         renderCompetencies(competencies, materialsByComp);
         bindActionButtons();
         renderSubmissionsView(data.topicsByCompetency || {});
@@ -399,6 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div class="module-actions">
             <button type="button" class="btn btn-outline-secondary btn-sm add-material-btn btn-on-dark" data-topic-id="${topic.id}"><i class="fas fa-file"></i> Add Module</button>
+            <button type="button" class="btn btn-outline-primary btn-sm add-activity-btn" data-topic-id="${topic.id}"><i class="fas fa-tasks"></i> Add Activity</button>
           </div>
           <button class="toggle-sections" aria-expanded="false"><span class="sections-count">${sectionsCount} section${sectionsCount!==1?'s':''}</span><i class="fas fa-chevron-down"></i></button>
         </div>
@@ -883,8 +885,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function openAddActivityModal(topicId) {
     const modal = document.getElementById('addActivityModal');
-    document.getElementById('activity_topic_id').value = topicId;
-    if (typeof openModal === 'function') { openModal(modal); } else { modal && modal.classList.remove('hidden'); modal && (modal.style.display = 'flex'); }
+    const form = document.getElementById('addActivityForm');
+    const hiddenTopic = document.getElementById('activity_topic_id');
+    if (!modal || !form || !hiddenTopic) return;
+    const compSel = form.querySelector('#activity_competency_select') || (() => {
+      const row = document.createElement('div'); row.className = 'form-row';
+      const g1 = document.createElement('div'); g1.className = 'form-group'; g1.style.flex = '1';
+      const l1 = document.createElement('label'); l1.textContent = 'Competency *';
+      const s1 = document.createElement('select'); s1.id = 'activity_competency_select';
+      g1.appendChild(l1); g1.appendChild(s1);
+      const g2 = document.createElement('div'); g2.className = 'form-group'; g2.style.flex = '1';
+      const l2 = document.createElement('label'); l2.textContent = 'Topic *';
+      const s2 = document.createElement('select'); s2.id = 'activity_topic_select';
+      g2.appendChild(l2); g2.appendChild(s2);
+      row.appendChild(g1); row.appendChild(g2);
+      const firstGroup = form.querySelector('.form-group');
+      form.insertBefore(row, firstGroup);
+      return s1;
+    })();
+    const topicSel = form.querySelector('#activity_topic_select');
+    const data = window.__trainerCourseData || { competencies: [], topicsByCompetency: {} };
+    const comps = data.competencies || [];
+    compSel.innerHTML = comps.length ? comps.map(c => `<option value="${c.id}">${c.name}</option>`).join('') : '<option value="">No competencies</option>';
+    function fillTopics(cid) {
+      const arr = (data.topicsByCompetency && data.topicsByCompetency[cid]) ? data.topicsByCompetency[cid] : [];
+      topicSel.innerHTML = arr.length ? arr.map(t => `<option value="${t.id}">${t.topic_name || t.name || 'Topic'}</option>`).join('') : '<option value="">No topics</option>';
+      const val = topicSel.value;
+      hiddenTopic.value = val || '';
+    }
+    // Preselect based on provided topicId
+    let preCompId = ''; let preTopicId = topicId || '';
+    if (preTopicId) {
+      for (const c of comps) {
+        const ts = (data.topicsByCompetency && data.topicsByCompetency[c.id]) ? data.topicsByCompetency[c.id] : [];
+        if (ts.some(t => String(t.id) === String(preTopicId))) { preCompId = c.id; break; }
+      }
+    }
+    if (!preCompId && comps.length) preCompId = comps[0].id;
+    compSel.value = preCompId;
+    fillTopics(preCompId);
+    if (preTopicId) { topicSel.value = String(preTopicId); hiddenTopic.value = String(preTopicId); }
+    compSel.onchange = () => { fillTopics(compSel.value); };
+    topicSel.onchange = () => { hiddenTopic.value = topicSel.value; };
+    if (typeof openModal === 'function') { openModal(modal); } else { modal.classList.remove('hidden'); modal.style.display = 'flex'; }
   }
 
   // Add Material modal interactions
@@ -948,7 +991,47 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Add Activity modal interactions
-    // Add Activity modal and handlers removed per request
+  const addActivityForm = document.getElementById('addActivityForm');
+  const activityTypeSel = document.getElementById('activity_attachment_type');
+  const actFileGroup = document.getElementById('activity_file_input_group');
+  const actLinkGroup = document.getElementById('activity_link_input_group');
+  document.getElementById('cancelActivity')?.addEventListener('click', () => { document.getElementById('addActivityModal')?.classList.add('hidden'); });
+  document.getElementById('closeActivityModal')?.addEventListener('click', () => { document.getElementById('addActivityModal')?.classList.add('hidden'); });
+  activityTypeSel?.addEventListener('change', function(){ const v = this.value; if (v === 'file') { actFileGroup?.classList.remove('hidden'); actLinkGroup?.classList.add('hidden'); } else if (v === 'link') { actLinkGroup?.classList.remove('hidden'); actFileGroup?.classList.add('hidden'); } else { actFileGroup?.classList.add('hidden'); actLinkGroup?.classList.add('hidden'); } });
+  addActivityForm?.addEventListener('submit', function(e){
+    e.preventDefault();
+    const topicId = document.getElementById('activity_topic_id')?.value;
+    if (!topicId) { openConfirm('Error', 'Please select a topic', () => {}, { confirmText: 'OK', showCancel: false }); return; }
+    const dueDateDate = document.getElementById('due_date_date')?.value || '';
+    const dueDateTime = document.getElementById('due_date_time')?.value || '';
+    const startDateDate = document.getElementById('start_date_date')?.value || '';
+    const startDateTime = document.getElementById('start_date_time')?.value || '';
+    const dueHidden = document.getElementById('due_date');
+    const startHidden = document.getElementById('start_date');
+    if (dueHidden) dueHidden.value = (dueDateDate && dueDateTime) ? `${dueDateDate} ${dueDateTime}:00` : (dueDateDate ? `${dueDateDate} 00:00:00` : '');
+    if (startHidden) startHidden.value = (startDateDate && startDateTime) ? `${startDateDate} ${startDateTime}:00` : (startDateDate ? `${startDateDate} 00:00:00` : '');
+    const formData = new FormData(addActivityForm);
+    const submitBtn = addActivityForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true; submitBtn.textContent = 'Adding...';
+    formData.append('batch_name', document.getElementById('trainer-batch-select')?.value || window.__trainerCourseData?.batchName || '');
+    fetch('../php/add_activity.php', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          document.getElementById('addActivityModal')?.classList.add('hidden');
+          openConfirm('Confirm Action', 'Activity added successfully.', () => {
+            const code = document.getElementById('course-code')?.textContent || window.__trainerCourseData?.courseCode || '';
+            const name = document.getElementById('course-detail-title')?.textContent || '';
+            const hours = document.getElementById('course-hours')?.textContent || '';
+            loadCourseDetails(code, name, hours);
+          }, { confirmText: 'Confirm' });
+        } else {
+          openConfirm('Error', 'Add activity failed: ' + (d.message || 'Unknown error'), () => {}, { confirmText: 'OK', showCancel: false });
+        }
+      })
+      .catch(() => { openConfirm('Error', 'Network error while adding activity', () => {}, { confirmText: 'OK', showCancel: false }); })
+      .finally(() => { submitBtn.disabled = false; submitBtn.textContent = 'Add Activity'; addActivityForm.reset(); });
+  });
 
   // Connect quiz-type activities to Quizzes management tab
   document.getElementById('competencies-list')?.addEventListener('click', function(e) {

@@ -20,6 +20,7 @@
 <body>
   <div class="container">
     <?php include __DIR__ . '/partials/sidebar.php'; ?>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
     <main class="main">
       <?php include __DIR__ . '/partials/header.php'; ?>
       <div class="content">

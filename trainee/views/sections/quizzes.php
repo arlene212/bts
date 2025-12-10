@@ -212,12 +212,14 @@ function startQuiz(quizId) {
 
 function displayQuizQuestions(questions, quizInfo) {
     const container = document.getElementById('quizAttemptBody');
+    const requiresManual = Array.isArray(questions) && questions.some(q => q.question_type === 'essay');
     let html = `
         <div class="quiz-info-header">
             <div class="quiz-timer">
                 <i class="fas fa-clock"></i>
                 <span id="quizTimer">${quizInfo.time_limit ? quizInfo.time_limit + ' min' : 'No limit'}</span>
             </div>
+            ${requiresManual ? `<div class="manual-review-note"><i class=\"fas fa-user-check\"></i> Some answers require trainer review. Final score may change.</div>` : ''}
         </div>
         <form id="quizAttemptForm">
             <input type="hidden" name="quiz_id" value="${quizInfo.id}">
@@ -282,15 +284,14 @@ function displayQuizQuestions(questions, quizInfo) {
     const submitBtn = document.getElementById('submitQuizBtn');
     if (submitBtn) { 
         submitBtn.onclick = function() { 
-            if (confirm('Are you sure you want to submit your quiz? This action cannot be undone.')) {
-                submitQuizAttempt(quizInfo.id); 
-            }
+            submitQuizAttempt(quizInfo.id); 
         }; 
     }
 }
 
 function submitQuizAttempt(quizId) {
     const form = document.getElementById('quizAttemptForm');
+    if (form && !form.checkValidity()) { alert('Please answer all questions before submitting.'); return; }
     const formData = new FormData(form);
     formData.append('action', 'submit_quiz');
     const submitBtn = document.getElementById('submitQuizBtn');
@@ -298,7 +299,8 @@ function submitQuizAttempt(quizId) {
 
     fetch('../trainee/handlers/quiz_handler.php', {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: { 'Accept': 'application/json' }
     })
     .then(response => response.json())
     .then(data => {
@@ -328,7 +330,7 @@ function viewQuizResults(quizId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            displayQuizResults(data.results);
+            displayQuizResults(data.results, !!data.has_manual_questions);
             openModal('quizResultsModal');
         } else {
             alert('Error loading results: ' + data.message);
@@ -340,7 +342,7 @@ function viewQuizResults(quizId) {
     });
 }
 
-function displayQuizResults(results) {
+function displayQuizResults(results, hasManual = false) {
     const container = document.getElementById('quizResultsBody');
     
     if (results.length === 0) {
@@ -354,20 +356,28 @@ function displayQuizResults(results) {
         return;
     }
 
-    const latestResult = results[0]; // Get the most recent attempt
+    const latestResult = results[0];
     const improvement = results.length > 1 ? 
-        (latestResult.score - results[1].score).toFixed(1) : 0;
+        ((latestResult.score ?? 0) - (results[1].score ?? 0)).toFixed(1) : 0;
     
     let html = `
         <div class="quiz-results-summary">
             <div class="result-header">
                 <h3>Quiz Results</h3>
-                <div class="score-display ${latestResult.passed ? 'passed' : 'failed'}">
+                ${latestResult.score === null ? `
+                  <div class="score-display">
+                    <span class="score-number">Pending Review</span>
+                    <span class="score-label">Trainer will review your answers</span>
+                  </div>
+                ` : `
+                  <div class="score-display ${latestResult.passed ? 'passed' : 'failed'}">
                     <span class="score-number">${latestResult.score}%</span>
                     <span class="score-label">${latestResult.passed ? 'Passed' : 'Failed'}</span>
                     ${improvement !== 0 ? `<small>${improvement > 0 ? '+' : ''}${improvement}% from last attempt</small>` : ''}
-                </div>
+                  </div>
+                `}
             </div>
+            ${hasManual ? `<div class="manual-review-note"><i class=\"fas fa-user-check\"></i> Trainer will manually score essay answers. Your final grade may be updated.</div>` : ''}
             
             <div class="result-details">
                 <div class="detail-item">
@@ -378,14 +388,16 @@ function displayQuizResults(results) {
                     <i class="fas fa-clock"></i>
                     <span>Time Spent: ${formatTime(latestResult.time_spent)}</span>
                 </div>
-                <div class="detail-item">
+                ${latestResult.score === null ? '' : `
+                  <div class="detail-item">
                     <i class="fas fa-trophy"></i>
                     <span>Passing Score: ${latestResult.passing_score}%</span>
-                </div>
-                <div class="detail-item">
+                  </div>
+                  <div class="detail-item">
                     <i class="fas fa-graduation-cap"></i>
                     <span>Grade: ${getGrade(parseFloat(latestResult.score))}</span>
-                </div>
+                  </div>
+                `}
             </div>
     `;
 

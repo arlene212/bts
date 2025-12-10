@@ -75,11 +75,17 @@ try {
         if ($filterOnBatch) {
             $brStmt = $pdo->prepare("SELECT resource_type, resource_id FROM batch_resources WHERE course_code = ? AND batch_name = ?");
             $brStmt->execute([$courseCode, $batchName]);
-            foreach ($brStmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $rows = $brStmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as $r) {
                 if (($r['resource_type'] ?? '') === 'material') { $allowedMaterials[(int)$r['resource_id']] = true; }
                 if (($r['resource_type'] ?? '') === 'activity') { $allowedActivities[(int)$r['resource_id']] = true; }
             }
+            // If no mapping rows exist, disable filtering to show all course resources
+            if (empty($rows)) { $filterOnBatch = false; }
         }
+        // Decide per-type filtering: if there are no activity mappings, do not filter activities
+        $filterActivitiesOnBatch = $filterOnBatch && !empty($allowedActivities);
+        $filterMaterialsOnBatch = $filterOnBatch && !empty($allowedMaterials);
     } catch (PDOException $e) {
         error_log("Query execution failed: " . $e->getMessage());
         error_log("Parameters: traineeId=$traineeId, courseCode=$courseCode");
@@ -88,10 +94,12 @@ try {
 
     // Build competencies list for the course using course_id
     $competencies = [];
+    $codeToId = [];
     $cstmt = $pdo->prepare("SELECT id, competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes FROM competencies WHERE status = 'active' AND course_id = ?");
     $cstmt->execute([$course['id']]);
     foreach ($cstmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $competencies[(int)$row['id']] = [
+        $cidNum = (int)$row['id'];
+        $competencies[$cidNum] = [
             'id' => (int)$row['id'],
             'type' => $row['competency_type'],
             'name' => $row['competency_name'],
@@ -102,6 +110,7 @@ try {
             'learning_outcomes' => $row['learning_outcomes'] ?? '',
             'topics' => []
         ];
+        $codeToId[$row['competency_code']] = $cidNum;
     }
 
     $topics = [];
@@ -121,7 +130,7 @@ try {
         }
 
         // Group materials under topics (respect batch mapping if present)
-        $matMapped = isset($filterOnBatch) && $filterOnBatch ? ($row['material_id'] && isset($allowedMaterials[(int)$row['material_id']])) : (bool)$row['material_id'];
+        $matMapped = $filterMaterialsOnBatch ? ($row['material_id'] && isset($allowedMaterials[(int)$row['material_id']])) : (bool)$row['material_id'];
         if ($matMapped && !isset($topics[$row['topic_id']]['materials'][$row['material_id']])) {
             $topics[$row['topic_id']]['materials'][$row['material_id']] = [
                 'id' => $row['material_id'],
@@ -132,7 +141,7 @@ try {
         }
 
         // Group activities under topics and also create a flat list of activities (respect batch mapping if present)
-        $actMapped = isset($filterOnBatch) && $filterOnBatch ? ($row['activity_id'] && isset($allowedActivities[(int)$row['activity_id']])) : (bool)$row['activity_id'];
+        $actMapped = $filterActivitiesOnBatch ? ($row['activity_id'] && isset($allowedActivities[(int)$row['activity_id']])) : (bool)$row['activity_id'];
         if ($actMapped && !isset($topics[$row['topic_id']]['activities'][$row['activity_id']])) {
             $activity = [
                 'id' => $row['activity_id'],
@@ -142,6 +151,7 @@ try {
                 'due_date' => $row['due_date'],
                 'max_score' => $row['max_score'],
                 'start_date' => $row['start_date'], // Ensure start_date is fetched
+                'competency_id' => $row['competency_id'],
                 'submission' => null
             ];
             if ($row['submission_id']) {
@@ -158,22 +168,36 @@ try {
         }
     }
 
-    // Assign topics to competencies by numeric id
+    // Assign topics to competencies by competency code -> numeric id mapping
     foreach ($topics as $topic) {
-        $cid = (int)$topic['competency_id'];
-        if (isset($competencies[$cid])) {
+        $compCode = (string)$topic['competency_id'];
+        $cid = isset($codeToId[$compCode]) ? (int)$codeToId[$compCode] : null;
+        if ($cid !== null && isset($competencies[$cid])) {
             $topic['materials'] = array_values($topic['materials']);
             $topic['activities'] = array_values($topic['activities']);
             $competencies[$cid]['topics'][] = $topic;
         } else {
-            error_log("Competency ID '{$cid}' not found in competencies for topic '{$topic['name']}'");
+            error_log("Competency code '{$compCode}' not found in competencies for topic '{$topic['name']}'");
         }
     }
+
+    // Fetch quizzes grouped by competency (linked via competencies.id)
+    $quizzesByCompetencyId = [];
+    try {
+        $quizStmt = $pdo->prepare("\n            SELECT q.id, q.title, q.status, q.time_limit, q.max_attempts, q.passing_score, q.is_randomized, q.show_correct_answers, q.created_at,\n                   comp.id AS competency_id,\n                   (SELECT setting_value FROM quiz_settings qs WHERE qs.quiz_id = q.id AND qs.setting_key = 'due_date' LIMIT 1) AS due_date\n            FROM quizzes q\n            JOIN competencies comp ON q.competency_id = comp.id\n            WHERE q.course_code = ? AND q.status IN ('active','published')\n            ORDER BY q.created_at DESC\n        ");
+        $quizStmt->execute([$courseCode]);
+        foreach ($quizStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $cid = (int)$row['competency_id'];
+            if (!isset($quizzesByCompetencyId[$cid])) { $quizzesByCompetencyId[$cid] = []; }
+            $quizzesByCompetencyId[$cid][] = $row;
+        }
+    } catch (Exception $__) {}
 
     echo json_encode([
         'course' => $course,
         'competencies' => array_values($competencies),
         'activities' => array_values($activities),
+        'quizzesByCompetencyId' => $quizzesByCompetencyId,
         'selectedBatch' => isset($batchName) ? $batchName : null
     ]);
 

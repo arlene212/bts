@@ -18,16 +18,70 @@ function setupGlobalEventListeners() {
   });
   const hamburger = document.getElementById('hamburger');
   const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const main = document.querySelector('.main');
+  const content = document.querySelector('.content');
+  const sidebar = document.querySelector('.sidebar');
+
+  function closeMobileSidebar() {
+    document.body.classList.remove('sidebar-open');
+    if (hamburger) { hamburger.classList.remove('active'); hamburger.setAttribute('aria-expanded', 'false'); }
+  }
   if (hamburger) {
-    hamburger.addEventListener('click', () => { document.body.classList.toggle('sidebar-open'); });
+    hamburger.addEventListener('click', () => { 
+      document.body.classList.toggle('sidebar-open'); 
+      hamburger.classList.toggle('active');
+      const expanded = hamburger.classList.contains('active');
+      hamburger.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    });
   }
   if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', () => { document.body.classList.remove('sidebar-open'); });
+    sidebarOverlay.addEventListener('click', () => { 
+      closeMobileSidebar();
+    });
   }
+  if (main) {
+    main.addEventListener('click', () => {
+      if (window.innerWidth <= 768 && document.body.classList.contains('sidebar-open')) {
+        closeMobileSidebar();
+      }
+    });
+  }
+  if (content) {
+    content.addEventListener('click', () => {
+      if (window.innerWidth <= 768 && document.body.classList.contains('sidebar-open')) {
+        closeMobileSidebar();
+      }
+    });
+  }
+  if (sidebar) {
+    sidebar.addEventListener('click', (e) => {
+      if (window.innerWidth <= 768 && document.body.classList.contains('sidebar-open')) {
+        e.stopPropagation();
+      }
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768 && document.body.classList.contains('sidebar-open')) {
+      const isInsideSidebar = sidebar && sidebar.contains(e.target);
+      const isHamburger = hamburger && (hamburger === e.target || hamburger.contains(e.target));
+      if (!isInsideSidebar && !isHamburger) {
+        closeMobileSidebar();
+      }
+    }
+  }, true);
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       const openModals = document.querySelectorAll('.modal:not(.hidden)');
       openModals.forEach(modal => { closeModal(modal.id); });
+      closeMobileSidebar();
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) {
+      document.body.classList.remove('sidebar-open');
+      if (hamburger) { hamburger.classList.remove('active'); hamburger.setAttribute('aria-expanded', 'false'); }
     }
   });
 }
@@ -48,7 +102,10 @@ function setupTabNavigation() {
       } catch (_) {}
       const targetContent = document.getElementById(tabId);
       if (targetContent) { targetContent.classList.add('active'); }
-      if (window.innerWidth <= 768) { document.body.classList.remove('sidebar-open'); }
+      if (window.innerWidth <= 768) { 
+        document.body.classList.remove('sidebar-open'); 
+        if (hamburger) { hamburger.classList.remove('active'); }
+      }
       if (tabId === 'trainers' || tabId === 'trainees') { setTimeout(() => { initializeSwitches(); }, 100); }
     });
   });
