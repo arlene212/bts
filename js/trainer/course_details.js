@@ -400,7 +400,6 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div class="module-actions">
             <button type="button" class="btn btn-outline-secondary btn-sm add-material-btn btn-on-dark" data-topic-id="${topic.id}"><i class="fas fa-file"></i> Add Module</button>
-            <button type="button" class="btn btn-outline-primary btn-sm add-activity-btn" data-topic-id="${topic.id}"><i class="fas fa-tasks"></i> Add Activity</button>
           </div>
           <button class="toggle-sections" aria-expanded="false"><span class="sections-count">${sectionsCount} section${sectionsCount!==1?'s':''}</span><i class="fas fa-chevron-down"></i></button>
         </div>
@@ -467,20 +466,29 @@ document.addEventListener('DOMContentLoaded', () => {
     Object.values(topicsByCompetency).forEach(arr => arr.forEach(t => { if (t.activities) all.push(...t.activities); }));
     if (!all.length) { container.innerHTML = '<p class="no-data">No activities have been created for this course yet.</p>'; return; }
     container.innerHTML = all.map(a => `
-      <div class="activity-submission-item">
-        <div class="activity-header"><strong>${a.activity_title}</strong> (${(a.submissions || []).length} submissions)</div>
-        ${renderSubmissions(a.submissions || [], a.max_score, a.id)}
+      <div class="submissions-card">
+        <div class="card-header">
+          <div class="title"><i class="fas fa-clipboard-list"></i> ${a.activity_title}</div>
+          <div class="meta">${(a.submissions || []).length} submission${(a.submissions||[]).length!==1?'s':''}</div>
+        </div>
+        <div class="card-body">${renderSubmissions(a.submissions || [], a.max_score, a.id)}</div>
       </div>`).join('');
   }
 
   function renderSubmissions(submissions, maxScore, activityId) {
     if (!submissions.length) return '<p class="no-submissions">No submissions yet.</p>';
-    return `
-      <table class="submissions-table"><thead><tr><th>Trainee</th><th>Submitted At</th><th>Submission</th><th>Score</th><th>Actions</th></tr></thead><tbody>
-      ${submissions.map(s => `
-        <tr data-submission-id="${s.submission_id}"><td>${s.trainee_first_name} ${s.trainee_last_name}</td><td>${new Date(s.submitted_at).toLocaleString()}</td><td><a href="../uploads/submissions/${s.submission_file_path}" target="_blank">View File</a></td><td class="score-cell">${s.score !== null ? `${s.score} / ${maxScore}` : 'Not Graded'}</td><td><button class="grade-btn" data-submission-id="${s.submission_id}" data-current-score="${s.score || ''}" data-max-score="${maxScore}" data-feedback="${s.feedback || ''}">${s.score !== null ? 'Edit Grade' : 'Grade'}</button></td></tr>
-      `).join('')}
-      </tbody></table>`;
+    return submissions.map(s => {
+      const initials = ((s.trainee_first_name||'').charAt(0) + (s.trainee_last_name||'').charAt(0)).toUpperCase();
+      const time = s.submitted_at ? new Date(s.submitted_at).toLocaleString() : '';
+      const scoreText = s.score !== null ? `${s.score} / ${maxScore}` : 'Not Graded';
+      return `
+        <div class="submission-row" data-submission-id="${s.submission_id}">
+          <div class="submission-name"><div class="avatar">${initials||'T'}</div><div>${s.trainee_first_name} ${s.trainee_last_name}</div></div>
+          <div class="submission-time">${time}</div>
+          <div><a href="../uploads/submissions/${s.submission_file_path}" target="_blank">View File</a></div>
+          <div class="submission-actions"><span class="submission-score">${scoreText}</span> <button class="btn btn-primary grade-btn" data-submission-id="${s.submission_id}" data-current-score="${s.score || ''}" data-max-score="${maxScore}" data-feedback="${s.feedback || ''}">${s.score !== null ? 'Edit Grade' : 'Grade'}</button></div>
+        </div>`;
+    }).join('');
   }
 
   document.getElementById('competencies-list')?.addEventListener('click', function(e) {
@@ -510,8 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const addMaterialBtn = e.target.closest('.add-material-btn');
     if (addMaterialBtn) openAddMaterialModal(addMaterialBtn.dataset.topicId);
-    const addActivityBtn = e.target.closest('.add-activity-btn');
-    if (addActivityBtn) openAddActivityModal(addActivityBtn.dataset.topicId);
+    
     const editCompMatBtn = e.target.closest('.edit-comp-material-btn');
     if (editCompMatBtn) {
       openEditMaterialModal({
@@ -1052,11 +1059,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function openGradeModal(submissionId, currentScore, maxScore, feedback) {
     document.getElementById('grade_submission_id').value = submissionId;
     document.getElementById('submission_score').value = currentScore;
-    document.getElementById('submission_score').max = maxScore;
-    document.getElementById('submission_max_score').textContent = maxScore;
+    const max = (maxScore && Number(maxScore) > 0) ? Number(maxScore) : 100;
+    document.getElementById('submission_score').max = String(max);
+    document.getElementById('submission_max_score').textContent = String(max);
     document.getElementById('submission_feedback').value = feedback;
-    gradeModal.classList.remove('hidden');
+    if (typeof openModal === 'function') { openModal(gradeModal); } else { gradeModal.classList.remove('hidden'); gradeModal.style.display = 'flex'; }
   }
+  window.openGradeModal = openGradeModal;
 
   document.getElementById('closeGradeModal')?.addEventListener('click', () => gradeModal.classList.add('hidden'));
   document.getElementById('cancelGrade')?.addEventListener('click', () => gradeModal.classList.add('hidden'));
@@ -1069,21 +1078,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const maxScore = document.getElementById('submission_max_score').textContent;
     const submitBtn = this.querySelector('button[type="submit"]');
     submitBtn.disabled = true; submitBtn.textContent = 'Saving...';
-    formData.append('batch_name', document.getElementById('trainer-batch-select')?.value || currentBatchName);
+    const bnVal = document.getElementById('trainer-batch-select')?.value || currentBatchName;
+    if (!bnVal) {
+      openConfirm('Error', 'Please select a batch first', () => {}, { confirmText: 'OK', showCancel: false });
+      submitBtn.disabled = false; submitBtn.textContent = 'Save Grade';
+      return;
+    }
+    formData.append('batch_name', bnVal);
+    const numScore = Number(score);
+    const numMax = Number(maxScore);
+    if (!(numMax > 0)) {
+      openConfirm('Error', 'Invalid max score', () => {}, { confirmText: 'OK', showCancel: false });
+      submitBtn.disabled = false; submitBtn.textContent = 'Save Grade';
+      return;
+    }
+    if (isNaN(numScore) || numScore < 0 || numScore > numMax) {
+      openConfirm('Error', `Score must be between 0 and ${numMax}`, () => {}, { confirmText: 'OK', showCancel: false });
+      submitBtn.disabled = false; submitBtn.textContent = 'Save Grade';
+      return;
+    }
     fetch('../php/grade_submission.php', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData })
       .then(r => r.json())
       .then(d => {
         if (d.success) {
           openConfirm('Success', 'Grade saved successfully!', () => {}, { confirmText: 'OK', showCancel: false });
           gradeModal.classList.add('hidden');
-          const row = document.querySelector(`tr[data-submission-id="${submissionId}"]`);
+          const row = document.querySelector(`.submission-row[data-submission-id="${submissionId}"]`);
           if (row) {
-            const cell = row.querySelector('.score-cell');
-            cell.textContent = `${score} / ${maxScore}`;
+            const scoreEl = row.querySelector('.submission-score');
+            if (scoreEl) scoreEl.textContent = `${score} / ${maxScore}`;
             const btn = row.querySelector('.grade-btn');
-            btn.textContent = 'Edit Grade';
-            btn.dataset.currentScore = score;
-            btn.dataset.feedback = formData.get('feedback');
+            if (btn) { btn.textContent = 'Edit Grade'; btn.dataset.currentScore = score; btn.dataset.feedback = formData.get('feedback'); }
           }
         } else {
           openConfirm('Error', 'Error saving grade: ' + (d.message || 'Unknown'), () => {}, { confirmText: 'OK', showCancel: false });
@@ -1091,6 +1116,32 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .catch(() => { openConfirm('Error', 'Network error while saving grade', () => {}, { confirmText: 'OK', showCancel: false }); })
       .finally(() => { submitBtn.disabled = false; submitBtn.textContent = 'Save Grade'; });
+  });
+  // Fallback click binding to ensure submission triggers
+  document.querySelector('#gradeSubmissionForm button[type="submit"]')?.addEventListener('click', function(ev){
+    const gf = document.getElementById('gradeSubmissionForm');
+    if (!gf) return;
+    // Let the bound submit handler run
+    // Some environments require explicit requestSubmit for custom buttons
+    if (typeof gf.requestSubmit === 'function') { gf.requestSubmit(); }
+  });
+  // Ensure grade form submission works even if initial binding missed
+  (function ensureGradeBinding(){
+    const gf = document.getElementById('gradeSubmissionForm');
+    if (!gf || gf.__boundFallback) return;
+    gf.__boundFallback = true;
+    gf.addEventListener('submit', function(e){ /* no-op; already handled above */ });
+  })();
+  // Fallback global delegation for grade buttons
+  document.addEventListener('click', function(ev){
+    const gb = ev.target.closest('.grade-btn');
+    if (!gb) return;
+    ev.preventDefault();
+    const id = gb.dataset.submissionId;
+    const currentScore = gb.dataset.currentScore;
+    const maxScore = gb.dataset.maxScore;
+    const feedback = gb.dataset.feedback;
+    if (id) window.openGradeModal(id, currentScore, maxScore, feedback);
   });
 });
 document.addEventListener('click', function(e){

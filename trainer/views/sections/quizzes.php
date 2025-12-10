@@ -51,6 +51,19 @@ try {
     }
     $activeQuizzes = array_filter($quizzes, function($q){ return ($q['status'] ?? 'draft') !== 'archived'; });
     $archivedQuizzes = array_filter($quizzes, function($q){ return ($q['status'] ?? 'draft') === 'archived'; });
+
+    $activitiesStmt = $pdo->prepare("
+        SELECT ta.*, ct.topic_name, ct.course_code, c.course_name,
+               (SELECT COUNT(*) FROM activity_submissions s WHERE s.activity_id = ta.id) AS submission_count
+        FROM topic_activities ta
+        JOIN course_topics ct ON ta.topic_id = ct.id
+        JOIN courses c ON ct.course_code = c.course_code
+        WHERE ta.activity_type <> 'quiz'
+          AND ct.course_code IN (SELECT course_code FROM course_assignments WHERE trainer_id = ?)
+        ORDER BY ta.due_date DESC, ta.start_date DESC, ta.id DESC
+    ");
+    $activitiesStmt->execute([$user['user_id']]);
+    $otherActivities = $activitiesStmt->fetchAll();
 } catch (PDOException $e) {
     error_log("Error loading quiz data: " . $e->getMessage());
     $trainerCourses = [];
@@ -187,6 +200,63 @@ try {
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
+    </div>
+
+    <div class="archived-section">
+        <div class="tab-header" style="margin-top: 24px;">
+            <div class="header-content">
+                <h3><i class="fas fa-clipboard-list"></i> Other Activities</h3>
+                <p class="header-subtitle">Activities created in courses that are not quizzes</p>
+            </div>
+        </div>
+        <div class="quizzes-grid">
+            <?php if (!empty($otherActivities)): ?>
+                <?php foreach ($otherActivities as $index => $act): ?>
+                    <div class="quiz-card card" style="animation-delay: <?php echo ($index * 0.1); ?>s;">
+                        <div class="quiz-header">
+                            <div class="quiz-title-wrapper">
+                                <h3><?php echo htmlspecialchars($act['activity_title']); ?></h3>
+                                <div class="quiz-status">
+                                    <i class="fas fa-tasks"></i>
+                                    <?php echo ucfirst($act['activity_type']); ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="quiz-info">
+                            <div class="quiz-course">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span><?php echo htmlspecialchars($act['course_name']); ?></span>
+                            </div>
+
+                            <?php if (!empty($act['activity_description'])): ?>
+                                <p class="quiz-description"><?php echo htmlspecialchars($act['activity_description']); ?></p>
+                            <?php endif; ?>
+
+                            <div class="quiz-stats">
+                                <div class="stat">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>Due: <?php echo $act['due_date'] ? date('M j, Y g:i A', strtotime($act['due_date'])) : 'No due date'; ?></span>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-star"></i>
+                                    <span>Max: <?php echo (int)$act['max_score']; ?></span>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-upload"></i>
+                                    <span>Submissions: <?php echo (int)$act['submission_count']; ?></span>
+                                </div>
+                            </div>
+                            <div class="quiz-actions">
+                                <button class="btn btn-primary edit-activity-btn" data-activity-id="<?php echo $act['id']; ?>">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
     </div>
 
     <div class="archived-section">
@@ -474,6 +544,71 @@ document.addEventListener('DOMContentLoaded', function() {
         if (footerClose) footerClose.addEventListener('click', closeFn);
         modal.addEventListener('click', function(e){ if (e.target === modal) closeFn(); });
     });
+
+    document.querySelectorAll('.edit-activity-btn').forEach(btn=>{
+        btn.addEventListener('click', function(){
+            const id = this.getAttribute('data-activity-id');
+            const modal = document.getElementById('editActivityModal');
+            const form = document.getElementById('editActivityForm');
+            const titleEl = document.getElementById('edit_activity_title');
+            const descEl = document.getElementById('edit_activity_description');
+            const startEl = document.getElementById('edit_start_date');
+            const dueEl = document.getElementById('edit_due_date');
+            const maxEl = document.getElementById('edit_max_score');
+            if (!modal || !form) return;
+            form.reset();
+            document.getElementById('edit_activity_id').value = id;
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            const fd = new URLSearchParams();
+            fd.append('action','get_activity');
+            fd.append('activity_id', id);
+            fetch('../trainer/handlers/activity_handler.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: fd.toString() })
+              .then(r=>r.json())
+              .then(data=>{
+                if (!data.success) return;
+                const a = data.activity || {};
+                if (titleEl) titleEl.value = a.activity_title || '';
+                if (descEl) descEl.value = a.activity_description || '';
+                function toLocal(dt){ if(!dt) return ''; const d = new Date(dt.replace(' ','T')); const pad=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+                if (startEl) startEl.value = toLocal(a.start_date);
+                if (dueEl) dueEl.value = toLocal(a.due_date);
+                if (maxEl) maxEl.value = a.max_score != null ? a.max_score : '';
+              });
+        });
+    });
+
+    const editModal = document.getElementById('editActivityModal');
+    const editForm = document.getElementById('editActivityForm');
+    if (editModal) {
+        const x = editModal.querySelector('.close');
+        const footerClose = editModal.querySelector('.modal-footer .btn.btn-outline-secondary');
+        const closeFn = ()=>{ editModal.style.display='none'; editModal.classList.add('hidden'); };
+        if (x) x.addEventListener('click', closeFn);
+        if (footerClose) footerClose.addEventListener('click', closeFn);
+        editModal.addEventListener('click', function(e){ if (e.target === editModal) closeFn(); });
+    }
+
+    if (editForm) {
+        editForm.addEventListener('submit', function(e){
+            e.preventDefault();
+            if (editForm.dataset.submitting === '1') return;
+            editForm.dataset.submitting = '1';
+            const submitBtnEl = editForm.querySelector('.submit-btn');
+            const originalSubmitHTML = submitBtnEl ? submitBtnEl.innerHTML : '';
+            if (submitBtnEl) { submitBtnEl.disabled = true; submitBtnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; }
+            const fd = new FormData(editForm);
+            fd.set('action','update_activity');
+            fetch('../trainer/handlers/activity_handler.php', { method:'POST', body: fd })
+              .then(r=>r.json())
+              .then(data=>{
+                if (data.success) { alert('Activity updated successfully'); location.reload(); }
+                else { alert(data.message||'Error'); }
+              })
+              .catch(()=>alert('Request failed'))
+              .finally(()=>{ editForm.dataset.submitting=''; if (submitBtnEl) { submitBtnEl.disabled = false; submitBtnEl.innerHTML = originalSubmitHTML; }});
+        });
+    }
 });
 
 
@@ -805,5 +940,48 @@ document.addEventListener('click', function(e){
         <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary">Close</button>
         </div>
+    </div>
+</div>
+
+<div class="modal hidden" id="editActivityModal" style="position:fixed;inset:0;z-index:1000;display:none;align-items:flex-start;justify-content:center;overflow:auto;background:rgba(0,0,0,0.3)">
+    <div class="modal-content modal-content-large" style="max-height:85vh;overflow:auto;margin:40px auto;width:95%;max-width:900px">
+        <div class="modal-header">
+            <h2>Edit Activity</h2>
+            <span class="close">&times;</span>
+        </div>
+        <form id="editActivityForm">
+            <input type="hidden" name="activity_id" id="edit_activity_id">
+            <div class="modal-body">
+                <div id="editActivityErrors" class="form-errors hidden"></div>
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="edit_activity_title">Activity Title <span class="required">*</span></label>
+                        <input type="text" id="edit_activity_title" name="activity_title" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_activity_description">Description</label>
+                        <textarea id="edit_activity_description" name="activity_description" rows="3" class="form-control"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_start_date">Start Date</label>
+                            <input type="datetime-local" id="edit_start_date" name="start_date" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_due_date">Due Date</label>
+                            <input type="datetime-local" id="edit_due_date" name="due_date" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_max_score">Max Score</label>
+                            <input type="number" id="edit_max_score" name="max_score" min="0" class="form-control">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary">Close</button>
+                <button type="submit" class="btn btn-primary submit-btn">Save Changes</button>
+            </div>
+        </form>
     </div>
 </div>

@@ -45,6 +45,22 @@
 
     #courses .detail-view { display: none; }
     #courses .detail-view.active { display: block; }
+    #courses .submissions-card { border: 1px solid #e2e6ea; border-radius: 12px; background:#fff; margin: 12px 0; overflow:hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04); }
+    #courses .submissions-card .card-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#f8f9fa; }
+    #courses .submissions-card .card-header .title { display:flex; align-items:center; gap:10px; font-weight:600; }
+    #courses .submissions-card .card-header .meta { color:#495057; font-size:.9rem; }
+    #courses .submissions-card .card-body { padding:12px 16px; }
+    #courses .submission-row { display:grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid #eee; }
+    #courses .submission-row:last-child { border-bottom:none; }
+    #courses .submission-name { display:flex; align-items:center; gap:10px; }
+    #courses .submission-name .avatar { width:32px; height:32px; border-radius:50%; background:#e9ecef; display:flex; align-items:center; justify-content:center; font-weight:600; color:#6c757d; }
+    #courses .submission-time { color:#6c757d; font-size:.9rem; }
+    #courses .submission-score { font-weight:600; }
+    #courses .submission-actions .btn { padding:6px 10px; }
+    @media (max-width: 768px) {
+      #courses .submission-row { grid-template-columns: 1fr; }
+      #courses .submission-actions { margin-top:6px; }
+    }
   </style>
   <div id="enrolled" class="tab-inner active">
     <h2 class="section-header">My Assigned Courses</h2>

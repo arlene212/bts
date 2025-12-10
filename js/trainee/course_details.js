@@ -406,17 +406,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       if (type === 'activity' && id) {
-        const tabLink = document.querySelector(`.tab-link[data-tab="quizzes"]`);
+        const tabLink = document.querySelector(`.tab-link[data-tab="activities-summary"]`);
         if (tabLink) { tabLink.click(); }
-        setTimeout(() => {
-          const targetRow = document.querySelector(`#activities-pane .sections-row[data-resource-id="${CSS.escape(id)}"]`) ||
-                            document.querySelector(`#activities-pane .topic-activity-item[data-activity-id="${CSS.escape(id)}"]`);
-          if (targetRow) {
-            targetRow.classList.add('row-highlight');
-            try { targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
-            setTimeout(() => targetRow.classList.remove('row-highlight'), 2000);
+        let tries = 0;
+        const tryHighlight = function(){
+          const selector = `#summaryTableBody a[href*="activity_view.php?id=${CSS.escape(id)}"]`;
+          const link = document.querySelector(selector);
+          if (link) {
+            const row = link.closest('tr');
+            if (row) {
+              row.classList.add('row-highlight');
+              try { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+              setTimeout(() => row.classList.remove('row-highlight'), 2000);
+            }
+            return;
           }
-        }, 150);
+          if (tries < 10) { tries++; setTimeout(tryHighlight, 200); }
+        };
+        setTimeout(tryHighlight, 250);
       }
     }
   });
@@ -715,10 +722,22 @@ document.addEventListener('DOMContentLoaded', () => {
       hoursChip.textContent = `Hours: ${(parseInt(comp.hours || 0, 10) || 0)} hrs`;
 
       const topics = (comp.topics || []);
+      const compMaterials = Array.isArray(comp.materials) ? comp.materials : [];
+      let modulesHtml = '';
+      if (compMaterials.length) {
+        modulesHtml += `
+          <div class="topic-container">
+            <h4 class="topic-title">Competency Materials</h4>
+            <div class="topic-content-section">
+              ${renderMaterials(compMaterials)}
+            </div>
+          </div>
+        `;
+      }
       if (!topics.length) {
-        modulesList.innerHTML = '<div class="empty-state">No modules found for this competency.</div>';
+        modulesHtml += '<div class="empty-state">No modules found for this competency.</div>';
       } else {
-        modulesList.innerHTML = topics.map(t => `
+        modulesHtml += topics.map(t => `
           <div class="topic-container">
             <h4 class="topic-title">${t.topic_name || t.name || 'Unnamed Topic'}</h4>
             <div class="topic-content-section">
@@ -728,6 +747,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         `).join('');
       }
+      modulesList.innerHTML = modulesHtml;
 
       const activities = topics.flatMap(t => t.activities || []);
       if (!activities.length) {
@@ -771,6 +791,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
   function buildSectionsFromCompetency(comp) {
     const topics = Array.isArray(comp.topics) ? comp.topics : [];
+    const compMaterials = Array.isArray(comp.materials) ? comp.materials : [];
     const mats = topics.flatMap(t => (t.materials || []).map(m => ({
       icon: 'fa-folder',
       title: t.topic_name || t.name || m.material_title || m.title || 'Material',
@@ -783,6 +804,18 @@ document.addEventListener('DOMContentLoaded', () => {
       id: m.id,
       path: m.file_path
     })));
+    const compMats = compMaterials.map(m => ({
+      icon: 'fa-file',
+      title: m.title || 'Material',
+      submitted: null,
+      score: null,
+      max: null,
+      due: null,
+      status: false,
+      type: 'material',
+      id: m.id,
+      path: m.file_path
+    }));
     const acts = topics.flatMap(t => (t.activities || []).map(a => ({
       icon: 'fa-folder',
       title: a.activity_title || a.title || 'Activity',
@@ -794,5 +827,5 @@ document.addEventListener('DOMContentLoaded', () => {
       type: 'activity',
       id: a.id
     })));
-    return [...mats, ...acts];
+    return [...compMats, ...mats, ...acts];
   }

@@ -168,16 +168,24 @@ try {
         }
     }
 
-    // Assign topics to competencies by competency code -> numeric id mapping
+    // Assign topics to competencies handling both code and numeric id
     foreach ($topics as $topic) {
-        $compCode = (string)$topic['competency_id'];
-        $cid = isset($codeToId[$compCode]) ? (int)$codeToId[$compCode] : null;
+        $compKey = (string)$topic['competency_id'];
+        $cid = null;
+        if (isset($codeToId[$compKey])) {
+            $cid = (int)$codeToId[$compKey];
+        } else {
+            $maybeId = (int)$topic['competency_id'];
+            if ($maybeId > 0 && isset($competencies[$maybeId])) {
+                $cid = $maybeId;
+            }
+        }
         if ($cid !== null && isset($competencies[$cid])) {
             $topic['materials'] = array_values($topic['materials']);
             $topic['activities'] = array_values($topic['activities']);
             $competencies[$cid]['topics'][] = $topic;
         } else {
-            error_log("Competency code '{$compCode}' not found in competencies for topic '{$topic['name']}'");
+            error_log("Competency reference '{$compKey}' not matched for topic '{$topic['name']}'");
         }
     }
 
@@ -193,11 +201,43 @@ try {
         }
     } catch (Exception $__) {}
 
+    $materialsByCompetency = [];
+    try {
+        $hasBatchResourcesTbl = false;
+        try {
+            $tchkBr = $pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'batch_resources'");
+            $tchkBr->execute();
+            $hasBatchResourcesTbl = ((int)$tchkBr->fetchColumn() > 0);
+        } catch (Exception $__) {}
+        if ($hasBatchResourcesTbl && !empty($batchName)) {
+            $matStmt = $pdo->prepare("SELECT cm.id, cm.course_code, cm.competency_id, cm.title, cm.content_type, cm.file_path, cm.content, cm.date_created 
+                                       FROM course_materials cm 
+                                       JOIN batch_resources br ON br.resource_type = 'material' AND br.resource_id = cm.id AND br.course_code = cm.course_code AND br.batch_name = ? 
+                                       WHERE cm.course_code = ? ORDER BY cm.date_created ASC");
+            $matStmt->execute([$courseCode, $batchName]);
+        } else {
+            $matStmt = $pdo->prepare("SELECT cm.id, cm.course_code, cm.competency_id, cm.title, cm.content_type, cm.file_path, cm.content, cm.date_created 
+                                       FROM course_materials cm 
+                                       WHERE cm.course_code = ? ORDER BY cm.date_created ASC");
+            $matStmt->execute([$courseCode]);
+        }
+        foreach ($matStmt->fetchAll(PDO::FETCH_ASSOC) as $m) {
+            $cid = (int)$m['competency_id'];
+            if (!isset($materialsByCompetency[$cid])) { $materialsByCompetency[$cid] = []; }
+            $materialsByCompetency[$cid][] = $m;
+        }
+        foreach ($competencies as $cid => &$comp) {
+            $comp['materials'] = isset($materialsByCompetency[$cid]) ? $materialsByCompetency[$cid] : [];
+        }
+        unset($comp);
+    } catch (Exception $__) {}
+
     echo json_encode([
         'course' => $course,
         'competencies' => array_values($competencies),
         'activities' => array_values($activities),
         'quizzesByCompetencyId' => $quizzesByCompetencyId,
+        'materialsByCompetency' => $materialsByCompetency,
         'selectedBatch' => isset($batchName) ? $batchName : null
     ]);
 
