@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (typeof setupBrowseCourseDetailView === 'function') { setupBrowseCourseDetailView(); }
   setupProfileModal();
   setupEnrolledTabs();
+  setupClickableCards();
 });
 
 function setupEnrolledTabs() {
@@ -109,4 +110,23 @@ function setupEnrolledTabs() {
   // Initialize with active tab
   const activeEnrolledTab = document.querySelector('[data-tab="enrolled-active"].active') ? 'enrolled-active' : 'enrolled-completed';
   showEnrolledTab(activeEnrolledTab);
+}
+
+function setupClickableCards() {
+  const cards = document.querySelectorAll('.clickable-card');
+  if (!cards || cards.length === 0) return;
+  cards.forEach(card => {
+    card.addEventListener('click', function() {
+      const targetTab = this.getAttribute('data-target') || 'home';
+      const subtab = this.getAttribute('data-subtab');
+      const tabLink = document.querySelector(`.tab-link[data-tab="${targetTab}"]`);
+      if (tabLink) {
+        tabLink.click();
+      }
+      if (targetTab === 'enrolled' && subtab) {
+        const btn = document.querySelector(`.switch-btn[data-target="${subtab}"]`);
+        if (btn) btn.click();
+      }
+    });
+  });
 }

@@ -49,9 +49,11 @@ function setupBrowseCourseDetailView() {
               if (topic.materials && topic.materials.length > 0) {
                 html += '<div class="materials-list">';
                 topic.materials.forEach(function(mat){
-                  var fileLink = mat.file_path ? ('../uploads/courses/' + mat.file_path) : '#';
+                  var isExternal = mat.file_path && /^https?:\/\//i.test(mat.file_path);
+                  var fileLink = mat.file_path ? (isExternal ? mat.file_path : ('../php/download.php?source=topic&material_id=' + mat.id)) : '#';
                   html += '<div class="material-item material"><div class="material-title">';
-                  html += '<a href="' + fileLink + '" target="_blank" rel="noopener noreferrer"' + (mat.file_path ? ' download' : '') + '>' + (mat.title || 'Material') + '</a>';
+                  var downloadAttr = (!isExternal && mat.file_path) ? ' download' : '';
+                  html += '<a href="' + fileLink + '" target="_blank" rel="noopener noreferrer"' + downloadAttr + '>' + (mat.title || 'Material') + '</a>';
                   html += '</div><div class="material-desc">' + (mat.description || '') + '</div></div>';
                 });
                 html += '</div>';

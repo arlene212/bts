@@ -1,6 +1,17 @@
 <?php
 function enrollGuest($db, $userId, $courseCode, $batchName = null)
 {
+  if (empty($batchName)) {
+    return ['success' => false, 'message' => 'Please select a batch before enrolling'];
+  }
+  // Validate batch exists for the course
+  try {
+    $bchk = $db->prepare("SELECT 1 FROM course_batches WHERE course_code = ? AND batch_name = ?");
+    $bchk->execute([$courseCode, $batchName]);
+    if (!$bchk->fetchColumn()) {
+      return ['success' => false, 'message' => 'Invalid batch selection'];
+    }
+  } catch (Throwable $e) {}
   $stmt = $db->prepare("SELECT status FROM enrollments WHERE trainee_id = ? AND course_code = ? ORDER BY date_requested DESC LIMIT 1");
   $stmt->execute([$userId, $courseCode]);
   $existing = $stmt->fetch(PDO::FETCH_ASSOC);

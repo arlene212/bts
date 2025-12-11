@@ -57,38 +57,113 @@ function viewCourseDetails(courseCode, courseName, hours, description, credited)
       if (descEl && data.course && data.course.description) {
         descEl.textContent = data.course.description;
       }
-      let contentHtml = `<h2>Competencies</h2>`;
       const competencies = (data.competencies || []);
-      if (competencies.length > 0) {
-        competencies.forEach(comp => {
-          contentHtml += `<div class="competency-box">`;
-          contentHtml += `<div class="competency-header"><h4>${comp.name}</h4></div>`;
-          if (comp.topics && comp.topics.length > 0) {
-            comp.topics.forEach(topic => {
-              contentHtml += `<div class="topic-box">`;
-              contentHtml += `<h5>${topic.name}</h5>`;
-              if (topic.materials && topic.materials.length > 0) {
-                contentHtml += `<div class="materials-list">`;
-                topic.materials.forEach(mat => {
-                  const fileLink = mat.file_path ? `../uploads/courses/${mat.file_path}` : '#';
-                  contentHtml += `<div class="material-item material" data-material-id="${mat.id}"><div class="material-title"><a href="${fileLink}" target="_blank" rel="noopener noreferrer" ${mat.file_path ? 'download' : ''}>${mat.title || 'Material'}</a></div><div class="material-desc">${mat.description || ''}</div></div>`;
-                });
-                contentHtml += `</div>`;
-              }
-              if (topic.activities && topic.activities.length > 0) {
-                contentHtml += `<div class="activities-list">`;
-                topic.activities.forEach(act => {
-                  contentHtml += `<div class="material-item activity" data-activity="${act.id}" data-type="${act.type}"><div class="material-title">${act.title}</div><div class="material-status not-submitted">Not submitted</div></div>`;
-                });
-                contentHtml += `</div>`;
-              }
-              contentHtml += `</div>`;
-            });
-          } else { contentHtml += '<p class="no-materials">No topics for this competency.</p>'; }
-          contentHtml += `</div>`;
+      const groups = { basic: [], common: [], core: [] };
+      const cmByComp = data.materialsByCompetency || {};
+      competencies.forEach(comp => {
+        const rows = [];
+        let totalActivities = 0;
+        let completedActivities = 0;
+        const extraMaterials = cmByComp[comp.id] || [];
+        extraMaterials.forEach(m => {
+          const isExternal = m.file_path && /^https?:\/\//i.test(m.file_path);
+          const link = m.file_path ? (isExternal ? m.file_path : `../php/download.php?source=course&material_id=${m.id}`) : '';
+          if (link) rows.push({ type:'module', title: m.title || 'Module', link, download: !isExternal, locked: (comp.type !== 'basic') });
         });
-      } else { contentHtml += '<p>No competency materials are available for this course.</p>'; }
-      courseContentContainer.innerHTML = contentHtml;
+        (comp.topics || []).forEach(topic => {
+          (topic.materials || []).forEach(mat => {
+            const isExternal = mat.file_path && /^https?:\/\//i.test(mat.file_path);
+            const link = mat.file_path ? (isExternal ? mat.file_path : `../php/download.php?source=topic&material_id=${mat.id}`) : '#';
+            rows.push({ type:'material', title: mat.title || 'Material', link, locked: (comp.type !== 'basic') });
+          });
+          (topic.activities || []).forEach(act => {
+            totalActivities += 1;
+            const submitted = !!act.submission;
+            if (submitted) completedActivities += 1;
+            rows.push({ type:'activity', id: act.id, title: act.title || 'Activity', submitted, score: act.submission && (act.submission.score ?? null), due: act.due_date || null, activityType: act.type || 'assignment', locked: (comp.type !== 'basic') });
+          });
+        });
+        const progress = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
+        const sectionsCount = rows.length;
+        groups[(comp.type || 'basic')].push({ comp, rows, progress, sectionsCount });
+      });
+
+      const totalModules = groups.basic.length + groups.common.length + groups.core.length;
+      let html = `<div class="modules-ui"><div class="list-header"><h3><i class="fas fa-book"></i> Modules</h3><input type="text" id="modules-search" placeholder="Search modules..."><span class="chip" id="modules-count">${totalModules} modules</span></div>`;
+      function renderGroup(label, key){
+        if (groups[key].length === 0) return '';
+        let g = `<div class="module-group" data-group="${key}"><div class="group-header"><span class="competency-marker">${label}</span></div><div class="group-list">`;
+        groups[key].forEach(m => {
+          g += `<div class="module-card"><div class="module-header">`
+             + `<img class="module-thumb" src="../images/school.png" alt="logo">`
+             + `<div class="module-title-area"><h4 class="module-title">${m.comp.name}</h4><div class="module-status"><span class="progress-dot"></span>${m.progress}% Resume <i class="fas fa-play"></i></div></div>`
+             + `<span class="sections-pill">${m.sectionsCount} sections <i class="fas fa-chevron-down"></i></span>`
+             + `</div>`;
+          g += `<div class="module-sections"><div class="sections-card"><div class="sections-header-row">`
+             + `<div class="col section">Section</div><div class="col submitted">Submitted</div><div class="col score">Score</div><div class="col due">Due</div><div class="col status">Status</div></div>`;
+          m.rows.forEach(r => {
+            const icon = r.type === 'material' ? '<i class="fas fa-folder" style="color:#1d4ed8"></i>' : '<i class="fas fa-folder" style="color:#475569"></i>';
+            const submittedIcon = r.submitted ? '<i class="fas fa-flag"></i>' : '—';
+            const scoreText = (r.score || r.score === 0) ? r.score : '—';
+            const dueText = r.due ? r.due : '—';
+            const statusIcon = r.submitted ? '<i class="fas fa-flag"></i>' : '-';
+            const downloadAttr = r.download ? ' download' : '';
+            const linkHtml = r.locked ? '<span class="section-link disabled-link">' + (r.title) + '</span>' : (r.link ? '<a href="' + r.link + '" target="_blank" rel="noopener noreferrer" class="section-link"' + downloadAttr + '>' + r.title + '</a>' : r.title);
+            const activityData = r.type === 'activity' ? ` data-activity-id="${r.id}" data-activity-type="${r.activityType || 'assignment'}" data-activity-title="${r.title.replace(/"/g,'') }"` : '';
+            const lockedAttr = r.locked ? ' data-locked="1"' : '';
+            g += `<div class="sections-row"${activityData}${lockedAttr}>` + `<div class="cell sec-title">${icon} ${linkHtml}</div>` + `<div class="cell sec-submitted">${submittedIcon}</div>` + `<div class="cell sec-score">${scoreText}</div>` + `<div class="cell sec-due">${dueText}</div>` + `<div class="cell sec-status">${statusIcon}</div>` + `</div>`;
+          });
+          g += `</div></div></div>`;
+        });
+        g += `</div>`; return g;
+      }
+      html += renderGroup('Basic Competencies','basic');
+      html += renderGroup('Common Competencies','common');
+      html += renderGroup('Core Competencies','core');
+      html += `</div>`;
+      courseContentContainer.innerHTML = html;
+
+      const searchInput = document.getElementById('modules-search');
+      if (searchInput) {
+        searchInput.addEventListener('input', function(){
+          const q = this.value.toLowerCase();
+          document.querySelectorAll('#courseDetail .module-card').forEach(card => {
+            const title = (card.querySelector('.module-title')?.textContent || '').toLowerCase();
+            card.style.display = title.includes(q) ? '' : 'none';
+          });
+        });
+      }
+
+      const cards = Array.from(document.querySelectorAll('#courseDetail .module-card'));
+      cards.forEach((card, idx) => {
+        if (idx === 0) { card.classList.add('open'); card.classList.remove('collapsed'); }
+        else { card.classList.add('collapsed'); card.classList.remove('open'); }
+        const pill = card.querySelector('.sections-pill');
+        if (pill) {
+          pill.setAttribute('role','button');
+          pill.setAttribute('tabindex','0');
+          pill.setAttribute('aria-expanded', idx === 0 ? 'true' : 'false');
+          const toggle = () => {
+            const isOpen = card.classList.contains('open');
+            card.classList.toggle('open', !isOpen);
+            card.classList.toggle('collapsed', isOpen);
+            pill.setAttribute('aria-expanded', (!isOpen).toString());
+          };
+          pill.addEventListener('click', toggle);
+          pill.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+        }
+      });
+
+      document.addEventListener('click', function(e){
+        const row = e.target.closest('#courseDetail .sections-row');
+        if (!row) return;
+        if (row.getAttribute('data-locked') === '1') { showNotification('Available for trainees only. Basic competencies are accessible.', 'info'); return; }
+        const aid = row.getAttribute('data-activity-id');
+        const atype = row.getAttribute('data-activity-type') || 'assignment';
+        const titleEl = row.querySelector('.section-link');
+        const atitle = titleEl ? titleEl.textContent : (row.getAttribute('data-activity-title') || 'Activity');
+        if (aid) { try { openActivityModal(aid, atype, atitle); } catch (_) {} }
+      });
     })
     .catch(() => { courseContentContainer.innerHTML = '<div class="error-message">Failed to load course content.</div>'; });
 }

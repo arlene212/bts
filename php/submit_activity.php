@@ -1,6 +1,7 @@
 <?php
 require_once 'DatabaseConnection.php';
 require_once 'SessionManager.php';
+require_once 'ErrorHandler.php';
 
 date_default_timezone_set('UTC'); // Set default timezone to UTC
 
@@ -57,18 +58,28 @@ try {
 
     // === VALIDATION CHECKS ===
     // 1. Check if the activity exists and is valid for submission
-    $activityStmt = $pdo->prepare("
-        SELECT start_date, due_date FROM topic_activities 
-        WHERE id = ?
-    ");
+    $activityStmt = $pdo->prepare("SELECT ta.start_date, ta.due_date, ct.course_code,
+                                          CASE WHEN comp.competency_type IS NOT NULL THEN comp.competency_type ELSE '' END AS competency_type
+                                   FROM topic_activities ta
+                                   JOIN course_topics ct ON ta.topic_id = ct.id
+                                   LEFT JOIN competencies comp ON (comp.id = ct.competency_id OR comp.competency_code = ct.competency_id)
+                                   WHERE ta.id = ? LIMIT 1");
     $activityStmt->execute([$activityId]);
-    $activity = $activityStmt->fetch();
+    $activity = $activityStmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$activity) {
         throw new Exception("Activity not found.");
     }
 
-    // 2. Check if the submission is within the allowed time frame
+    // 2. Only allow Basic competency activities for guests
+    if ($user['role'] === 'guest') {
+        $ctype = strtolower($activity['competency_type'] ?? '');
+        if (!empty($ctype) && $ctype !== 'basic') {
+            ErrorHandler::getInstance()->handle403('Guests may only submit Basic competency activities');
+        }
+    }
+
+    // 3. Check if the submission is within the allowed time frame
     $now = new DateTime(); // Will be in UTC due to date_default_timezone_set
     $startDate = $activity['start_date'] ? new DateTime($activity['start_date']) : null;
     $dueDate = new DateTime($activity['due_date']);

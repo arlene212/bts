@@ -32,8 +32,22 @@ function setupTabs() {
 function setupHamburgerAndNotif() {
   const hamburger = document.getElementById('hamburger');
   const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
   if (hamburger && sidebar) {
-    hamburger.addEventListener('click', function() { sidebar.classList.toggle('active'); });
+    const toggleSidebar = function() {
+      sidebar.classList.toggle('active');
+      if (overlay) {
+        const isActive = sidebar.classList.contains('active');
+        overlay.classList.toggle('hidden', !isActive);
+      }
+    };
+    hamburger.addEventListener('click', toggleSidebar);
+    if (overlay) {
+      overlay.addEventListener('click', function() {
+        sidebar.classList.remove('active');
+        overlay.classList.add('hidden');
+      });
+    }
   }
   const notifIcon = document.getElementById('notifIcon');
   const notifDropdown = document.getElementById('notifDropdown');

@@ -18,6 +18,7 @@
 <body>
   <div class="container">
     <?php include __DIR__ . '/partials/sidebar.php'; ?>
+    <div class="sidebar-overlay hidden" id="sidebarOverlay"></div>
     <main class="main">
       <?php include __DIR__ . '/partials/header.php'; ?>
       <div class="content">

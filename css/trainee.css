@@ -2574,7 +2574,7 @@ body::before {
 /* ===========================
    Course Detail Layout (My Courses)
 =========================== */
-#courseDetail { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+#courseDetail { max-width: none; width: 100%; margin: 0; display: flex; flex-direction: column; gap: 16px; }
 #courseDetail .detail-header { display: flex; align-items: center; gap: 12px; justify-content: flex-start; border-bottom: 2px solid #e6f0ff; padding-bottom: 12px; }
 #courseDetail .back-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f1f5ff; color: #1d4ed8; border: 1px solid #dbeafe; border-radius: 999px; font-weight: 600; cursor: pointer; }
 #courseDetail .back-btn:hover { background: #e0e7ff; }

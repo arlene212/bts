@@ -84,9 +84,7 @@ function validateEnrollment() {
   const batchSelect = document.getElementById('batchSelect');
   const batchError = document.getElementById('batchSelectError');
   if (batchSelect) {
-    const nonEmptyOptions = Array.from(batchSelect.options).filter(o => o.value);
-    const requireSelection = nonEmptyOptions.length > 0;
-    if (requireSelection && !batchSelect.value) {
+    if (!batchSelect.value) {
       if (batchError) batchError.classList.remove('hidden');
       batchSelect.focus();
       return false;

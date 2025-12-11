@@ -1,8 +1,33 @@
 <?php 
-// Calculate enrolled courses statistics and split lists
 $total_enrolled = is_array($enrolled_courses) ? count($enrolled_courses) : 0;
+if (is_array($enrolled_courses)) {
+  foreach ($enrolled_courses as &$course) {
+    try {
+      $totalStmt = $db->prepare(
+        "SELECT COUNT(ta.id)
+         FROM topic_activities ta
+         JOIN course_topics ct ON ta.topic_id = ct.id
+         WHERE ct.course_code = ?"
+      );
+      $totalStmt->execute([$course['course_code']]);
+      $course['total_activities'] = (int)$totalStmt->fetchColumn();
+      $completedStmt = $db->prepare(
+        "SELECT COUNT(*)
+         FROM activity_submissions s
+         WHERE s.guest_id = ? AND s.activity_id IN (
+           SELECT ta.id FROM topic_activities ta JOIN course_topics ct ON ta.topic_id = ct.id WHERE ct.course_code = ?
+         )"
+      );
+      $completedStmt->execute([$user['user_id'], $course['course_code']]);
+      $course['completed_activities'] = (int)$completedStmt->fetchColumn();
+      $course['progress'] = $course['total_activities'] > 0 ? (int)round(($course['completed_activities'] / $course['total_activities']) * 100) : 0;
+      if ($course['progress'] >= 100) { $course['status'] = 'completed'; }
+    } catch (Throwable $e) {}
+  }
+  unset($course);
+}
 $completed_count = is_array($enrolled_courses) ? count(array_filter($enrolled_courses, function($course) { 
-  return isset($course['status']) && $course['status'] == 'completed'; 
+  return isset($course['status']) && $course['status'] === 'completed'; 
 })) : 0;
 $active_courses = is_array($enrolled_courses) ? array_filter($enrolled_courses, function($course) {
   return !isset($course['status']) || $course['status'] !== 'completed';
@@ -45,6 +70,7 @@ $completed_courses_list = is_array($enrolled_courses) ? array_filter($enrolled_c
               <p>Code: <?php echo htmlspecialchars($course['course_code']); ?></p>
               <p>Basic Hours: <?php echo htmlspecialchars($course['basic_hours'] ?? 0); ?> hrs</p>
               <p>Credited: <?php echo htmlspecialchars($course['credited_hours'] ?? 0); ?> hrs</p>
+              <p class="progress-indicator">Progress: <?php echo htmlspecialchars($course['progress'] ?? 0); ?>% (<?php echo (int)($course['completed_activities'] ?? 0); ?>/<?php echo (int)($course['total_activities'] ?? 0); ?>)</p>
               <?php if (!empty($course['description'])): ?>
                 <p class="course-description"><?php echo htmlspecialchars(substr($course['description'], 0, 100)); ?>...</p>
               <?php endif; ?>
@@ -92,6 +118,7 @@ $completed_courses_list = is_array($enrolled_courses) ? array_filter($enrolled_c
               <p>Basic Hours: <?php echo htmlspecialchars($course['basic_hours'] ?? 0); ?> hrs</p>
               <p>Credited: <?php echo htmlspecialchars($course['credited_hours'] ?? 0); ?> hrs</p>
               <span class="status-badge status-completed"><i class="fas fa-trophy"></i> Completed</span>
+              <p class="progress-indicator completed">Status: <strong>Completed</strong> (<?php echo htmlspecialchars($course['progress'] ?? 100); ?>%)</p>
               <?php if (!empty($course['description'])): ?>
                 <p class="course-description"><?php echo htmlspecialchars(substr($course['description'], 0, 100)); ?>...</p>
               <?php endif; ?>

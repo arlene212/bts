@@ -9,7 +9,7 @@ $completed_count = is_array($enrolled_courses) ? count(array_filter($enrolled_co
 <div class="dashboard tab-inner active" id="dashboard">
   <h1 class="section-header">Dashboard Overview</h1>
   <div class="dashboard-cards">
-    <div class="dashboard-card clickable-card" data-target="enrolled">
+    <div class="dashboard-card clickable-card" data-target="enrolled" data-subtab="active">
       <div class="number-circle"><?php echo $total_enrolled; ?></div>
       <div class="label-text">Enrolled Courses</div>
     </div>
@@ -17,7 +17,7 @@ $completed_count = is_array($enrolled_courses) ? count(array_filter($enrolled_co
       <div class="number-circle"><?php echo $total_available; ?></div>
       <div class="label-text">Available Courses</div>
     </div>
-    <div class="dashboard-card clickable-card" data-target="enrolled">
+    <div class="dashboard-card clickable-card" data-target="enrolled" data-subtab="completed">
       <div class="number-circle"><?php echo $completed_count; ?></div>
       <div class="label-text">Completed Courses</div>
     </div>
