@@ -64,9 +64,9 @@ try {
         $filterActivitiesOnBatch = $filterOnBatch && !empty($allowedActivities);
     }
 
-    // Build competencies list for the course using course_id (include all types)
+    // Build competencies list for the course using course_id (Basic only)
     $competencies = [];
-    $cstmt = $pdo->prepare("SELECT id, competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes FROM competencies WHERE status = 'active' AND course_id = (SELECT id FROM courses WHERE course_code = ?) ORDER BY unit_order, competency_name");
+    $cstmt = $pdo->prepare("SELECT id, competency_code, competency_name, module_title, competency_type, nominal_hours, description, learning_outcomes FROM competencies WHERE status = 'active' AND competency_type = 'basic' AND course_id = (SELECT id FROM courses WHERE course_code = ?) ORDER BY unit_order, competency_name");
     $cstmt->execute([$courseCode]);
     foreach ($cstmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $competencies[(int)$row['id']] = [
@@ -82,14 +82,15 @@ try {
         ];
     }
 
-    // Get topics, materials, and activities for the course
+    // Get topics, materials, and activities for the course (Basic competencies only)
     $stmt = $pdo->prepare(
         "SELECT 
-            ct.id as topic_id, ct.competency_id, ct.topic_name, ct.topic_description,
+            ct.id as topic_id, comp.id as comp_id, ct.topic_name, ct.topic_description,
             tm.id as material_id, tm.material_title, tm.material_description, tm.file_path as material_file_path,
             ta.id as activity_id, ta.activity_title, ta.activity_description, ta.activity_type, ta.due_date, ta.max_score,
             asub.id as submission_id, asub.file_path as submission_file, asub.submitted_at, asub.score, asub.feedback
          FROM course_topics ct
+         JOIN competencies comp ON (comp.id = ct.competency_id OR comp.competency_code = ct.competency_id) AND comp.competency_type = 'basic'
          LEFT JOIN topic_materials tm ON ct.id = tm.topic_id
          LEFT JOIN topic_activities ta ON ct.id = ta.topic_id
          LEFT JOIN activity_submissions asub ON ta.id = asub.activity_id AND asub.guest_id = ?
@@ -108,7 +109,7 @@ try {
                 'id' => $topicId,
                 'name' => $row['topic_name'],
                 'description' => $row['topic_description'],
-                'competency_id' => $row['competency_id'],
+                'competency_id' => (int)$row['comp_id'],
                 'materials' => [],
                 'activities' => []
             ];
@@ -156,7 +157,7 @@ try {
         }
     }
 
-    // Also fetch course_materials grouped by competency (trainer-posted modules)
+    // Also fetch course_materials grouped by competency (trainer-posted modules) — filter to Basic
     $materialsByCompetency = [];
     try {
         $hasBatchResourcesTbl = false;
@@ -179,6 +180,7 @@ try {
         }
         foreach ($matStmt->fetchAll(PDO::FETCH_ASSOC) as $m) {
             $cid = (int)$m['competency_id'];
+            if (!isset($competencies[$cid])) { continue; }
             if (!isset($materialsByCompetency[$cid])) { $materialsByCompetency[$cid] = []; }
             $materialsByCompetency[$cid][] = $m;
         }

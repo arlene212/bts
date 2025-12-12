@@ -40,12 +40,31 @@ function cert_fetch_competencies($pdo, $courseCode)
 
 function cert_fetch_activities_by_competency($pdo, $courseCode)
 {
-  $stmt = $pdo->prepare("SELECT ct.id as topic_id, ct.competency_id, ta.id as activity_id, ta.activity_title, ta.activity_type, ta.due_date FROM course_topics ct LEFT JOIN topic_activities ta ON ct.id = ta.topic_id WHERE ct.course_code = ? ORDER BY ct.created_at ASC, ta.created_at ASC");
+  $stmt = $pdo->prepare("SELECT 
+      comp.competency_code AS comp_code,
+      ct.id AS topic_id,
+      ta.id AS activity_id,
+      ta.activity_title,
+      ta.activity_type,
+      ta.due_date
+    FROM course_topics ct
+    JOIN competencies comp ON (comp.id = ct.competency_id OR comp.competency_code = ct.competency_id)
+      AND comp.competency_type = 'basic'
+    LEFT JOIN topic_activities ta ON ct.id = ta.topic_id
+    WHERE ct.course_code = ?
+    ORDER BY ct.created_at ASC, ta.created_at ASC");
   $stmt->execute([$courseCode]);
   $items = [];
   foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
-    if (!$r['activity_id'] || !$r['competency_id']) { continue; }
-    $items[$r['competency_id']][] = ['id' => $r['activity_id'], 'title' => $r['activity_title'], 'type' => strtolower($r['activity_type'] ?? ''), 'due_date' => $r['due_date']];
+    if (!$r['activity_id'] || !$r['comp_code']) { continue; }
+    $code = $r['comp_code'];
+    if (!isset($items[$code])) { $items[$code] = []; }
+    $items[$code][] = [
+      'id' => $r['activity_id'],
+      'title' => $r['activity_title'],
+      'type' => strtolower($r['activity_type'] ?? ''),
+      'due_date' => $r['due_date']
+    ];
   }
   return $items;
 }
@@ -84,14 +103,12 @@ function cert_evaluate($pdo, $userId, $courseCode)
   $competencies = cert_fetch_competencies($pdo, $courseCode);
   $activities = cert_fetch_activities_by_competency($pdo, $courseCode);
   $quizzes = cert_fetch_course_quizzes($pdo, $courseCode);
-  $requiredTypes = array_map('strtolower', $cfg['required_activity_types']);
   $competencyStatus = [];
   $missingActivities = [];
   foreach ($competencies as $code => $c) {
     $list = $activities[$code] ?? [];
-    $required = array_filter($list, function($a) use ($requiredTypes){ return in_array($a['type'], $requiredTypes, true); });
     $miss = [];
-    foreach ($required as $a) {
+    foreach ($list as $a) {
       if (!cert_has_submission($pdo, $a['id'], $userId)) { $miss[] = ['activity_id' => $a['id'], 'title' => $a['title'], 'type' => $a['type']]; }
     }
     $completed = empty($miss);

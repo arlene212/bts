@@ -207,9 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <h4 class="module-title">${escapeHtml(title)}</h4>
             ${isCompleted ? `
               <div class="module-status"><span>Completed</span> <i class="fas fa-check text-success"></i></div>
-            ` : `
-              <div class="module-status"><i class="fas fa-circle-notch text-success"></i> <span>${progress}% Resume</span> <i class="fas fa-play"></i></div>
-            `}
+            ` : ``}
           </div>
           <button class="toggle-sections btn btn-outline-secondary" aria-expanded="false">
             <span class="sections-count">${sectionsCount} section${sectionsCount !== 1 ? 's' : ''}</span>
@@ -240,9 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <h4 class="module-title">${escapeHtml(title)}</h4>
             ${isCompleted ? `
               <div class="module-status"><span>Completed</span> <i class="fas fa-check text-success"></i></div>
-            ` : `
-              <div class="module-status"><i class="fas fa-circle-notch text-success"></i> <span>${progress}% Resume</span> <i class="fas fa-play"></i></div>
-            `}
+            ` : ``}
           </div>
           <button class="toggle-sections btn btn-outline-secondary" aria-expanded="false">
             <span class="sections-count">${sectionsCount} section${sectionsCount !== 1 ? 's' : ''}</span>

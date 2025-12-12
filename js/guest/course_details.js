@@ -46,10 +46,14 @@ function viewCourseDetails(courseCode, courseName, hours, description, credited)
   if (hoursEl) hoursEl.textContent = hours ? `Basic Hours: ${hours} hrs` : '';
   if (creditedEl) creditedEl.textContent = credited ? `Credited: ${credited} hrs` : '';
   document.dispatchEvent(new CustomEvent('courseDetailOpened', { detail: { courseCode, courseName } }));
+  const openedKeyPrefix = 'guest_opened_' + courseCode;
+  function getOpened() { try { const s = localStorage.getItem(openedKeyPrefix); return s ? JSON.parse(s) : []; } catch (_) { return []; } }
+  function saveOpened(arr) { try { localStorage.setItem(openedKeyPrefix, JSON.stringify(arr)); } catch (_) {} }
+  const openedSet = new Set(getOpened());
   const courseContentContainer = document.getElementById('courseDetailContent');
   if (!courseContentContainer) return;
   courseContentContainer.innerHTML = '<div>Loading course content...</div>';
-  fetch(`../php/get_course_details_guest.php?course_code=${encodeURIComponent(courseCode)}`)
+  fetch(`../php/get_course_details_guest.php?course_code=${encodeURIComponent(courseCode)}&_=${Date.now()}`)
     .then(response => response.json())
     .then(data => {
       if (data.error) { courseContentContainer.innerHTML = `<div class="error-message">Error: ${data.error}</div>`; return; }
@@ -68,13 +72,13 @@ function viewCourseDetails(courseCode, courseName, hours, description, credited)
         extraMaterials.forEach(m => {
           const isExternal = m.file_path && /^https?:\/\//i.test(m.file_path);
           const link = m.file_path ? (isExternal ? m.file_path : `../php/download.php?source=course&material_id=${m.id}`) : '';
-          if (link) rows.push({ type:'module', title: m.title || 'Module', link, download: !isExternal, locked: (comp.type !== 'basic') });
+          if (link) rows.push({ type:'module', id: m.id, title: m.title || 'Module', link, download: !isExternal, locked: (comp.type !== 'basic'), opened: openedSet.has('cm:' + m.id) });
         });
         (comp.topics || []).forEach(topic => {
           (topic.materials || []).forEach(mat => {
             const isExternal = mat.file_path && /^https?:\/\//i.test(mat.file_path);
             const link = mat.file_path ? (isExternal ? mat.file_path : `../php/download.php?source=topic&material_id=${mat.id}`) : '#';
-            rows.push({ type:'material', title: mat.title || 'Material', link, locked: (comp.type !== 'basic') });
+            rows.push({ type:'material', id: mat.id, title: mat.title || 'Material', link, locked: (comp.type !== 'basic'), opened: openedSet.has('tm:' + mat.id) });
           });
           (topic.activities || []).forEach(act => {
             totalActivities += 1;
@@ -96,7 +100,7 @@ function viewCourseDetails(courseCode, courseName, hours, description, credited)
         groups[key].forEach(m => {
           g += `<div class="module-card"><div class="module-header">`
              + `<img class="module-thumb" src="../images/school.png" alt="logo">`
-             + `<div class="module-title-area"><h4 class="module-title">${m.comp.name}</h4><div class="module-status"><span class="progress-dot"></span>${m.progress}% Resume <i class="fas fa-play"></i></div></div>`
+             + `<div class="module-title-area"><h4 class="module-title">${m.comp.name}</h4></div>`
              + `<span class="sections-pill">${m.sectionsCount} sections <i class="fas fa-chevron-down"></i></span>`
              + `</div>`;
           g += `<div class="module-sections"><div class="sections-card"><div class="sections-header-row">`
@@ -106,12 +110,13 @@ function viewCourseDetails(courseCode, courseName, hours, description, credited)
             const submittedIcon = r.submitted ? '<i class="fas fa-flag"></i>' : '—';
             const scoreText = (r.score || r.score === 0) ? r.score : '—';
             const dueText = r.due ? r.due : '—';
-            const statusIcon = r.submitted ? '<i class="fas fa-flag"></i>' : '-';
+            const statusText = r.type === 'activity' ? (r.submitted ? 'Submitted' : 'Pending') : (r.opened ? 'Opened' : 'Not opened');
             const downloadAttr = r.download ? ' download' : '';
             const linkHtml = r.locked ? '<span class="section-link disabled-link">' + (r.title) + '</span>' : (r.link ? '<a href="' + r.link + '" target="_blank" rel="noopener noreferrer" class="section-link"' + downloadAttr + '>' + r.title + '</a>' : r.title);
             const activityData = r.type === 'activity' ? ` data-activity-id="${r.id}" data-activity-type="${r.activityType || 'assignment'}" data-activity-title="${r.title.replace(/"/g,'') }"` : '';
+            const materialKey = r.type === 'module' ? ` data-material-key="cm:${r.id || ''}"` : (r.type === 'material' ? ` data-material-key="tm:${r.id || ''}"` : '');
             const lockedAttr = r.locked ? ' data-locked="1"' : '';
-            g += `<div class="sections-row"${activityData}${lockedAttr}>` + `<div class="cell sec-title">${icon} ${linkHtml}</div>` + `<div class="cell sec-submitted">${submittedIcon}</div>` + `<div class="cell sec-score">${scoreText}</div>` + `<div class="cell sec-due">${dueText}</div>` + `<div class="cell sec-status">${statusIcon}</div>` + `</div>`;
+            g += `<div class="sections-row"${activityData}${materialKey}${lockedAttr}>` + `<div class="cell sec-title">${icon} ${linkHtml}</div>` + `<div class="cell sec-submitted">${submittedIcon}</div>` + `<div class="cell sec-score">${scoreText}</div>` + `<div class="cell sec-due">${dueText}</div>` + `<div class="cell sec-status">${statusText}</div>` + `</div>`;
           });
           g += `</div></div></div>`;
         });
@@ -164,6 +169,18 @@ function viewCourseDetails(courseCode, courseName, hours, description, credited)
         const atitle = titleEl ? titleEl.textContent : (row.getAttribute('data-activity-title') || 'Activity');
         if (aid) { try { openActivityModal(aid, atype, atitle); } catch (_) {} }
       });
+      document.addEventListener('click', function(e){
+        const link = e.target.closest('#courseDetail .section-link');
+        if (!link) return;
+        const row = link.closest('#courseDetail .sections-row');
+        if (!row) return;
+        const mkey = row.getAttribute('data-material-key');
+        if (!mkey) return;
+        const arr = getOpened();
+        if (!arr.includes(mkey)) { arr.push(mkey); saveOpened(arr); }
+        const statusCell = row.querySelector('.cell.sec-status');
+        if (statusCell) { statusCell.textContent = 'Opened'; }
+      });
     })
     .catch(() => { courseContentContainer.innerHTML = '<div class="error-message">Failed to load course content.</div>'; });
 }
@@ -189,3 +206,17 @@ if (document.readyState === 'loading') {
 } else {
   setupCourseDetailView();
 }
+// Open a course detail using course code from the enrolled list
+function openCourseByCode(code){
+  const contentBtn = document.querySelector(`.view-course-content-btn[data-course-code="${code}"]`) || document.querySelector(`.view-course-content-btn[data-course="${code}"]`);
+  if (!contentBtn) return false;
+  const courseCode = contentBtn.getAttribute('data-course-code') || contentBtn.getAttribute('data-course');
+  const courseName = contentBtn.getAttribute('data-course-name') || contentBtn.getAttribute('data-title') || '';
+  const courseHours = contentBtn.getAttribute('data-course-hours') || '';
+  const courseDescription = contentBtn.getAttribute('data-course-description') || '';
+  const credited = contentBtn.getAttribute('data-credited-hours') || '';
+  if (courseCode) { viewCourseDetails(courseCode, courseName, courseHours, courseDescription, credited); return true; }
+  return false;
+}
+
+window.openCourseByCode = openCourseByCode;

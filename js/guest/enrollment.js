@@ -137,8 +137,12 @@ function loadBatchesForCourse(courseCode) {
       if (list.length > 0) {
         const def = document.createElement('option'); def.value = ''; def.textContent = 'Select a batch'; batchSelect.appendChild(def);
         list.forEach(r => { const opt = document.createElement('option'); opt.value = r.batch_name; opt.textContent = r.batch_name; batchSelect.appendChild(opt); });
+        const hasDefault = list.some(r => String(r.batch_name).toLowerCase() === 'batch 1');
+        if (hasDefault) { batchSelect.value = 'Batch 1'; }
+        else if (list.length === 1) { batchSelect.value = list[0].batch_name; }
       } else {
-        const opt = document.createElement('option'); opt.value = ''; opt.textContent = 'No batches available'; batchSelect.appendChild(opt);
+        const opt = document.createElement('option'); opt.value = 'Batch 1'; opt.textContent = 'Batch 1'; batchSelect.appendChild(opt);
+        batchSelect.value = 'Batch 1';
       }
     })
     .catch(() => {

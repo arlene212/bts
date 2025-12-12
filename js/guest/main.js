@@ -60,6 +60,16 @@ document.addEventListener('DOMContentLoaded', function () {
   setupProfileModal();
   setupEnrolledTabs();
   setupClickableCards();
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const openCode = params.get('open_course');
+    if (openCode) {
+      const tabLink = document.querySelector('.tab-link[data-tab="enrolled"]');
+      if (tabLink) tabLink.click();
+      setTimeout(function(){ if (window.openCourseByCode) window.openCourseByCode(openCode); }, 50);
+    }
+  } catch (e) {}
 });
 
 function setupEnrolledTabs() {

@@ -17,7 +17,15 @@ if (isset($_GET['course_code'])) {
         ");
         $stmt->execute([$courseCode]);
         $batches = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+        if (empty($batches)) {
+            try {
+                $ins = $pdo->prepare("INSERT INTO course_batches (course_code, batch_name, created_at) VALUES (?, 'Batch 1', NOW())");
+                $ins->execute([$courseCode]);
+                $batches = [['batch_name' => 'Batch 1']];
+            } catch (PDOException $__) {
+                $batches = [['batch_name' => 'Batch 1']];
+            }
+        }
         echo json_encode($batches);
     } catch (PDOException $e) {
         echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);

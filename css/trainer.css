@@ -2221,6 +2221,10 @@ body.no-scroll { overflow: hidden; }
   margin-bottom: var(--spacing-6);
   padding-bottom: var(--spacing-4);
   border-bottom: 2px solid var(--primary-100);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: white;
 }
 
 .modal-header h2 {

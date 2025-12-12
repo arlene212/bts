@@ -1,15 +1,14 @@
 <?php
 function enrollGuest($db, $userId, $courseCode, $batchName = null)
 {
-  if (empty($batchName)) {
-    return ['success' => false, 'message' => 'Please select a batch before enrolling'];
-  }
-  // Validate batch exists for the course
+  if (empty($batchName)) { $batchName = 'Batch 1'; }
+  // Ensure batch exists; create default if missing
   try {
     $bchk = $db->prepare("SELECT 1 FROM course_batches WHERE course_code = ? AND batch_name = ?");
     $bchk->execute([$courseCode, $batchName]);
     if (!$bchk->fetchColumn()) {
-      return ['success' => false, 'message' => 'Invalid batch selection'];
+      $bins = $db->prepare("INSERT INTO course_batches (course_code, batch_name, created_at) VALUES (?, ?, NOW())");
+      $bins->execute([$courseCode, $batchName]);
     }
   } catch (Throwable $e) {}
   $stmt = $db->prepare("SELECT status FROM enrollments WHERE trainee_id = ? AND course_code = ? ORDER BY date_requested DESC LIMIT 1");

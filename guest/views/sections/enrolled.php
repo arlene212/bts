@@ -7,7 +7,8 @@ if (is_array($enrolled_courses)) {
         "SELECT COUNT(ta.id)
          FROM topic_activities ta
          JOIN course_topics ct ON ta.topic_id = ct.id
-         WHERE ct.course_code = ?"
+         JOIN competencies comp ON ct.competency_id = comp.id
+         WHERE ct.course_code = ? AND comp.competency_type = 'basic'"
       );
       $totalStmt->execute([$course['course_code']]);
       $course['total_activities'] = (int)$totalStmt->fetchColumn();
@@ -15,7 +16,11 @@ if (is_array($enrolled_courses)) {
         "SELECT COUNT(*)
          FROM activity_submissions s
          WHERE s.guest_id = ? AND s.activity_id IN (
-           SELECT ta.id FROM topic_activities ta JOIN course_topics ct ON ta.topic_id = ct.id WHERE ct.course_code = ?
+           SELECT ta.id 
+           FROM topic_activities ta 
+           JOIN course_topics ct ON ta.topic_id = ct.id 
+           JOIN competencies comp ON ct.competency_id = comp.id 
+           WHERE ct.course_code = ? AND comp.competency_type = 'basic'
          )"
       );
       $completedStmt->execute([$user['user_id'], $course['course_code']]);
