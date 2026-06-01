@@ -1,75 +1,72 @@
-# Billing Enrolment System
+# eLearning Management System (Contract Contribution)
 
 ## Overview
-A web-based enrollment and billing management system designed to handle student registration, class assignment, and fee tracking for academic institutions.
+A role-based learning management system developed as part of a contract-based thesis project. The system supports administrators, instructors, and students in managing learning modules, schedules, and submission workflows.
 
-This project was developed as a contract-based system for a thesis requirement.
+The implementation was part of a collaborative development effort under an external repository owned by the thesis team.
 
 ---
 
 ## Problem
-Institutions required a centralized system to manage:
-- Student enrollment processing
-- Class assignment handling
-- Billing and payment tracking
-- Reduction of manual record-keeping
-
-Existing workflows were fragmented across spreadsheets and manual logs, leading to inconsistencies and inefficiency.
+Educational institutions required a structured system for:
+- Managing learning materials
+- Tracking student submissions
+- Coordinating instructor workloads
+- Organizing schedules and academic workflows
 
 ---
 
 ## System Roles
 
 ### Admin
-- System oversight and configuration
-- User and data management
+- System configuration and user management
 
-### Staff / Registrar
-- Handles student enrollment
-- Assigns classes
-- Manages billing records
+### Instructor
+- Uploads modules and manages student submissions
+
+### Student
+- Accesses learning materials and submits requirements
 
 ---
 
-## Core Features
-- Student enrollment processing
-- Class assignment system
-- Billing record generation and tracking
-- Administrative data management
-- Structured relational data handling
+## Core Contributions
+- Role-based access logic implementation
+- Backend workflow structuring using PHP
+- Database design support for learning modules and submissions
+- Frontend integration using HTML/CSS/JS
 
 ---
 
 ## Tech Stack
-- PHP (Pure PHP)
+- PHP
 - MySQL
-- HTML
-- CSS
+- HTML / CSS
 - JavaScript
 
 ---
 
-## Database Structure (Simplified)
+## Database Concepts
 - Users
 - Students
-- Classes
-- Enrollment Records
-- Billing Records
+- Instructors
+- Modules
+- Submissions
+- Schedules
 
 ---
 
 ## Workflow
-1. Staff encodes student information
-2. Students are enrolled into classes
-3. Billing records are generated per enrollment
-4. Admin reviews and manages records
+1. Admin sets system structure
+2. Instructors upload modules and manage content
+3. Students submit outputs
+4. Instructors evaluate submissions
 
 ---
 
 ## Notes
-Contract-based development focused on CRUD workflows, relational database design, and administrative process automation.
+Contract-based collaborative development. Repository ownership retained by thesis team.
 
 ---
 
 ## Status
-Completed (Contract Project)
+Completed (Contract Contribution)
